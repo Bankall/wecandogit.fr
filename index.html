@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="author" content="Christian Sulecki" />
+		<link rel="icon" href="/logo.png" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#000000" />
+
+		<meta name="description" content="Parc de loisirs, d'éducation et de sport canin, pour chiens de tout âges et de toutes races à Reims et alentours. L'association de 2 éducatrices comportementalistes." />
+		<meta name="keywords" content="Education, Eduquer, Educateur, Parc loisirs, Comportementaliste, Chien, Canin, Education canine, Dressage, Dresseur, Reims, Betheny" />
+
+		<link rel="apple-touch-icon" href="/logo.png" />
+		<link rel="manifest" href="/manifest.json" />
+		<title>Educateur comportementaliste canin à Reims - We Can Dog It</title>
+
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" />
+
+		<script src="https://kit.fontawesome.com/5fee777e14.js" crossorigin="anonymous"></script>
+	</head>
+	<body>
+		<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root"></div>
+
+		<script>
+			if ('loading' in HTMLImageElement.prototype) {
+				const images = document.querySelectorAll('img[loading="lazy"]');
+				images.forEach(img => {
+					img.src = img.dataset.src;
+				});
+			} else {
+				// Dynamically import the LazySizes library
+				const script = document.createElement('script');
+				script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.1.2/lazysizes.min.js';
+				document.body.appendChild(script);
+			}
+		</script>
+
+		<script type="module" src="/src/main.jsx"></script>
+	</body>
+</html>

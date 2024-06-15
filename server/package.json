@@ -1,0 +1,25 @@
+{
+	"name": "server",
+	"version": "1.0.0",
+	"author": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "NODE_ENV=developpment nodemon -L --watch lib --watch . index"
+	},
+	"type": "module",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"@auth/express": "^0.5.5",
+		"@bankall/mysql-backend": "^0.0.1",
+		"body-parser": "^1.20.2",
+		"config": "^3.3.11",
+		"cors": "^2.8.5",
+		"express": "^4.19.2",
+		"request-ip": "^3.3.0"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.0"
+	}
+}

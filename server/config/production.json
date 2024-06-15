@@ -1,0 +1,10 @@
+{
+	"mysql": {
+		"host": "couponing-database-1.ciwymjvuuzyx.eu-west-1.rds.amazonaws.com",
+		"port": 3306,
+        "user": "admin",
+        "password": "FJ_nA7D&)!(bLgMu",
+		"database": "couponing"
+	},
+	"FRONT_URI": "https://coupon.piximedia.com"
+}
