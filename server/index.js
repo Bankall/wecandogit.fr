@@ -3,8 +3,12 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import requestIp from "request-ip";
 import path from "path";
+import { fileURLToPath } from "url";
 import Backend from "@bankall/mysql-backend";
 import { ExpressAuth } from "@auth/express";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3030;
 const API_PATH = "/api/v1";
@@ -17,9 +21,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestIp.mw());
-
 app.use(express.static(path.join(__dirname, "../dist")));
-
 app.use("/auth/*", ExpressAuth({ providers: [] }));
 
 /*

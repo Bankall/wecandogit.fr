@@ -5,7 +5,8 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"start": "NODE_ENV=developpment nodemon -L --watch lib --watch . index"
+		"dev": "NODE_ENV=developpment nodemon -L --watch lib --watch . index",
+		"start": "NODE_ENV=production node index.js"
 	},
 	"type": "module",
 	"license": "ISC",
