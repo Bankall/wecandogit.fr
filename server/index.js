@@ -18,6 +18,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestIp.mw());
 
+app.use(express.static(path.join(__dirname, "../dist")));
+
 app.use("/auth/*", ExpressAuth({ providers: [] }));
 
 /*
