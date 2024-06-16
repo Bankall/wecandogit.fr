@@ -1,6 +1,6 @@
 .hero {
 	color: #fff;
-	background: url("/src/assets/medias/header-background.webp") no-repeat center / cover;
+	background: url("/assets/medias/header-background.webp") no-repeat center / cover;
 	position: relative;
 	padding: 0;
 }
