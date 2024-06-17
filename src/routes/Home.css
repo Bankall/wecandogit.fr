@@ -17,6 +17,7 @@
 .hero .content {
 	padding: 80px 10vw;
 	position: relative;
+	margin: 0;
 }
 
 .hero h2 {
