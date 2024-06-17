@@ -36,10 +36,6 @@ backend.start(() => {
 	});
 });*/
 
-app.get("*", (req, res) => {
-	res.sendFile(path.join(__dirname, "../dist", "index.html"));
-});
-
 const shuffle = array => {
 	const shuffled = [...array];
 	let currentIndex = shuffled.length;
@@ -214,4 +210,8 @@ app.get(`${API_PATH}/is-logged-in`, async (req, res) => {
 
 app.listen(PORT, () => {
 	console.log(`App listening on port ${PORT}!`);
+});
+
+app.get("*", (req, res) => {
+	res.sendFile(path.join(__dirname, "../dist", "index.html"));
 });
