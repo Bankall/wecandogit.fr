@@ -26,7 +26,7 @@ export default function Header() {
 						<NavLink to='/agenda'>Notre agenda</NavLink>
 					</li>
 					<li>
-						<NavLink to='/activites'>Nos activitée</NavLink>
+						<NavLink to='/activites'>Nos activitées</NavLink>
 					</li>
 					<li>
 						<NavLink to='/formules-et-tarifs'>Formules et tarifs</NavLink>
