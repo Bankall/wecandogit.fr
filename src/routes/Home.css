@@ -14,14 +14,17 @@
 	background: rgba(0, 0, 0, 0.5);
 }
 
-.hero .content {
+section.hero .content {
 	padding: 80px 10vw;
 	position: relative;
+	max-width: none;
 	margin: 0;
 }
 
-.hero h2 {
-	margin-top: 20px;
+section.hero h2 {
+	margin: 20px 0 0;
+	text-align: left;
+	text-transform: none;
 }
 
 .hero h2,
