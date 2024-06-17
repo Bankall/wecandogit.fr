@@ -4,13 +4,13 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 
 import Root from "./routes/Root";
-
 import Home from "./routes/Home";
-import Education from "./routes/Education";
+import Login from "./routes/Login";
 import ErrorPage from "./routes/ErrorPage";
+// import Education from "./routes/Education";
+// import Account from "./routes/Account/Account";
 
-import Account from "./routes/Account/Account";
-import Login from "./routes/Account/Login";
+// import Agenda from "./routes/Agenda";
 
 import axios from "axios";
 if (import.meta.env.VITE_API_ENDPOINT) {
@@ -28,12 +28,40 @@ const router = createBrowserRouter([
 				element: <Home />
 			},
 			{
-				path: "/account",
-				element: <Account />
+				path: "/a-propos",
+				lazy: async () => import("./routes/About")
 			},
 			{
-				path: "/education",
-				element: <Education />
+				path: "/educatrices",
+				lazy: async () => import("./routes/About")
+			},
+			{
+				path: "/cynologiste-kezako",
+				lazy: async () => import("./routes/Cynologyst")
+			},
+			{
+				path: "/conditions-generales-vente",
+				lazy: async () => import("./routes/GTC")
+			},
+			{
+				path: "/politique-confidentialite",
+				lazy: async () => import("./routes/Privacy")
+			},
+			{
+				path: "/agenda",
+				lazy: () => import("./routes/Agenda")
+			},
+			{
+				path: "/activities",
+				lazy: () => import("./routes/Activities")
+			},
+			{
+				path: "/account",
+				lazy: () => import("./routes/Account")
+			},
+			{
+				path: "/formules-et-tarifs",
+				lazy: () => import("./routes/Pricing")
 			}
 		]
 	},

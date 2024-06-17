@@ -1,0 +1,21 @@
+.trainers .box {
+	text-align: left;
+	width: calc(100% - 10px);
+	height: auto;
+	margin: 5px;
+	padding: 20px 60px;
+}
+
+.about-us .ar-3-4 {
+	max-width: 300px;
+}
+
+@media screen and (max-width: 900px) {
+	.about-us .flex-row {
+		flex-direction: column;
+	}
+
+	.about-us .ar-3-4 {
+		width: auto;
+	}
+}

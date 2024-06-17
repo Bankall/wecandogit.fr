@@ -20,7 +20,7 @@ export default function Header() {
 			<nav className={menuToogle ? "active" : null} onClick={() => setMenuToggle(false)}>
 				<ul>
 					<li>
-						<NavLink to='/qui-sommes-nous'>Qui sommes nous ?</NavLink>
+						<NavLink to='/a-propos'>Qui sommes nous ?</NavLink>
 					</li>
 					<li>
 						<NavLink to='/agenda'>Notre agenda</NavLink>

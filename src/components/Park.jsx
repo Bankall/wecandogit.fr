@@ -1,6 +1,6 @@
 export default function Park() {
 	return (
-		<section className='park'>
+		<section className='park light'>
 			<div className='content'>
 				<h2>Le parc de loisirs et d'éducation</h2>
 				<p>Situé aux Mesneux, notre parc canin de 4000m² est un espace de rencontre, où les chiens peuvent venir se dépenser physiquement et mentalement, rencontrer leurs congénères et apprendre en toute sécurité. Un lieu où les maîtres peuvent échanger entre eux ainsi qu'avec une éducatrice comportementaliste (l'une de nous est toujours présente). Un espace réservé à la pratique du sport, un espace dédié au loisirs, et un espace dédié aux cours pour les chiots ainsi qu'aux petits chiens.</p>

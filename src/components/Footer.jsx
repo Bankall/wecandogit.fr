@@ -11,20 +11,23 @@ export default function Footer() {
 			<section className='sitemap'>
 				<ul>
 					<li>
-						<Link to='/about-us'>Qui sommes nous</Link>
+						<Link to='/a-propos'>Qui sommes nous</Link>
 					</li>
 					<li>
-						<Link to='/about-us#trainer'>Les educatrices</Link>
+						<Link to='/educatrices'>Les educatrices</Link>
 					</li>
 					<li>
-						<Link to='/cynology'>Un Cynologiste: Kézako?</Link>
+						<Link to='/cynologiste-kezako'>Un Cynologiste: Kézako?</Link>
 					</li>
 					<li>
-						<Link to='/privacy'>Politique de confidentialité</Link>
+						<Link to='/conditions-generales-vente'>Conditions générales de vente</Link>
+					</li>
+					<li>
+						<Link to='/politique-confidentialite'>Politique de confidentialité</Link>
 					</li>
 				</ul>
 
-				{activities.data
+				{activities.data?.trainers
 					? activities.data.trainers.map(trainer => {
 							return (
 								<ul key={trainer.id}>
@@ -33,7 +36,7 @@ export default function Footer() {
 									{trainer.activities.map(activity => {
 										return (
 											<li key={activity.id}>
-												<Link to={`/activity/${activity.id}/${activity.label}`}>{activity.label}</Link>
+												<Link to={`/activite/${activity.id}/${encodeURIComponent(activity.label.replace(/\s/gi, "-")).toLowerCase()}`}>{activity.label}</Link>
 											</li>
 										);
 									})}
@@ -46,10 +49,15 @@ export default function Footer() {
 						<Link to='/agenda'>Notre agenda</Link>
 					</li>
 					<li>
-						<Link to='/booking'>Mes réservation</Link>
+						<Link to='/reservations'>Mes réservation</Link>
 					</li>
 					<li>
-						<Link to='https://docs.google.com/forms/d/e/1FAIpQLSeleVaqfG4q7Eb78hn87ur3-EdVo1CsOQat3OUCy99tfWLbvA/viewform'>Formulaire de contact</Link>
+						<Link to='/formules-et-tarifs'>Formules et tarifs</Link>
+					</li>
+					<li>
+						<a href='https://docs.google.com/forms/d/e/1FAIpQLSeleVaqfG4q7Eb78hn87ur3-EdVo1CsOQat3OUCy99tfWLbvA/viewform' target='_blank'>
+							Formulaire de contact
+						</a>
 					</li>
 				</ul>
 			</section>

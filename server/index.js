@@ -25,8 +25,6 @@ app.use(express.static(path.join(__dirname, "../dist")));
 app.use("/auth/*", ExpressAuth({ providers: [] }));
 
 /*
-app.use(express.static(path.join(__dirname, "../app/build")));
-
 const backend = new Backend({
 	app,
 	path: API_PATH
@@ -37,6 +35,23 @@ backend.start(() => {
 		res.sendFile(path.join(__dirname, "../app/build", "index.html"));
 	});
 });*/
+
+const shuffle = array => {
+	const shuffled = [...array];
+	let currentIndex = shuffled.length;
+
+	// While there remain elements to shuffle...
+	while (currentIndex != 0) {
+		// Pick a remaining element...
+		let randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex--;
+
+		// And swap it with the current element.
+		[shuffled[currentIndex], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[currentIndex]];
+	}
+
+	return shuffled;
+};
 
 app.get(`${API_PATH}/is-logged-in`, async (req, res) => {
 	res.send({
@@ -117,38 +132,67 @@ app.get(`${API_PATH}/get-next-individual-slots`, async (req, res) => {
 	]);
 });
 
-app.get(`${API_PATH}/get-activities-by-trainer`, async (req, res) => {
+app.get(`${API_PATH}/get-trainers-description`, async (req, res) => {
+	const trainers = [
+		{
+			id: 123,
+			name: "Chloe Ternier",
+			description: `Après avoir été infirmière pendant près de 10 ans, j'ai choisi de changer de voie pour m'investir dans le bien-être canin. Passionnée de sport (course à pied et triathlon), je suis persuadée que la pratique des sports canins peut permettre d'améliorer grandement non seulement la relation humain/chien, mais également aider à résoudre de nombreux troubles du comportement chez le chien. 
+
+J'ai également conscience que de nombreux propriétaires ont besoin d'être guidés dans l'éducation de leur chien, d'apprendre à communiquer avec lui, à répondre à ses besoins. Mais aussi du fait que ces propriétaires sont de plus en plus soucieux du bien-être de leur animal.  J'ai donc débuté ma formation de cynologiste en septembre 2020, avant de quitter mon poste à l'hôpital au mois de juillet suivant afin de me consacrer entièrement à cette reconversion et à ce projet. 
+
+J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`
+		},
+		{
+			id: 345,
+			name: "Elodie Decouleur",
+			description: `J'ai été commerciale durant 8 ans, avant d'être pendant 2 ans chef de publicité. En septembre 2020, j'ai décidé d'arrêter mon activité salariée, afin de me consacrer pleinement à mon activité secondaire, l'éducation et la rééducation des chiens de compagnie. 
+
+Je suis passionnée de chiens depuis toujours, mais c'est en 2016 que j'ai validé le diplôme d'éducatrice comportementaliste, Cynologiste et que j'ai ouvert Amity Dog. 
+
+J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`
+		}
+	];
+
 	res.send({
-		trainers: [
-			{
-				id: 123,
-				name: "Chloe Ternier",
-				activities: [
-					{
-						id: 123,
-						label: "Agility"
-					},
-					{
-						id: 456,
-						label: "Dog Dancing"
-					}
-				]
-			},
-			{
-				id: 345,
-				name: "Elodie Decouleur",
-				activities: [
-					{
-						id: 123,
-						label: "Man-trailing"
-					},
-					{
-						id: 456,
-						label: "Nose work"
-					}
-				]
-			}
-		]
+		trainers: shuffle(trainers)
+	});
+});
+
+app.get(`${API_PATH}/get-activities-by-trainer`, async (req, res) => {
+	const trainers = [
+		{
+			id: 123,
+			name: "Chloe Ternier",
+			activities: [
+				{
+					id: 123,
+					label: "Agility"
+				},
+				{
+					id: 456,
+					label: "Dog Dancing"
+				}
+			]
+		},
+		{
+			id: 345,
+			name: "Elodie Decouleur",
+			activities: [
+				{
+					id: 123,
+					label: "Man-trailing"
+				},
+				{
+					id: 456,
+					label: "Nose work"
+				}
+			]
+		}
+	];
+
+	res.send({
+		trainers: shuffle(trainers)
 	});
 });
 
