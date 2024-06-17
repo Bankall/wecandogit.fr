@@ -141,7 +141,8 @@ app.get(`${API_PATH}/get-trainers-description`, async (req, res) => {
 
 J'ai également conscience que de nombreux propriétaires ont besoin d'être guidés dans l'éducation de leur chien, d'apprendre à communiquer avec lui, à répondre à ses besoins. Mais aussi du fait que ces propriétaires sont de plus en plus soucieux du bien-être de leur animal.  J'ai donc débuté ma formation de cynologiste en septembre 2020, avant de quitter mon poste à l'hôpital au mois de juillet suivant afin de me consacrer entièrement à cette reconversion et à ce projet. 
 
-J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`
+J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`,
+			photo: "/assets/medias/chloe.jpg"
 		},
 		{
 			id: 345,
@@ -150,7 +151,8 @@ J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`
 
 Je suis passionnée de chiens depuis toujours, mais c'est en 2016 que j'ai validé le diplôme d'éducatrice comportementaliste, Cynologiste et que j'ai ouvert Amity Dog. 
 
-J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`
+J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`,
+			photo: "/assets/medias/FB_IMG_1599744511817.jpg"
 		}
 	];
 

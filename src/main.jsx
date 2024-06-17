@@ -10,8 +10,6 @@ import ErrorPage from "./routes/ErrorPage";
 // import Education from "./routes/Education";
 // import Account from "./routes/Account/Account";
 
-// import Agenda from "./routes/Agenda";
-
 import axios from "axios";
 if (import.meta.env.VITE_API_ENDPOINT) {
 	axios.defaults.baseURL = import.meta.env.VITE_API_ENDPOINT;

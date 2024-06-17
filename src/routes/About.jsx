@@ -1,21 +1,58 @@
 import { useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
 
+import { Navigation } from "swiper/modules";
 import Swiper from "swiper";
 
 import "swiper/css";
 import "swiper/css/navigation";
 
 import "./About.css";
+import { useLocation } from "react-router-dom";
+import { Interweave } from "interweave";
 
 export default function About() {
-	const trainers = useFetch("/get-trainers-description");
+	const trainers = useFetch("/get-trainers-description", () => {});
+	const location = useLocation();
 
-	useEffect(() => {}, []);
+	useEffect(() => {
+		if (!trainers.data?.trainers) {
+			return;
+		}
+
+		new Swiper(".swiper", {
+			modules: [Navigation],
+			navigation: {
+				nextEl: ".swiper-button-next",
+				prevEl: ".swiper-button-prev"
+			},
+			loop: true,
+			slidesPerView: "auto",
+			spaceBetween: 10,
+			autoplay: {
+				delay: 5000
+			}
+		});
+	}, [trainers]);
+
+	useEffect(() => {
+		const pathname = location.pathname ? location.pathname.slice(1) : "";
+		const anchor = document.querySelector(`#${pathname}`);
+
+		const timeout = setTimeout(() => {
+			if (anchor) {
+				anchor.scrollIntoView({ behavior: "smooth", block: "center" });
+			}
+		}, 200);
+
+		return () => {
+			clearTimeout(timeout);
+		};
+	}, [location]);
 
 	return (
 		<>
-			<section className='about-us'>
+			<section className='about-us' id='a-propos'>
 				<div className='content'>
 					<h2>We Can Dog It</h2>
 					<div className='flex-row'>
@@ -45,17 +82,21 @@ export default function About() {
 										return (
 											<div className='swiper-slide box' key={trainer.id}>
 												<div className='title'>{trainer.name}</div>
-												<div className='content'>
+												<div className='content flex-row'>
+													<img src={trainer.photo} />
 													<pre>{trainer.description}</pre>
+												</div>
+
+												<div className='content grid'>
+													<Interweave content={trainer.training} />
 												</div>
 											</div>
 										);
 								  })
 								: null}
-
-							<div className='swiper-button-prev'></div>
-							<div className='swiper-button-next'></div>
 						</div>
+						<div className='swiper-button-prev'></div>
+						<div className='swiper-button-next'></div>
 					</div>
 				</div>
 			</section>

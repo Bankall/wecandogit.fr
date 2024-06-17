@@ -10,6 +10,28 @@
 	max-width: 300px;
 }
 
+.trainers .swiper-button-prev,
+.trainers .swiper-button-next {
+	padding: 16px;
+	margin-top: -16px;
+}
+
+.trainers .swiper-button-prev:after,
+.trainers .swiper-button-next:after {
+	font-size: 14px;
+}
+
+.trainers .content.grid > span {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 10px;
+	align-items: end;
+}
+
+.trainers .content.grid > span > span {
+	border-bottom: 1px solid;
+}
+
 @media screen and (max-width: 900px) {
 	.about-us .flex-row {
 		flex-direction: column;
