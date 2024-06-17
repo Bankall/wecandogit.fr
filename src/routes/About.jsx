@@ -41,7 +41,7 @@ export default function About() {
 
 		const timeout = setTimeout(() => {
 			if (anchor) {
-				anchor.scrollIntoView({ behavior: "smooth", block: "center" });
+				anchor.scrollIntoView({ behavior: "smooth" });
 			}
 		}, 200);
 

@@ -33,7 +33,8 @@
 }
 
 @media screen and (max-width: 900px) {
-	.about-us .flex-row {
+	.about-us .flex-row,
+	.trainers .flex-row {
 		flex-direction: column;
 	}
 
