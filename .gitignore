@@ -14,6 +14,7 @@ dist-ssr
 .env.*
 .env
 .aws
+config
 
 # Editor directories and files
 .vscode/*
