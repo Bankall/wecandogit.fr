@@ -68,8 +68,8 @@ const sess = {
 
 if (app.get("env") === "production") {
 	// trust first proxy
-	app.set("trust proxy", 1);
-	sess.cookie.secure = true; // serve secure cookies
+	//app.set("trust proxy", 1);
+	//sess.cookie.secure = true; // serve secure cookies
 }
 
 app.use(session(sess));
