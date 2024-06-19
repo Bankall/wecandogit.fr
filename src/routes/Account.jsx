@@ -1,11 +1,15 @@
-import { useFetch } from "/src/hooks/useFetch";
-import { Navigate } from "react-router-dom";
+import { useCookies } from "react-cookie";
+
 export default function Account() {
-	const isLoggedIn = useFetch("/is-logged-in");
+	const [cookies, setCookies] = useCookies();
+	console.log(cookies);
 	return (
-		<>
-			{false && !isLoggedIn.loading && isLoggedIn.data && !isLoggedIn.data.result && <Navigate to='/login' />}
-			Account page
-		</>
+		<section className='account'>
+			<div className='content'>
+				<h2>Hello {cookies.username} !</h2>
+			</div>
+		</section>
 	);
 }
+
+export { Account as Component };

@@ -12,7 +12,14 @@ export function useFetch(options, callback) {
 
 		setLoading(true);
 
-		axios({ url, method: options.data ? "post" : "get", data: options.data, headers: options.headers, signal: controller.signal })
+		axios({
+			url,
+			method: options.data ? "post" : "get",
+			data: options.data,
+			headers: options.headers,
+			signal: controller.signal,
+			withCredentials: typeof options.withCredentials !== "undefined" ? options.withCredentials : true
+		})
 			.then(response => {
 				setError(null);
 				setData(response.data);

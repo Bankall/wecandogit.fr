@@ -1,9 +1,0 @@
-#error-page {
-	display: flex;
-	flex-direction: row;
-}
-
-#error-page .box {
-	padding: 40px 80px;
-	margin-top: 10vh;
-}

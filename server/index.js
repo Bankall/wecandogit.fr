@@ -3,9 +3,18 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import requestIp from "request-ip";
 import path from "path";
+import axios from "axios";
 import { fileURLToPath } from "url";
-import Backend from "@bankall/mysql-backend";
-import { ExpressAuth } from "@auth/express";
+
+import session from "express-session";
+import rawMySQLStore from "express-mysql-session";
+import "dotenv/config";
+import config from "config";
+import bcrypt from "bcrypt";
+import md5 from "md5";
+
+import MySQLBackend from "@bankall/mysql-backend";
+import MailSender from "./lib/mail-sender/index.cjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,25 +25,54 @@ const API_PATH = "/api/v1";
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const app = express();
+const backend = new MySQLBackend({
+	app,
+	path: API_PATH,
+	config: {
+		"mysql.host": config.get("mysql.host"),
+		"mysql.user": config.get("mysql.user"),
+		"mysql.password": config.get("mysql.password"),
+		"mysql.database": config.get("mysql.database")
+	}
+});
 
-app.use(cors());
+app.use(
+	cors({
+		origin: config.get("FRONT_URI"),
+		credentials: true,
+		optionsSuccessStatus: 200
+	})
+);
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestIp.mw());
 app.use(express.static(path.join(__dirname, "../dist")));
-app.use("/auth/*", ExpressAuth({ providers: [] }));
 
-/*
-const backend = new Backend({
-	app,
-	path: API_PATH
+const MySQLStore = rawMySQLStore(session);
+const sessionStore = new MySQLStore({
+	host: config.get("mysql.host"),
+	user: config.get("mysql.user"),
+	port: 3306,
+	password: config.get("mysql.password"),
+	database: "wecandogit"
 });
 
-backend.start(() => {
-	app.get("*", (req, res) => {
-		res.sendFile(path.join(__dirname, "../app/build", "index.html"));
-	});
-});*/
+const sess = {
+	secret: process.env.SESSION_COOKIE_SECRET,
+	resave: false,
+	saveUninitialized: true,
+	store: sessionStore,
+	cookie: {}
+};
+
+if (app.get("env") === "production") {
+	// trust first proxy
+	app.set("trust proxy", 1);
+	sess.cookie.secure = true; // serve secure cookies
+}
+
+app.use(session(sess));
 
 const shuffle = array => {
 	const shuffled = [...array];
@@ -53,10 +91,281 @@ const shuffle = array => {
 	return shuffled;
 };
 
+const isLoggedIn = req => {
+	return !!req.session.loggedIn;
+};
+
+const checkACL = (req, res, next) => {
+	console.log(req);
+	next();
+};
+
+const validateEmail = email => {
+	const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+	if (!email || email.length > 254) return false;
+	if (!emailRegex.test(email)) return false;
+
+	const parts = email.split("@");
+	if (parts[0].length > 64) return false;
+
+	const domainParts = parts[1].split(".");
+	if (domainParts.some(part => part.length > 63)) return false;
+
+	return true;
+};
+
+const getResetPasswordToken = email => {
+	const token = md5(`${process.env.PASSWORD_RECOVERY_SALT}/${email}`);
+	return token;
+};
+
+const assert = async (...args) => {
+	try {
+		const ok = args.every(item => typeof item !== "undefined");
+		if (!ok) throw "Some key are missing";
+
+		return true;
+	} catch (err) {
+		throw err;
+	}
+};
+
+app.get(`${API_PATH}/auth/oauth/get-google-redirect-url`, async (req, res) => {
+	const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+	const options = {
+		redirect_uri: config.get("GOOGLE_OAUTH_REDIRECT_URI"),
+		client_id: process.env.AUTH_GOOGLE_ID,
+		access_type: "online",
+		response_type: "code",
+		prompt: "consent",
+		scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" ")
+	};
+
+	const queryString = new URLSearchParams(options).toString();
+	const url = `${rootUrl}?${queryString.toString()}`;
+
+	res.send(url);
+});
+
+app.get(`${API_PATH}/auth/oauth/callback`, async (req, res) => {
+	try {
+		const code = req.query.code;
+		const url = "https://oauth2.googleapis.com/token";
+
+		const options = {
+			code,
+			client_id: process.env.AUTH_GOOGLE_ID,
+			client_secret: process.env.AUTH_GOOGLE_SECRET,
+			redirect_uri: config.get("GOOGLE_OAUTH_REDIRECT_URI"),
+			grant_type: "authorization_code"
+		};
+
+		const queryString = new URLSearchParams(options);
+
+		const { id_token, access_token } = (
+			await axios.post(url, queryString.toString(), {
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded"
+				}
+			})
+		).data;
+
+		const googleUser = (
+			await axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`, {
+				headers: {
+					Authorization: `Bearer ${id_token}`
+				}
+			})
+		).data;
+
+		if (!googleUser) {
+			return res.redirect(`${config.get("FRONT_URI")}/login#google-error`);
+		}
+
+		req.session.regenerate(async err => {
+			if (err) next(err);
+
+			req.session.loggedIn = true;
+			req.session.email = googleUser.email;
+
+			let user = await backend.get({ table: "user", query: { email: googleUser.email } });
+			if (!Object.keys(user.result).length) {
+				// Insert user here
+				user = await backend.post({
+					table: "user",
+					body: {
+						email: googleUser.email,
+						firstname: googleUser.given_name,
+						lastname: googleUser.family_name
+					}
+				});
+			}
+
+			res.cookie("username", googleUser.given_name);
+			res.cookie("email", googleUser.email);
+
+			res.redirect(config.get("FRONT_URI") + (req.body.redirect || "/account"));
+		});
+	} catch (err) {
+		console.log(err);
+	}
+});
+
+app.post(`${API_PATH}/create-user`, async (req, res, next) => {
+	try {
+		await assert(req.body.email, req.body.password, req.body.firstname, req.body.lastname, req.body.phone);
+
+		req.body.password = await bcrypt.hash(req.body.password, 10);
+
+		const newUser = await backend.post({
+			table: "user",
+			body: req.body
+		});
+
+		req.session.regenerate(async err => {
+			if (err) next(err);
+
+			req.session.loggedIn = true;
+			req.session.email = req.body.email;
+
+			res.cookie("username", req.body.firstname);
+			res.cookie("email", req.body.email);
+
+			res.send({
+				ok: true,
+				location: req.body.redirect || "/account"
+			});
+		});
+	} catch (err) {
+		res.send({
+			error: err.error.match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
+		});
+	}
+});
+
+app.post(`${API_PATH}/auth/login`, async (req, res) => {
+	try {
+		await assert(req.body.email, req.body.password);
+
+		const user = await backend.get({
+			table: "user",
+			query: {
+				email: req.body.email
+			}
+		});
+
+		if (!user.result.length) {
+			throw { error: "Aucun compte n'existe avec cette adresse" };
+		}
+
+		const passwordMatch = await bcrypt.compare(req.body.password, user.result[0].password);
+		if (!passwordMatch) {
+			throw { error: "Mot de passe incorrect" };
+		}
+
+		req.session.regenerate(async err => {
+			if (err) next(err);
+
+			req.session.loggedIn = true;
+			req.session.email = req.body.email;
+
+			res.cookie("username", user.result[0].firstname);
+			res.cookie("email", req.body.email);
+
+			res.send({
+				ok: true,
+				location: req.body.redirect || "/account"
+			});
+		});
+	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
+
+app.get(`${API_PATH}/auth/logout`, async (req, res) => {
+	req.session.destroy();
+
+	res.cookie("username", "");
+	res.cookie("email", "");
+	res.redirect(config.get("FRONT_URI") + "/");
+});
+
+app.get(`${API_PATH}/user-info`, checkACL, async (req, res) => {});
+
 app.get(`${API_PATH}/is-logged-in`, async (req, res) => {
 	res.send({
-		ok: Math.random() > 0.5
+		ok: isLoggedIn(req)
 	});
+});
+
+app.get(`${API_PATH}/send-reset-password-link/:email`, async (req, res) => {
+	try {
+		const email = req.params.email;
+		if (!email) {
+			throw "Missing email";
+		}
+
+		const isValidEmail = validateEmail(email);
+		if (!isValidEmail) {
+			throw "Invalid email";
+		}
+
+		const emailVerificationLink = config.get("FRONT_URI") + `/reset-password/new-password/?email=${encodeURIComponent(email)}&token=${getResetPasswordToken(email)}`;
+
+		await MailSender.send({
+			subject: "Réinitialisation de votre mot de passe",
+			email: req.params.email,
+			macros: {
+				CONTENT_HTML: `Veuillez cliquer sur le lien suivant <br/><a href="${emailVerificationLink}" target="_blank">${emailVerificationLink}</a>`,
+				CONTENT_TXT: `Veuillez copier le lien suivant dans votre navigateur ${emailVerificationLink}`
+			}
+		});
+
+		res.send({
+			ok: true
+		});
+	} catch (err) {
+		res.send({
+			error: `An error occured: ${err}`
+		});
+	}
+});
+
+app.post(`${API_PATH}/reset-password`, async (req, res) => {
+	try {
+		await assert(req.body.email, req.body.token, req.body.password);
+
+		const tokenIsValid = getResetPasswordToken(req.body.email) === req.body.token;
+		if (!tokenIsValid) {
+			throw "Invalid Token";
+		}
+
+		await backend.put({
+			table: "user",
+			where: {
+				email: req.body.email
+			},
+			body: {
+				password: await bcrypt.hash(req.body.password, 10)
+			}
+		});
+
+		res.send({
+			ok: true
+		});
+	} catch (err) {
+		res.send({
+			error: `An error occured: ${err}`
+		});
+	}
+});
+
+app.get(`${API_PATH}/get-cart-item`, async (req, res) => {
+	const count = parseInt(Math.random() * 3);
+	res.send({ count });
 });
 
 app.get(`${API_PATH}/get-next-collective-activities`, async (req, res) => {
@@ -198,20 +507,12 @@ app.get(`${API_PATH}/get-activities-by-trainer`, async (req, res) => {
 	});
 });
 
-app.get(`${API_PATH}/get-cart-item`, async (req, res) => {
-	const count = parseInt(Math.random() * 3);
-	res.send({ count });
-});
-
-app.get(`${API_PATH}/is-logged-in`, async (req, res) => {
-	const result = Math.random() > 0.3;
-	res.send({ result });
-});
-
 app.listen(PORT, () => {
 	console.log(`App listening on port ${PORT}!`);
 });
 
-app.get("*", (req, res) => {
-	res.sendFile(path.join(__dirname, "../dist", "index.html"));
+backend.start(() => {
+	app.get("*", (req, res) => {
+		res.sendFile(path.join(__dirname, "../dist", "index.html"));
+	});
 });

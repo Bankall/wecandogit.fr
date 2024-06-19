@@ -1,15 +1,12 @@
 import { useRouteError, useNavigate, Link } from "react-router-dom";
-import "./ErrorPage.css";
 
 export default function ErrorPage() {
 	const error = useRouteError();
 	const navigate = useNavigate();
 
-	console.error(error);
-
 	return (
-		<section id='error-page'>
-			<div className='box'>
+		<section className='flex-row'>
+			<div className='box big-box'>
 				<div className='title'>
 					<i className='fa-regular fa-face-frown'></i> Oops!
 				</div>

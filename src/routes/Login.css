@@ -1,0 +1,55 @@
+.google-button {
+	display: flex;
+	justify-content: center;
+	margin: 40px 0;
+}
+
+.google-button.disabled button {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+.google-button a:hover {
+	text-decoration: none;
+}
+
+.google-button button {
+	background: #fff;
+	border: 1px solid var(--light-borders);
+	color: rgb(15, 23, 42);
+	font-weight: 400;
+	font-size: 14px;
+	display: flex;
+	flex-direction: row;
+	gap: 10px;
+	align-items: center;
+	transition: box-shadow 0.3s ease-in;
+}
+
+.google-button button:hover {
+	box-shadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
+}
+
+.google-button button img {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+
+.login-separator {
+	position: relative;
+	width: 100%;
+	height: 1px;
+	margin: 20px 0;
+	background: var(--light-borders);
+}
+
+.login-separator::before {
+	content: "OU";
+	font-size: 16px;
+	background: #fff;
+	padding: 0 10px;
+	position: absolute;
+	top: -12px;
+	left: 50%;
+	transform: translate(-50%, 0);
+}

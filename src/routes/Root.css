@@ -6,6 +6,8 @@
 	--box-shadows: rgba(45, 46, 92, 0.15);
 	--light-borders: rgba(211, 215, 223, 0.5);
 	--swiper-navigation-size: 22px !important;
+	--valid-color: rgba(12, 143, 12, 0.705);
+	--invalid-color: firebrick;
 }
 
 body {
@@ -40,6 +42,10 @@ pre {
 
 .font-0 {
 	font-size: 0;
+}
+
+.font-13 {
+	font-size: 13px !important;
 }
 
 .ar-3-4 {
@@ -106,6 +112,7 @@ button {
 	font-weight: 600;
 	padding: 0.5rem 0.875rem;
 	transition: all 0.3s ease-in;
+	outline: none;
 }
 
 button.big {
@@ -113,7 +120,8 @@ button.big {
 	padding: 0.475rem 1.675rem;
 }
 
-button:hover {
+button:hover,
+button:focus {
 	background-color: var(--accent-color-3);
 	border: 1px solid var(--accent-color-1);
 }
@@ -192,8 +200,24 @@ button:hover {
 	margin-top: 20px;
 }
 
+.box .box p {
+	font-size: 13px;
+}
+
 .box p button {
 	margin-top: 10px;
+}
+
+.box.big-box {
+	padding: 40px 80px;
+	margin-top: 10vh;
+}
+
+@media screen and (max-width: 900px) {
+	.box.big-box {
+		padding: 40px 20px;
+		margin: 20px;
+	}
 }
 
 .swiper-initialized .swiper-button-prev,
@@ -203,4 +227,68 @@ button:hover {
 	border: 0.375rem;
 	padding: 22px;
 	margin-top: -22px;
+}
+
+form {
+	font-size: 13px;
+	text-align: left;
+}
+
+.form-row {
+	position: relative;
+	min-width: 300px;
+	margin: 20px 0 15px;
+}
+
+.form-row.button-wrapper {
+	text-align: center;
+}
+
+form .feedback {
+	position: absolute;
+	top: -10px;
+	background: #fff;
+	left: 5px;
+	padding: 0 5px;
+}
+
+form .invalid .feedback,
+form .error-feedback {
+	color: var(--invalid-color);
+}
+
+form .valid .feedback {
+	color: var(--valid-color);
+}
+
+form .legal-notice {
+	display: block;
+	font-size: 11px;
+	margin-top: 5px;
+}
+
+form input {
+	background: #fff;
+	border-radius: 0.25rem;
+	border: 1px solid #fff;
+	box-sizing: border-box;
+	color: #23272f;
+	font-family: inherit;
+	line-height: 1.25;
+	outline: 1px solid var(--light-borders);
+	padding: 0.75rem;
+	width: 100%;
+	transition: box-shadow 0.5s ease-in, outline 0.3s ease-in;
+}
+
+form .invalid input {
+	border: 1px solid var(--invalid-color);
+}
+
+form .valid input {
+	border: 1px solid var(--valid-color);
+}
+
+form input:focus {
+	box-shadow: 0 8px 18px rgba(37, 37, 37, 0.16);
 }

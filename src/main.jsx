@@ -1,19 +1,31 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, redirect } from "react-router-dom";
 import "./index.css";
 
 import Root from "./routes/Root";
 import Home from "./routes/Home";
 import Login from "./routes/Login";
+import ResetPassword from "./routes/ResetPassword";
 import ErrorPage from "./routes/ErrorPage";
-// import Education from "./routes/Education";
-// import Account from "./routes/Account/Account";
 
 import axios from "axios";
+import { useFetch } from "./hooks/useFetch";
 if (import.meta.env.VITE_API_ENDPOINT) {
 	axios.defaults.baseURL = import.meta.env.VITE_API_ENDPOINT;
 }
+
+const isLoggedIn = async () => {
+	try {
+		const res = await fetch(`${import.meta.env.VITE_API_ENDPOINT}is-logged-in`, { credentials: "include" });
+		const json = await res.json();
+
+		return !!json.ok;
+	} catch (e) {
+		console.error(err);
+		return false;
+	}
+};
 
 const router = createBrowserRouter([
 	{
@@ -55,7 +67,11 @@ const router = createBrowserRouter([
 			},
 			{
 				path: "/account",
-				lazy: () => import("./routes/Account")
+				lazy: () => import("./routes/Account"),
+				loader: async () => {
+					const ok = await isLoggedIn();
+					return !ok ? redirect("/login") : null;
+				}
 			},
 			{
 				path: "/formules-et-tarifs",
@@ -64,9 +80,27 @@ const router = createBrowserRouter([
 		]
 	},
 	{
-		path: "/login",
+		path: "/login/:redirect?",
 		element: <Login />,
-		errorElement: <ErrorPage />
+		errorElement: <ErrorPage />,
+		loader: async ({ params }) => {
+			const ok = await isLoggedIn();
+			return ok ? redirect(params.redirect ? `/${params.redirect}` : "/account") : null;
+		}
+	},
+	{
+		path: "/reset-password",
+		errorElement: <ErrorPage />,
+		children: [
+			{
+				path: "",
+				element: <ResetPassword />
+			},
+			{
+				path: "new-password/",
+				lazy: () => import("./routes/GenerateNewPassword")
+			}
+		]
 	}
 ]);
 

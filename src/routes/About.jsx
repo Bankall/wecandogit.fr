@@ -80,15 +80,17 @@ export default function About() {
 							{trainers.data?.trainers
 								? trainers.data?.trainers.map(trainer => {
 										return (
-											<div className='swiper-slide box' key={trainer.id}>
-												<div className='title'>{trainer.name}</div>
-												<div className='content flex-row'>
-													<img src={trainer.photo} />
-													<pre>{trainer.description}</pre>
-												</div>
+											<div className='swiper-slide' key={trainer.id}>
+												<div className='box'>
+													<div className='title'>{trainer.name}</div>
+													<div className='content flex-row'>
+														<img src={trainer.photo} />
+														<pre>{trainer.description}</pre>
+													</div>
 
-												<div className='content grid'>
-													<Interweave content={trainer.training} />
+													<div className='content grid'>
+														<Interweave content={trainer.training} />
+													</div>
 												</div>
 											</div>
 										);
