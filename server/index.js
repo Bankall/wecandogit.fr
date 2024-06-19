@@ -97,6 +97,7 @@ const isLoggedIn = req => {
 
 const checkACL = (req, res, next) => {
 	console.log(req);
+
 	next();
 };
 
