@@ -9,9 +9,7 @@ import { useLocation } from "react-router-dom";
 
 const AccountInfo = lazy(() => import("../components/AccountInfo"));
 const Bookings = lazy(() => import("../components/Bookings"));
-const Activities = lazy(() => import("../components/Activities"));
-const Slots = lazy(() => import("../components/Slots"));
-const Packages = lazy(() => import("../components/Packages"));
+const DashboardListComponent = lazy(() => import("../components/DashboardListComponent"));
 
 export default function Account() {
 	const location = useLocation();
@@ -31,11 +29,11 @@ export default function Account() {
 			case "profile":
 				return <AccountInfo />;
 			case "packages":
-				return <Packages />;
+				return <DashboardListComponent label='formule' type='package' />;
 			case "activities":
-				return <Activities />;
+				return <DashboardListComponent label='activité' type='activity' />;
 			case "slots":
-				return <Slots />;
+				return <DashboardListComponent label='créneau' type='slot' />;
 			case "bookings":
 			default:
 				return <Bookings />;
@@ -50,14 +48,26 @@ export default function Account() {
 				<div className='dashboard flex-row'>
 					<div className='menu'>
 						<ul onClick={onMenuClick}>
-							{me.data?.result.is_trainer === false ? <li name='bookings'>Mes Reservations</li> : null}
-							<li name='profile'>Mes Informations</li>
+							{me.data?.result.is_trainer === false ? (
+								<li name='bookings' className={currentMenu === "bookings" ? "active" : ""}>
+									Mes Reservations
+								</li>
+							) : null}
+							<li name='profile' className={currentMenu === "profile" ? "active" : ""}>
+								Mes Informations
+							</li>
 
 							{me.data?.result.is_trainer ? (
 								<>
-									<li name='activities'>Mes Activités</li>
-									<li name='slots'>Mes créneaux</li>
-									<li name='packages'>Mes Formules</li>
+									<li name='activities' className={currentMenu === "activities" ? "active" : ""}>
+										Mes Activités
+									</li>
+									<li name='slots' className={currentMenu === "slots" ? "active" : ""}>
+										Mes Créneaux
+									</li>
+									<li name='packages' className={currentMenu === "packages" ? "active" : ""}>
+										Mes Formules
+									</li>
 								</>
 							) : null}
 						</ul>

@@ -97,8 +97,22 @@ const isLoggedInMw = (req, res, next) => {
 	return next("route");
 };
 
-const checkACL = (req, res, next) => {
-	next();
+const isTrainer = async (req, res, next) => {
+	if (req.session && req.session.is_trainer) {
+		return req.session.is_trainer;
+	}
+
+	const user = backend.get({
+		table: "user",
+		query: {
+			id: req.session.id
+		}
+	});
+	console.log(user.result);
+	if (user.result) {
+		req.session.is_trainer = user.result[0].is_trainer;
+		return req.session.is_trainer;
+	}
 };
 
 const validateEmail = email => {
@@ -321,32 +335,6 @@ app.get(`${API_PATH}/auth/logout`, async (req, res) => {
 	res.redirect(config.get("FRONT_URI") + "/");
 });
 
-app.get(`${API_PATH}/me`, isLoggedInMw, async (req, res) => {
-	try {
-		const data = await backend.get({
-			table: "user",
-			query: {
-				email: req.session.email
-			}
-		});
-
-		if (!data.result.length) {
-			throw { error: "Could not find user data" };
-		}
-
-		data.result[0].password = "";
-
-		res.send({
-			ok: true,
-			result: data.result[0]
-		});
-	} catch (err) {
-		res.send({
-			error: err.error
-		});
-	}
-});
-
 app.get(`${API_PATH}/is-logged-in`, async (req, res) => {
 	res.send({
 		ok: isLoggedIn(req)
@@ -415,13 +403,41 @@ app.post(`${API_PATH}/reset-password`, async (req, res) => {
 	}
 });
 
+app.get(`${API_PATH}/me`, async (req, res) => {
+	try {
+		await assert(req.session.email);
+
+		const data = await backend.get({
+			table: "user",
+			query: {
+				email: req.session.email
+			}
+		});
+
+		if (!data.result.length) {
+			throw { error: "Could not find user data" };
+		}
+
+		delete data.result[0].password;
+
+		res.send({
+			ok: true,
+			result: data.result[0]
+		});
+	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
+
 app.post(`${API_PATH}/activity`, (req, res, next) => {
 	req.body.id_trainer = req.session.userId;
 	next();
 });
 
-app.post(`${API_PATH}/activity`, (req, res, next) => {
-	req.body.id_trainer = req.session.userId;
+app.put(`${API_PATH}/activity/:id`, (req, res, next) => {
+	req.where = Object.assign({ id_trainer: req.session.userId }, req.where);
 	next();
 });
 

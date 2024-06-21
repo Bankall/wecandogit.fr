@@ -40,6 +40,14 @@ pre {
 	display: none;
 }
 
+.relative {
+	position: relative;
+}
+
+.inline-block {
+	display: inline-block;
+}
+
 .font-0 {
 	font-size: 0;
 }
@@ -111,8 +119,23 @@ button {
 	color: #fff;
 	font-weight: 600;
 	padding: 0.5rem 0.875rem;
-	transition: all 0.3s ease-in;
+	opacity: 1;
+	transition: background-color 0.3s ease-in, border 0.3s ease-in, opacity 0.3s ease-in;
 	outline: none;
+}
+
+button.loading {
+	font-size: 0px !important;
+}
+
+button.loading {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+button.loading::before {
+	content: "Chargement";
+	font-size: 13px !important;
 }
 
 button.big {
@@ -244,6 +267,10 @@ form {
 	margin: 20px 0 15px;
 }
 
+.form-row .label-wrapper {
+	margin-bottom: 10px;
+}
+
 .form-row .prefix,
 .form-row .suffix {
 	position: absolute;
@@ -308,6 +335,10 @@ form textarea {
 	transition: box-shadow 0.5s ease-in, outline 0.3s ease-in;
 }
 
+form input[type="number"] {
+	text-align: right;
+}
+
 .checkbox-row input {
 	width: auto;
 	outline: none;
@@ -317,11 +348,13 @@ form textarea {
 	gap: 5px;
 }
 
-form .invalid input {
+form .invalid input,
+form .invalid textarea {
 	border: 1px solid var(--invalid-color);
 }
 
-form .valid input {
+form .valid input,
+form .valid textarea {
 	border: 1px solid var(--valid-color);
 }
 

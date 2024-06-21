@@ -31,7 +31,7 @@ export default function ActivityListing({ endpoint }) {
 							<span className='date-detail'>
 								{row.date} - {row.time}:
 							</span>
-							<span className='activity-detail'>
+							<span className='list-detail'>
 								{row.name} ({row.trainer})
 							</span>
 							<Link to={`/book-activity/${row.id}`}>

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { FormikWrapper } from "../utils/utils.formik";
-import Loading from "../components/Loading";
+import { FormikWrapper, sleep } from "../utils/utils.formik";
+import { Activity } from "../data/dashboard-form-data";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function ActivitiyEdit() {
@@ -11,60 +11,6 @@ export default function ActivitiyEdit() {
 	const [dataError, setDataError] = useState(false);
 	const [activityLabel, setActivityLabel] = useState(false);
 	const [formData, setFormData] = useState(false);
-	const rawFormData = [
-		{
-			name: "id",
-			type: "number",
-			uitype: "hidden"
-		},
-		{
-			name: "label",
-			type: "string",
-			label: "Nom de l'activité",
-			uitype: "text"
-		},
-		{
-			name: "group_label",
-			type: "string",
-			label: "Groupe d'activité",
-			notice: "Toutes les activités avec le même nom de groupe seront regroupés ensemble",
-			uitype: "text"
-		},
-		{
-			name: "description",
-			type: "string",
-			label: "Description de l'activité",
-			uitype: "textarea"
-		},
-		{
-			name: "is_collective",
-			type: "string",
-			label: "Activité collective",
-			required: false,
-			uitype: "checkbox"
-		},
-		{
-			name: "spots",
-			type: "number",
-			label: "Nombre de place",
-			uitype: "number"
-		},
-		{
-			name: "price",
-			type: "number",
-			label: "Prix TTC",
-			suffix: "€",
-			uitype: "number"
-		},
-		{
-			name: "vat",
-			type: "number",
-			label: "TVA 20% par défaut",
-			suffix: "%",
-			required: false,
-			uitype: "number"
-		}
-	];
 
 	useEffect(() => {
 		const fetch = async () => {
@@ -73,7 +19,7 @@ export default function ActivitiyEdit() {
 
 				if (Object.keys(response.data).length) {
 					setFormData(
-						rawFormData.map(row => {
+						Activity.map(row => {
 							const item = Object.assign({}, row);
 
 							if (typeof response.data[item.name] !== "undefined") {
@@ -107,26 +53,25 @@ export default function ActivitiyEdit() {
 						<div className='box big-box'>
 							<FormikWrapper
 								options={{
-									data: formData,
-									use_placeholders: true
+									data: formData
 								}}
 								submitText='Enregistrer'
-								onSubmit={async ({ values, setSubmitionError, setSubmitionFeedback }) => {
+								onSubmit={async ({ values, setCustomIsSubmitting, setSubmitionError, setSubmitionFeedback }) => {
 									setSubmitionError("");
 									setSubmitionFeedback("");
 
 									try {
-										const response = await axios.put(`/activity/${values.id}`, values, { withCredentials: true });
+										const response = await axios.put(`/activity/${params.id}`, values, { withCredentials: true });
 
 										if (response.data.error) throw response.data.error;
 										if (response.data.id) {
-											setTimeout(() => {
-												navigate("/account/#activities");
-											}, 2000);
+											await sleep(2000);
+											navigate("/account/#activities");
 										}
 									} catch (err) {
 										const errMessage = err.message || err;
 										setSubmitionError(errMessage);
+										setCustomIsSubmitting(false);
 									}
 								}}
 							/>

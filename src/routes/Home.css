@@ -63,7 +63,7 @@ section.hero h2 {
 	min-width: 120px;
 }
 
-.widgets .box .activity-detail {
+.widgets .box .list-detail {
 	flex-grow: 1;
 	padding-right: 5px;
 }

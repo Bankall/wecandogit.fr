@@ -1,51 +1,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { FormikWrapper } from "../utils/utils.formik";
+import { UserProfile } from "../data/dashboard-form-data";
 import Loading from "./Loading";
 
 export default function AccountInfo() {
 	const [formData, setFormData] = useState(false);
-	const rawFormData = [
-		{
-			name: "email",
-			type: "string",
-			label: "Adresse email",
-			uitype: "email"
-		},
-		{
-			name: "password",
-			type: "string",
-			label: "Mot de passe (laissez vide pour ne pas le changer)",
-			uitype: "password",
-			disableAutocomplete: true,
-			required: false
-		},
-		{
-			name: "firstname",
-			type: "string",
-			label: "Prénom",
-			uitype: "text"
-		},
-		{
-			name: "lastname",
-			type: "string",
-			label: "Nom",
-			uitype: "text"
-		},
-		{
-			name: "phone",
-			type: "string",
-			label: "Numéro de téléphone",
-			uitype: "tel"
-		},
-		{
-			name: "instagram",
-			type: "string",
-			prefix: "@",
-			label: "Compte instagram",
-			uitype: "text"
-		}
-	];
 
 	useEffect(() => {
 		const fetch = async () => {
@@ -54,7 +14,7 @@ export default function AccountInfo() {
 
 				if (response.data.ok) {
 					setFormData(
-						rawFormData.map(row => {
+						UserProfile.map(row => {
 							const item = Object.assign({}, row);
 
 							if (typeof response.data.result[item.name] !== "undefined") {
@@ -76,11 +36,10 @@ export default function AccountInfo() {
 			{formData ? (
 				<FormikWrapper
 					options={{
-						data: formData,
-						use_placeholders: true
+						data: formData
 					}}
 					submitText='Enregistrer'
-					onSubmit={async ({ values, setSubmitionError, setSubmitionFeedback }) => {
+					onSubmit={async ({ values, setSubmitionError, setCustomIsSubmitting, setSubmitionFeedback }) => {
 						setSubmitionError("");
 						setSubmitionFeedback("");
 
@@ -89,10 +48,12 @@ export default function AccountInfo() {
 
 							if (response.data.error) throw response.data.error;
 							if (response.data.ok) {
-								setSubmitionFeedback("Mis à jour");
+								setSubmitionFeedback("Joli joli, tout ça.");
+
 								setTimeout(() => {
 									setSubmitionFeedback("");
-								}, 3000);
+									setCustomIsSubmitting(false);
+								}, 2000);
 							}
 						} catch (err) {
 							const errMessage = err.message || err;
