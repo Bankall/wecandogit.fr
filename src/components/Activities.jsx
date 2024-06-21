@@ -21,7 +21,7 @@ export default function Activities() {
 								</div>
 							);
 					  })
-					: "Aucune formule pour l'instant"}
+					: "Aucune activité pour l'instant"}
 			</div>
 			<Link to='/account/activity/create'>
 				<button>Ajouter une activité</button>
