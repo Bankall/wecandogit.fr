@@ -81,19 +81,19 @@ main section {
 	padding: 60px 40px;
 }
 
-section .content {
+section > .content {
 	max-width: 1280px;
 	margin: 1rem auto 0;
 }
 
-section .content h2 {
+section > .content h2 {
 	font-size: 22px;
 	margin-bottom: 40px;
 	text-align: center;
 	text-transform: uppercase;
 }
 
-section .content p {
+section > .content p {
 	text-align: justify;
 }
 
@@ -213,6 +213,10 @@ button:focus {
 	margin-top: 10vh;
 }
 
+h2 + .box.big-box {
+	margin-top: 20px;
+}
+
 @media screen and (max-width: 900px) {
 	.box.big-box {
 		padding: 40px 20px;
@@ -238,6 +242,28 @@ form {
 	position: relative;
 	min-width: 300px;
 	margin: 20px 0 15px;
+}
+
+.form-row .prefix,
+.form-row .suffix {
+	position: absolute;
+	top: 12px;
+}
+
+.form-row .prefix {
+	left: 13px;
+}
+
+.form-row .suffix {
+	right: 13px;
+}
+
+.form-row .prefix + input {
+	padding-left: 25px;
+}
+
+.form-row .suffix + input {
+	padding-right: 25px;
 }
 
 .form-row.button-wrapper {
@@ -267,7 +293,8 @@ form .legal-notice {
 	margin-top: 5px;
 }
 
-form input {
+form input:not([type="checkbox"]),
+form textarea {
 	background: #fff;
 	border-radius: 0.25rem;
 	border: 1px solid #fff;
@@ -279,6 +306,15 @@ form input {
 	padding: 0.75rem;
 	width: 100%;
 	transition: box-shadow 0.5s ease-in, outline 0.3s ease-in;
+}
+
+.checkbox-row input {
+	width: auto;
+	outline: none;
+}
+
+.checkbox-row .flex-row {
+	gap: 5px;
 }
 
 form .invalid input {

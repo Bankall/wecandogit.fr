@@ -44,6 +44,13 @@ export default function Login() {
 			type: "string",
 			label: "Numéro de téléphone",
 			uitype: "tel"
+		},
+		{
+			name: "instagram",
+			type: "string",
+			prefix: "@",
+			label: "Compte instagram",
+			uitype: "text"
 		}
 	);
 

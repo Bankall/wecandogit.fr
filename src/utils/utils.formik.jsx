@@ -180,7 +180,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 	const [submitionError, setSubmitionError] = useState("");
 	const [submitionFeedback, setSubmitionFeedback] = useState("");
 
-	if (!options.validationSchema) {
+	if (!options.validationSchema && options.data) {
 		const { validationSchema, initialValues, data } = FormikBootstrapper(options.data);
 		options.validationSchema = validationSchema;
 		options.initialValues = initialValues;
@@ -188,99 +188,122 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 	}
 
 	return (
-		<Formik
-			initialValues={options.initialValues}
-			validationSchema={options.validationSchema}
-			onSubmit={async (values, action) => {
-				onSubmit({ values, setSubmitting: action.setSubmitting, setSubmitionError, setSubmitionFeedback });
-			}}>
-			{({ isSubmitting, errors, touched, values }) => (
-				<Form>
-					{options.data.map(value => {
-						let isInvalid = errors[value.name] && touched[value.name];
-						let isValid = !errors[value.name] && touched[value.name] && values[value.name];
+		<>
+			{options.data ? (
+				<Formik
+					initialValues={options.initialValues}
+					validationSchema={options.validationSchema}
+					onSubmit={async (values, action) => {
+						onSubmit({ values, setSubmitting: action.setSubmitting, setSubmitionError, setSubmitionFeedback });
+					}}>
+					{({ isSubmitting, errors, touched, values }) => (
+						<Form>
+							{options.data.map(value => {
+								let isInvalid = errors[value.name] && touched[value.name];
+								let isValid = !errors[value.name] && touched[value.name] && values[value.name];
 
-						switch (value.uitype) {
-							case "email":
-							case "password":
-							case "text":
-							case "number":
-							case "tel":
-							case "address":
-								return (
-									<div className={`form-row${isValid ? " valid" : isInvalid ? " invalid" : ""}${value.halfsize ? " halfsize" : ""}`} key={`form-row-${value.name}`}>
-										{!options.use_placeholders ? (
-											<div className='flex items-center space-between'>
-												<label htmlFor={value.name}> {value.label} </label>
+								switch (value.uitype) {
+									case "email":
+									case "password":
+									case "text":
+									case "number":
+									case "tel":
+									case "address":
+										return (
+											<div className={`form-row${isValid ? " valid" : isInvalid ? " invalid" : ""}${value.halfsize ? " halfsize" : ""}`} key={`form-row-${value.name}`}>
+												{!options.use_placeholders ? (
+													<div className='flex items-center space-between'>
+														<label htmlFor={value.name}> {value.label} </label>
+													</div>
+												) : null}
+
+												<div className='feedback'>
+													<ErrorMessage name={value.name} component='div' />
+													{isValid ? <div>✓</div> : null}
+												</div>
+
+												{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
+
+												{value.prefix ? <div className='prefix'>{value.prefix}</div> : null}
+												{value.suffix ? <div className='suffix'>{value.suffix}</div> : null}
+
+												<Field type={value.uitype} name={value.name} autoComplete={value.disableAutocomplete ? "one-time-code" : value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : ""} />
 											</div>
-										) : null}
+										);
+									case "radio":
+										return (
+											<div className={`form-row`} key={`form-row-${value.name}`}>
+												<div className='flex items-center space-between'>
+													<label> {value.label} </label>
+												</div>
+												<div className='flex items-center radio-wrapper'>
+													{value.options.map(option => {
+														let key = Object.keys(option)[0];
 
-										<div className='feedback'>
-											<ErrorMessage name={value.name} component='div' />
-											{isValid ? <div>✓</div> : null}
-										</div>
-
-										{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
-
-										<Field type={value.uitype} name={value.name} autoComplete={value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : ""} />
-									</div>
-								);
-							case "radio":
-								return (
-									<div className={`form-row`} key={`form-row-${value.name}`}>
-										<div className='flex items-center space-between'>
-											<label> {value.label} </label>
-										</div>
-										<div className='flex items-center radio-wrapper'>
-											{value.options.map(option => {
-												let key = Object.keys(option)[0];
-
-												return (
-													<label key={key}>
-														<Field type='radio' name={value.name} value={key} />
-														<span>{option[key]}</span>
+														return (
+															<label key={key}>
+																<Field type='radio' name={value.name} value={key} />
+																<span>{option[key]}</span>
+															</label>
+														);
+													})}
+												</div>
+											</div>
+										);
+									case "checkbox":
+										return (
+											<div className={`form-row checkbox-row`} key={`form-row-${value.name}`}>
+												<div className='flex items-center checkbox-wrapper'>
+													<label className='flex-row'>
+														<Field type={value.uitype} name={value.name} autoComplete={value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : ""} />
+														<Interweave content={value.label} />
 													</label>
-												);
-											})}
-										</div>
-									</div>
-								);
-							case "checkbox":
-								return (
-									<div className={`form-row`} key={`form-row-${value.name}`}>
-										<div className='flex items-center checkbox-wrapper'>
-											<label>
-												<Field type={value.uitype} name={value.name} autoComplete={value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : ""} />
-												<Interweave content={value.label} />
-											</label>
-										</div>
-									</div>
-								);
-							default:
-								return <div className='form-row' key={`form-row-${value.name}`}></div>;
-						}
-					})}
+												</div>
+											</div>
+										);
+									case "textarea":
+										return (
+											<div className={`form-row checkbox-row`} key={`form-row-${value.name}`}>
+												<div className='flex items-center space-between'>
+													{!options.use_placeholders ? (
+														<div className='flex items-center space-between'>
+															<label htmlFor={value.name}> {value.label} </label>
+														</div>
+													) : null}
 
-					{options.data.some(question => question.required) ? <span className='legal-notice'>*Champs obligatoires</span> : null}
-					{options.form_legal_notice ? <Interweave className='legal-notice' content={options.form_legal_notice} /> : null}
+													<Field component={value.uitype} name={value.name} autoComplete={value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : ""} />
 
-					<div className='form-row button-wrapper'>
-						<button type='submit' disabled={isSubmitting}>
-							{submitText || "Valider"}
-						</button>
-					</div>
+													{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
+												</div>
+											</div>
+										);
+									default:
+										return <div className='form-row' key={`form-row-${value.name}`}></div>;
+								}
+							})}
 
-					<div className='error-feedback'>
-						<p>{submitionError}</p>
-					</div>
-					<div className='submition-feedback'>
-						<p>{submitionFeedback}</p>
-					</div>
+							{options.data.some(question => question.required) ? <span className='legal-notice'>*Champs obligatoires</span> : null}
+							{options.form_legal_notice ? <Interweave className='legal-notice' content={options.form_legal_notice} /> : null}
 
-					<FormikFormObserver data={options.data} />
-				</Form>
-			)}
-		</Formik>
+							<div className='form-row button-wrapper'>
+								<button type='submit' disabled={isSubmitting}>
+									{submitText || "Valider"}
+								</button>
+							</div>
+
+							<div className='error-feedback'>
+								<p>{submitionError}</p>
+							</div>
+							<div className='submition-feedback'>
+								<p>{submitionFeedback}</p>
+							</div>
+
+							<FormikFormObserver data={options.data} />
+						</Form>
+					)}
+				</Formik>
+			) : null}
+		</>
 	);
 };
 

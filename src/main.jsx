@@ -17,7 +17,7 @@ if (import.meta.env.VITE_API_ENDPOINT) {
 
 const isLoggedIn = async () => {
 	try {
-		const res = await fetch(`${import.meta.env.VITE_API_ENDPOINT}is-logged-in`, { credentials: "include" });
+		const res = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/is-logged-in`, { credentials: "include" });
 		const json = await res.json();
 
 		return !!json.ok;
@@ -63,15 +63,44 @@ const router = createBrowserRouter([
 			},
 			{
 				path: "/activities",
-				lazy: () => import("./routes/Activities")
+				lazy: () => import("./routes/ListAllActivities")
 			},
 			{
 				path: "/account",
-				lazy: () => import("./routes/Account"),
-				loader: async () => {
-					const ok = await isLoggedIn();
-					return !ok ? redirect("/login") : null;
-				}
+				children: [
+					{
+						path: "",
+						lazy: () => import("./routes/Account"),
+						loader: async () => {
+							const ok = await isLoggedIn();
+							return !ok ? redirect("/login") : null;
+						}
+					},
+					{
+						path: "package/create/",
+						lazy: () => import("./routes/PackageCreate")
+					},
+					{
+						path: "package/edit/:id",
+						lazy: () => import("./routes/PackageEdit")
+					},
+					{
+						path: "activity/create/",
+						lazy: () => import("./routes/ActivityCreate")
+					},
+					{
+						path: "activity/edit/:id",
+						lazy: () => import("./routes/ActivityEdit")
+					},
+					{
+						path: "slot/create/",
+						lazy: () => import("./routes/SlotCreate")
+					},
+					{
+						path: "slot/edit/:id",
+						lazy: () => import("./routes/SlotEdit")
+					}
+				]
 			},
 			{
 				path: "/formules-et-tarifs",

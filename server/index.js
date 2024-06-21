@@ -66,12 +66,6 @@ const sess = {
 	cookie: {}
 };
 
-if (app.get("env") === "production") {
-	// trust first proxy
-	//app.set("trust proxy", 1);
-	//sess.cookie.secure = true; // serve secure cookies
-}
-
 app.use(session(sess));
 
 const shuffle = array => {
@@ -95,9 +89,15 @@ const isLoggedIn = req => {
 	return !!req.session.loggedIn;
 };
 
-const checkACL = (req, res, next) => {
-	console.log(req);
+const isLoggedInMw = (req, res, next) => {
+	if (isLoggedIn(req)) {
+		return next();
+	}
 
+	return next("route");
+};
+
+const checkACL = (req, res, next) => {
 	next();
 };
 
@@ -124,7 +124,7 @@ const getResetPasswordToken = email => {
 const assert = async (...args) => {
 	try {
 		const ok = args.every(item => typeof item !== "undefined");
-		if (!ok) throw "Some key are missing";
+		if (!ok) throw { error: "Some key are missing" };
 
 		return true;
 	} catch (err) {
@@ -201,6 +201,10 @@ app.get(`${API_PATH}/auth/oauth/callback`, async (req, res) => {
 						lastname: googleUser.family_name
 					}
 				});
+
+				req.session.userId = user.result.id;
+			} else {
+				req.session.userId = user.result[0].id;
 			}
 
 			res.cookie("username", googleUser.given_name);
@@ -229,6 +233,7 @@ app.post(`${API_PATH}/create-user`, async (req, res, next) => {
 
 			req.session.loggedIn = true;
 			req.session.email = req.body.email;
+			req.session.userId = newUser.result.id;
 
 			res.cookie("username", req.body.firstname);
 			res.cookie("email", req.body.email);
@@ -241,6 +246,27 @@ app.post(`${API_PATH}/create-user`, async (req, res, next) => {
 	} catch (err) {
 		res.send({
 			error: err.error.match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
+		});
+	}
+});
+
+app.put(`${API_PATH}/update-user`, async (req, res, next) => {
+	try {
+		const update = await backend.put({
+			table: "user",
+			id: req.session.userId,
+			body: req.body
+		});
+
+		console.log(req.session.userId);
+		console.log(req.body);
+
+		res.send({
+			ok: true
+		});
+	} catch (err) {
+		res.send({
+			error: err.error
 		});
 	}
 });
@@ -270,6 +296,7 @@ app.post(`${API_PATH}/auth/login`, async (req, res) => {
 
 			req.session.loggedIn = true;
 			req.session.email = req.body.email;
+			req.session.userId = user.result[0].id;
 
 			res.cookie("username", user.result[0].firstname);
 			res.cookie("email", req.body.email);
@@ -294,7 +321,31 @@ app.get(`${API_PATH}/auth/logout`, async (req, res) => {
 	res.redirect(config.get("FRONT_URI") + "/");
 });
 
-app.get(`${API_PATH}/user-info`, checkACL, async (req, res) => {});
+app.get(`${API_PATH}/me`, isLoggedInMw, async (req, res) => {
+	try {
+		const data = await backend.get({
+			table: "user",
+			query: {
+				email: req.session.email
+			}
+		});
+
+		if (!data.result.length) {
+			throw { error: "Could not find user data" };
+		}
+
+		data.result[0].password = "";
+
+		res.send({
+			ok: true,
+			result: data.result[0]
+		});
+	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
 
 app.get(`${API_PATH}/is-logged-in`, async (req, res) => {
 	res.send({
@@ -306,12 +357,12 @@ app.get(`${API_PATH}/send-reset-password-link/:email`, async (req, res) => {
 	try {
 		const email = req.params.email;
 		if (!email) {
-			throw "Missing email";
+			throw { error: "Missing email" };
 		}
 
 		const isValidEmail = validateEmail(email);
 		if (!isValidEmail) {
-			throw "Invalid email";
+			throw { error: "Invalid email" };
 		}
 
 		const emailVerificationLink = config.get("FRONT_URI") + `/reset-password/new-password/?email=${encodeURIComponent(email)}&token=${getResetPasswordToken(email)}`;
@@ -330,7 +381,7 @@ app.get(`${API_PATH}/send-reset-password-link/:email`, async (req, res) => {
 		});
 	} catch (err) {
 		res.send({
-			error: `An error occured: ${err}`
+			error: err.error
 		});
 	}
 });
@@ -341,7 +392,7 @@ app.post(`${API_PATH}/reset-password`, async (req, res) => {
 
 		const tokenIsValid = getResetPasswordToken(req.body.email) === req.body.token;
 		if (!tokenIsValid) {
-			throw "Invalid Token";
+			throw { error: "Invalid Token" };
 		}
 
 		await backend.put({
@@ -359,9 +410,29 @@ app.post(`${API_PATH}/reset-password`, async (req, res) => {
 		});
 	} catch (err) {
 		res.send({
-			error: `An error occured: ${err}`
+			error: err.error
 		});
 	}
+});
+
+app.post(`${API_PATH}/activity`, (req, res, next) => {
+	req.body.id_trainer = req.session.userId;
+	next();
+});
+
+app.post(`${API_PATH}/activity`, (req, res, next) => {
+	req.body.id_trainer = req.session.userId;
+	next();
+});
+
+app.get(`${API_PATH}/activity`, (req, res, next) => {
+	req.query = Object.assign({ id_trainer: req.session.userId }, req.query);
+	next();
+});
+
+app.get(`${API_PATH}/activity/:id`, (req, res, next) => {
+	req.query = Object.assign({ id_trainer: req.session.userId }, req.query);
+	next();
 });
 
 app.get(`${API_PATH}/get-cart-item`, async (req, res) => {

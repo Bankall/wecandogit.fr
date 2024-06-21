@@ -26,7 +26,7 @@ export default function Header() {
 						<NavLink to='/agenda'>Notre agenda</NavLink>
 					</li>
 					<li>
-						<NavLink to='/activites'>Nos activitées</NavLink>
+						<NavLink to='/activites'>Nos activités</NavLink>
 					</li>
 					<li>
 						<NavLink to='/formules-et-tarifs'>Formules et tarifs</NavLink>
@@ -43,6 +43,11 @@ export default function Header() {
 				<div className={isLoggedIn.loading ? "hidden" : isLoggedIn.data?.ok ? "" : "disabled"}>
 					<Link to='/account' title='Acceder à mon compte'>
 						<i className='fa-regular fa-user'></i>
+					</Link>
+				</div>
+				<div className={isLoggedIn.loading ? "hidden" : isLoggedIn.data?.ok ? "" : "disabled"}>
+					<Link to={`${import.meta.env.VITE_API_ENDPOINT}/auth/logout`} title='Se deconnecter'>
+						<i className='fa-solid fa-power-off'></i>
 					</Link>
 				</div>
 				<div className='disabled'>

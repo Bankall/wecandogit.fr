@@ -1,4 +1,13 @@
 import "./Loading.css";
 export default function Loading() {
-	return <span className='loader'></span>;
+	return (
+		<div className='loader-wrapper'>
+			<div className='lds-ellipsis'>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+			</div>
+		</div>
+	);
 }
