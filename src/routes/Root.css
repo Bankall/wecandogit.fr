@@ -293,6 +293,10 @@ form {
 	padding-right: 25px;
 }
 
+.form-row .suffix + input[name="duration"] {
+	padding-right: 38px;
+}
+
 .form-row.button-wrapper {
 	text-align: center;
 }

@@ -31,6 +31,14 @@ const Activity = [
 		uitype: "number"
 	},
 	{
+		name: "duration",
+		type: "number",
+		label: "Durée",
+		uitype: "number",
+		default: 60,
+		suffix: "min"
+	},
+	{
 		name: "price",
 		type: "number",
 		label: "Prix TTC",
@@ -40,9 +48,9 @@ const Activity = [
 	{
 		name: "vat",
 		type: "number",
-		label: "TVA 20% par défaut",
+		label: "TVA 0% par défaut",
 		suffix: "%",
-		placeholder: 20,
+		placeholder: 0,
 		required: false,
 		uitype: "number"
 	},
