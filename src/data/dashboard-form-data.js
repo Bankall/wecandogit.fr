@@ -9,7 +9,7 @@ const Activity = [
 		name: "group_label",
 		type: "string",
 		label: "Groupe d'activité",
-		notice: "Toutes les activités avec le même nom de groupe seront regroupés ensemble",
+		tooltip: "Toutes les activités avec le même nom de groupe seront regroupés ensemble",
 		uitype: "text"
 	},
 	{

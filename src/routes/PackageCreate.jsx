@@ -13,7 +13,8 @@ export function PackageCreate() {
 				<div className='box big-box'>
 					<FormikWrapper
 						options={{
-							data: Package
+							data: Package,
+							use_placeholders: false
 						}}
 						submitText='Enregistrer'
 						onSubmit={async ({ values, setSubmitionError, setSubmitionFeedback }) => {

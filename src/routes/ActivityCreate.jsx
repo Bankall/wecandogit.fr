@@ -13,7 +13,8 @@ export function ActivitiyCreate() {
 				<div className='box big-box'>
 					<FormikWrapper
 						options={{
-							data: Activity
+							data: Activity,
+							use_placeholders: false
 						}}
 						submitText='Enregistrer'
 						onSubmit={async ({ values, setSubmitionError, setSubmitionFeedback }) => {

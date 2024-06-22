@@ -297,6 +297,11 @@ form {
 	text-align: center;
 }
 
+form .tooltip {
+	margin-top: -10px;
+	margin-bottom: 10px;
+}
+
 form .feedback {
 	position: absolute;
 	top: -10px;

@@ -245,7 +245,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 
 												{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
 
-												<div className={`relative ${value.uitype === "number" ? "inline-block" : null}`}>
+												<div className={`relative ${value.uitype === "number" ? "inline-block" : ""}`}>
 													<div className='feedback'>
 														<ErrorMessage name={value.name} component='div' />
 														{isValid ? <div>✓</div> : null}

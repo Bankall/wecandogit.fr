@@ -53,7 +53,8 @@ export default function ActivitiyEdit() {
 						<div className='box big-box'>
 							<FormikWrapper
 								options={{
-									data: formData
+									data: formData,
+									use_placeholders: false
 								}}
 								submitText='Enregistrer'
 								onSubmit={async ({ values, setCustomIsSubmitting, setSubmitionError, setSubmitionFeedback }) => {
