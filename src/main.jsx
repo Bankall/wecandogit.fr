@@ -10,7 +10,7 @@ import ResetPassword from "./routes/ResetPassword";
 import ErrorPage from "./routes/ErrorPage";
 
 import axios from "axios";
-import { useFetch } from "./hooks/useFetch";
+
 if (import.meta.env.VITE_API_ENDPOINT) {
 	axios.defaults.baseURL = import.meta.env.VITE_API_ENDPOINT;
 }

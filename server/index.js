@@ -451,6 +451,26 @@ app.get(`${API_PATH}/activity/:id`, (req, res, next) => {
 	next();
 });
 
+app.post(`${API_PATH}/package`, (req, res, next) => {
+	req.body.id_trainer = req.session.userId;
+	next();
+});
+
+app.put(`${API_PATH}/package/:id`, (req, res, next) => {
+	req.where = Object.assign({ id_trainer: req.session.userId }, req.where);
+	next();
+});
+
+app.get(`${API_PATH}/package`, (req, res, next) => {
+	req.query = Object.assign({ id_trainer: req.session.userId }, req.query);
+	next();
+});
+
+app.get(`${API_PATH}/package/:id`, (req, res, next) => {
+	req.query = Object.assign({ id_trainer: req.session.userId }, req.query);
+	next();
+});
+
 app.get(`${API_PATH}/get-cart-item`, async (req, res) => {
 	const count = parseInt(Math.random() * 3);
 	res.send({ count });

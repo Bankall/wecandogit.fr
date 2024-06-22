@@ -1,8 +1,8 @@
 import * as Yup from "yup";
 import "yup-phone-lite";
-
+import axios from "axios";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Formik, Form, Field, ErrorMessage, useFormikContext } from "formik";
+import { Formik, Form, Field, ErrorMessage, useFormikContext, FieldArray } from "formik";
 import { Interweave } from "interweave";
 
 const JSONToYupSchemeConverter = data => {
@@ -49,10 +49,28 @@ const JSONToYupSchemeConverter = data => {
 	return Yup.object(scheme);
 };
 
-const ExtractInitialValues = data => {
+const ExtractInitialValues = async data => {
 	const values = {};
 
-	data.forEach(value => {
+	for await (const value of data) {
+		if (value.data_url) {
+			const response = await axios(value.data_url, { withCredentials: true });
+			const defaults = (value.default || "").split(",");
+
+			defaults.forEach(_default => {
+				values[`${value.name}-${_default}`] = true;
+			});
+
+			if (response.data?.length) {
+				value.data = response.data?.map(item => {
+					return {
+						label: item.label,
+						id: item.id
+					};
+				});
+			}
+		}
+
 		values[value.name] = (() => {
 			switch (value.uitype) {
 				case "radio":
@@ -64,7 +82,7 @@ const ExtractInitialValues = data => {
 					return typeof value.default !== "undefined" ? value.default : "";
 			}
 		})();
-	});
+	}
 
 	return values;
 };
@@ -82,7 +100,7 @@ const HardcodeSpecialRules = data => {
 				break;
 		}
 
-		if (typeof value.required === "undefined" && value.uitype !== "checkbox") {
+		if (typeof value.required === "undefined" && value.uitype !== "checkbox" && value.uitype !== "field-array") {
 			value.required = true;
 		}
 
@@ -94,7 +112,7 @@ const HardcodeSpecialRules = data => {
 	});
 };
 
-const FormikBootstrapper = data => {
+const FormikBootstrapper = async data => {
 	if (!data) {
 		return;
 	}
@@ -104,7 +122,7 @@ const FormikBootstrapper = data => {
 	const bootstrapped = {};
 
 	bootstrapped.validationSchema = JSONToYupSchemeConverter(data);
-	bootstrapped.initialValues = ExtractInitialValues(data);
+	bootstrapped.initialValues = await ExtractInitialValues(data);
 	bootstrapped.data = data;
 
 	return bootstrapped;
@@ -181,26 +199,32 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 	const [submitionFeedback, setSubmitionFeedback] = useState("");
 	const [customIsSubmitting, setCustomIsSubmitting] = useState(false);
 
-	if (!options.validationSchema && options.data) {
-		const { validationSchema, initialValues, data } = FormikBootstrapper(options.data);
-		options.validationSchema = validationSchema;
-		options.initialValues = initialValues;
-		options.data = data;
-	}
+	const [formOptions, setFormOptions] = useState(false);
+
+	useEffect(() => {
+		if (options.data) {
+			const bootStrap = async () => {
+				const { validationSchema, initialValues, data } = await FormikBootstrapper(options.data);
+				setFormOptions({ validationSchema, initialValues, data });
+			};
+
+			bootStrap();
+		}
+	}, [options.data]);
 
 	return (
 		<>
-			{options.data ? (
+			{formOptions ? (
 				<Formik
-					initialValues={options.initialValues}
-					validationSchema={options.validationSchema}
+					initialValues={formOptions.initialValues}
+					validationSchema={formOptions.validationSchema}
 					onSubmit={async (values, action) => {
 						setCustomIsSubmitting(true);
 						onSubmit({ values, setSubmitting: action.setSubmitting, setCustomIsSubmitting, setSubmitionError, setSubmitionFeedback });
 					}}>
 					{({ isSubmitting, errors, touched, values }) => (
 						<Form>
-							{options.data.map(value => {
+							{formOptions.data.map(value => {
 								let isInvalid = errors[value.name] && touched[value.name];
 								let isValid = !errors[value.name] && touched[value.name] && values[value.name];
 
@@ -272,12 +296,35 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 										);
 									case "checkbox":
 										return (
-											<div className={`form-row checkbox-row`} key={`form-row-${value.name}`}>
-												<div className='checkbox-wrapper'>
+											<div className='form-row checkbox-wrapper' key={`form-row-${value.name}`}>
+												<div className='checkbox-col'>
 													<label className='flex-row'>
-														<Field type={value.uitype} name={value.name} autoComplete={value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : ""} />
+														<Field type={value.uitype} name={value.name} />
 														<Interweave content={value.label} />
 													</label>
+												</div>
+											</div>
+										);
+									case "field-array":
+										return (
+											<div className='form-row checkbox-wrapper' key={`form-row-${value.name}`}>
+												<label className='flex-row'>
+													<Interweave content={value.label} />
+												</label>
+												<div className='checkbox-col'>
+													<FieldArray
+														name={value.name}
+														render={() => {
+															return value.data.map(item => {
+																return (
+																	<label className='flex-row' key={item.id}>
+																		<Field type='checkbox' name={`${value.name}-${item.id}`} />
+																		<Interweave content={item.label} />
+																	</label>
+																);
+															});
+														}}
+													/>
 												</div>
 											</div>
 										);
@@ -286,7 +333,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 								}
 							})}
 
-							{options.data.some(question => question.required) ? <span className='legal-notice'>*Champs obligatoires</span> : null}
+							{formOptions.data.some(question => question.required) ? <span className='legal-notice'>*Champs obligatoires</span> : null}
 							{options.form_legal_notice ? <Interweave className='legal-notice' content={options.form_legal_notice} /> : null}
 
 							<div className='form-row button-wrapper'>
@@ -302,7 +349,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 								<p>{submitionFeedback}</p>
 							</div>
 
-							<FormikFormObserver data={options.data} />
+							<FormikFormObserver data={formOptions.data} />
 						</Form>
 					)}
 				</Formik>

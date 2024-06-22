@@ -66,7 +66,7 @@ export default function ActivitiyEdit() {
 										if (response.data.error) throw response.data.error;
 										if (response.data.id) {
 											await sleep(2000);
-											navigate("/account/#activities");
+											navigate(-1);
 										}
 									} catch (err) {
 										const errMessage = err.message || err;

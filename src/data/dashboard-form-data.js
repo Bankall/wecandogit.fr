@@ -99,4 +99,33 @@ const UserProfile = [
 	}
 ];
 
-export { Activity, UserProfile };
+const Package = [
+	{
+		name: "label",
+		type: "string",
+		label: "Nom de la formule",
+		uitype: "text"
+	},
+	{
+		name: "number_of_session",
+		type: "number",
+		label: "Nombre de séances",
+		uitype: "number"
+	},
+	{
+		name: "price",
+		type: "number",
+		label: "Prix TTC",
+		suffix: "€",
+		uitype: "number"
+	},
+	{
+		name: "activity",
+		type: "string",
+		label: "Activités inclues",
+		uitype: "field-array",
+		data_url: "/activity"
+	}
+];
+
+export { Activity, UserProfile, Package };

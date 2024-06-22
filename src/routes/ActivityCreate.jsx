@@ -3,7 +3,7 @@ import axios from "axios";
 import { FormikWrapper } from "../utils/utils.formik";
 import { useNavigate } from "react-router-dom";
 import { Activity } from "../data/dashboard-form-data";
-export default function ActivitiyCreate() {
+export function ActivitiyCreate() {
 	const navigate = useNavigate();
 
 	return (

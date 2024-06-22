@@ -339,13 +339,19 @@ form input[type="number"] {
 	text-align: right;
 }
 
-.checkbox-row input {
+.checkbox-col input {
 	width: auto;
 	outline: none;
 }
 
-.checkbox-row .flex-row {
+.checkbox-col .flex-row {
 	gap: 5px;
+}
+
+.checkbox-wrapper .checkbox-col {
+	display: flex;
+	flex-direction: row;
+	gap: 20px;
 }
 
 form .invalid input,

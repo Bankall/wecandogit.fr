@@ -78,7 +78,7 @@ export default function Login() {
 								use_placeholders: true
 							}}
 							submitText={hash === "#register" ? "S'enregistrer" : "Se connecter"}
-							onSubmit={async ({ values, setSubmitionError }) => {
+							onSubmit={async ({ values, setSubmitionError, setCustomIsSubmiting }) => {
 								setSubmitionError("");
 
 								try {
@@ -93,6 +93,7 @@ export default function Login() {
 								} catch (err) {
 									const errMessage = err.message || err;
 									setSubmitionError(errMessage);
+									setCustomIsSubmitting(false);
 								}
 							}}
 						/>
