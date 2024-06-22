@@ -20,6 +20,10 @@ export default function Account() {
 
 	const onMenuClick = event => {
 		const name = event.target.getAttribute("name");
+		if (!name) {
+			return;
+		}
+
 		setCurrentMenu(name);
 		window.location.hash = `#${name}`;
 	};

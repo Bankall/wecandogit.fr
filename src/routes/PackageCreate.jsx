@@ -27,8 +27,9 @@ export function PackageCreate() {
 								};
 
 								Object.keys(values).forEach(key => {
+									if (key === "activity") return;
+
 									if (key.match(/activity-[0-9]+/) && values[key]) {
-										if (key === "activity") return;
 										const [name, id] = key.split("-");
 										return fixedValues.activity.push(id);
 									}
