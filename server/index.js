@@ -15,6 +15,8 @@ import md5 from "md5";
 
 import MySQLBackend from "@bankall/mysql-backend";
 import MailSender from "./lib/mail-sender/index.cjs";
+import { error } from "console";
+import { act } from "react";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -471,12 +473,108 @@ app.get(`${API_PATH}/package/:id`, (req, res, next) => {
 	next();
 });
 
+app.get(`${API_PATH}/slot`, async (req, res) => {
+	try {
+		const activities = await backend.get({
+			table: "activity",
+			query: {
+				id_trainer: req.session.userId
+			}
+		});
+
+		const slots = await backend.get({
+			table: "slot",
+			query: {
+				id_trainer: req.session.userId
+			}
+		});
+
+		for await (const slot of slots.result) {
+			slot.label = `${activities.result.filter(activity => activity.id === slot.id_activity)[0].label} - ${new Date(slot.date).toLocaleString()}`;
+		}
+
+		res.send(slots.result);
+	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
+app.post(`${API_PATH}/create-slots`, async (req, res) => {
+	try {
+		for await (const date of req.body.date) {
+			if (!date) {
+				continue;
+			}
+			await backend.post({
+				table: "slot",
+				body: {
+					id_trainer: req.session.userId,
+					id_activity: req.body.id_activity,
+					date
+				}
+			});
+		}
+
+		res.send({
+			ok: true
+		});
+	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
+
 app.get(`${API_PATH}/get-cart-item`, async (req, res) => {
 	const count = parseInt(Math.random() * 3);
 	res.send({ count });
 });
 
-app.get(`${API_PATH}/get-next-collective-activities`, async (req, res) => {
+app.get(`${API_PATH}/get-activities-by-trainer`, async (req, res) => {
+	try {
+		const activities = await backend.get({
+			table: "activity",
+			query: {
+				is_public: 1
+			}
+		});
+
+		const trainers = await backend.get({
+			table: "user",
+			query: {
+				is_trainer: 1
+			}
+		});
+
+		if (!activities.result?.length || !trainers.result?.length) {
+			throw { error: "Aucune activitée disponible" };
+		}
+
+		const resultByTrainers = {};
+
+		trainers.result.forEach(trainer => {
+			const { id, firstname } = trainer;
+			resultByTrainers[id] = { id, name: firstname, activities: [] };
+		});
+
+		activities.result.forEach(({ id, id_trainer, label }) => {
+			if (!resultByTrainers[id_trainer]) return;
+
+			resultByTrainers[id_trainer].activities.push({ id, label });
+		});
+
+		res.send({
+			trainers: shuffle(Object.values(resultByTrainers).filter(trainer => !!trainer.activities.length))
+		});
+	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
+
+app.get(`${API_PATH}/get-next-collective-slots`, async (req, res) => {
 	res.send([
 		{
 			date: "27/06",
@@ -570,43 +668,6 @@ Je suis passionnée de chiens depuis toujours, mais c'est en 2016 que j'ai valid
 
 J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`,
 			photo: "/assets/medias/FB_IMG_1599744511817.jpg"
-		}
-	];
-
-	res.send({
-		trainers: shuffle(trainers)
-	});
-});
-
-app.get(`${API_PATH}/get-activities-by-trainer`, async (req, res) => {
-	const trainers = [
-		{
-			id: 123,
-			name: "Chloe Ternier",
-			activities: [
-				{
-					id: 123,
-					label: "Agility"
-				},
-				{
-					id: 456,
-					label: "Dog Dancing"
-				}
-			]
-		},
-		{
-			id: 345,
-			name: "Elodie Decouleur",
-			activities: [
-				{
-					id: 123,
-					label: "Man-trailing"
-				},
-				{
-					id: 456,
-					label: "Nose work"
-				}
-			]
 		}
 	];
 

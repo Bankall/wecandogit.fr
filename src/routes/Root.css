@@ -64,8 +64,13 @@ pre {
 .flex-row {
 	display: flex;
 	flex-direction: row;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 20px;
+}
+
+.flex-row-reverse {
+	flex-direction: row-reverse;
 }
 
 .center {
@@ -330,6 +335,7 @@ form .legal-notice {
 }
 
 form input:not([type="checkbox"]),
+form select,
 form textarea {
 	background: #fff;
 	border-radius: 0.25rem;
@@ -364,11 +370,13 @@ form input[type="number"] {
 }
 
 form .invalid input,
+form .invalid select,
 form .invalid textarea {
 	border: 1px solid var(--invalid-color);
 }
 
 form .valid input,
+form .valid select,
 form .valid textarea {
 	border: 1px solid var(--valid-color);
 }

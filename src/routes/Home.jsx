@@ -17,7 +17,7 @@ export default function Home() {
 					<div className='box'>
 						<div className='title'>Prochaines activitées collectives</div>
 						<div className='content'>
-							<ActivityList endpoint='/get-next-collective-activities' />
+							<ActivityList endpoint='/get-next-collective-slots' />
 						</div>
 					</div>
 

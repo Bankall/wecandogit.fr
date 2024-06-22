@@ -64,6 +64,38 @@ const Activity = [
 	}
 ];
 
+const SlotCreateForm = [
+	{
+		name: "id_activity",
+		label: "Activité",
+		type: "string",
+		uitype: "select",
+		data_url: "/activity"
+	},
+	{
+		name: "date",
+		label: "Date",
+		type: "array",
+		uitype: "field-array-datetime-local"
+	}
+];
+
+const Slot = [
+	{
+		name: "id_activity",
+		label: "Activité",
+		type: "string",
+		uitype: "select",
+		data_url: "/activity"
+	},
+	{
+		name: "date",
+		label: "Date",
+		type: "string",
+		uitype: "datetime-local"
+	}
+];
+
 const UserProfile = [
 	{
 		name: "email",
@@ -131,9 +163,9 @@ const Package = [
 		name: "activity",
 		type: "string",
 		label: "Activités inclues",
-		uitype: "field-array",
+		uitype: "field-array-checbox",
 		data_url: "/activity"
 	}
 ];
 
-export { Activity, UserProfile, Package };
+export { Activity, UserProfile, Package, Slot, SlotCreateForm };

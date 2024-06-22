@@ -15,6 +15,14 @@ const JSONToYupSchemeConverter = data => {
 			scheme[value.name] = scheme[value.name].required("Champ obligatoire");
 		}
 
+		if (value.type === "array") {
+			scheme[value.name] = scheme[value.name].test({
+				name: "At least one field filled",
+				message: "Champ obligatoire",
+				test: arr => arr.some(value => !!value)
+			});
+		}
+
 		if (value.maxLength && value.type !== "number") {
 			scheme[value.name] = scheme[value.name].max(value.maxLength, "");
 		}
@@ -55,7 +63,7 @@ const ExtractInitialValues = async data => {
 	for await (const value of data) {
 		if (value.data_url) {
 			const response = await axios(value.data_url, { withCredentials: true });
-			const defaults = (value.default || "").split(",");
+			const defaults = (typeof value.default !== "undefined" ? value.default.toString() : "").split(",");
 
 			defaults.forEach(_default => {
 				values[`${value.name}-${_default}`] = true;
@@ -64,9 +72,16 @@ const ExtractInitialValues = async data => {
 			if (response.data?.length) {
 				value.data = response.data?.map(item => {
 					return {
-						label: item.label,
-						id: item.id
+						key: item.label,
+						value: item.id
 					};
+				});
+			}
+
+			if (value.uitype === "select") {
+				value.data.unshift({
+					value: "",
+					key: "Selectionner une valeur"
 				});
 			}
 		}
@@ -75,9 +90,13 @@ const ExtractInitialValues = async data => {
 			switch (value.uitype) {
 				case "radio":
 				case "select":
-					return Object.keys(value.options[0])[0];
+					return typeof value.default !== "undefined" ? value.default : Object.keys(value.data[0]).value;
 				case "checkbox":
 					return !!value.default;
+				case "field-array-datetime-local":
+					return [""];
+				case "datetime-local":
+					return typeof value.default !== "undefined" ? new Date(value.default).toISOString().slice(0, -8) : "";
 				default:
 					return typeof value.default !== "undefined" ? value.default : "";
 			}
@@ -100,7 +119,7 @@ const HardcodeSpecialRules = data => {
 				break;
 		}
 
-		if (typeof value.required === "undefined" && value.uitype !== "checkbox" && value.uitype !== "field-array") {
+		if (typeof value.required === "undefined" && value.uitype !== "checkbox" && value.uitype !== "field-array-checbox") {
 			value.required = true;
 		}
 
@@ -235,6 +254,8 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 									case "number":
 									case "tel":
 									case "address":
+									case "datetime-local":
+									case "field-array-datetime-local":
 										return (
 											<div className={`form-row${isValid ? " valid" : isInvalid ? " invalid" : ""}${value.halfsize ? " halfsize" : ""}`} key={`form-row-${value.name}`}>
 												{!options.use_placeholders ? (
@@ -244,8 +265,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 												) : null}
 
 												{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
-
-												<div className={`relative ${value.uitype === "number" ? "inline-block" : ""}`}>
+												<div className={`relative ${["number", "datetime-local", "field-array-datetime-local"].includes(value.uitype) ? "inline-block" : ""}`}>
 													<div className='feedback'>
 														<ErrorMessage name={value.name} component='div' />
 														{isValid ? <div>✓</div> : null}
@@ -254,7 +274,35 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 													{value.prefix ? <div className='prefix'>{value.prefix}</div> : null}
 													{value.suffix ? <div className='suffix'>{value.suffix}</div> : null}
 
-													<Field type={value.uitype} name={value.name} autoComplete={value.disableAutocomplete ? "one-time-code" : value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : value.placeholder} />
+													{value.uitype === "field-array-datetime-local" ? (
+														<FieldArray
+															name={value.name}
+															render={arrayHelpers => (
+																<div className='flex-row flex-row-reverse'>
+																	{values[value.name].map((key, index) => (
+																		<div key={`${value.name}.${index}`}>
+																			<Field
+																				name={`${value.name}.${index}`}
+																				onBlur={event => {
+																					if (event.target.value) {
+																						return arrayHelpers.push("");
+																					}
+
+																					if (values.date.length > 1) {
+																						arrayHelpers.remove(index);
+																					}
+																				}}
+																				type='datetime-local'
+																				min={new Date().toISOString().slice(0, -8)}
+																			/>
+																		</div>
+																	))}
+																</div>
+															)}
+														/>
+													) : (
+														<Field type={value.uitype} name={value.name} autoComplete={value.disableAutocomplete ? "one-time-code" : value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : value.placeholder} />
+													)}
 												</div>
 											</div>
 										);
@@ -294,6 +342,38 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 												</div>
 											</div>
 										);
+									case "select":
+										return (
+											<div className={`form-row${isValid ? " valid" : isInvalid ? " invalid" : ""}${value.halfsize ? " halfsize" : ""}`} key={`form-row-${value.name}`}>
+												{!options.use_placeholders ? (
+													<div className='label-wrapper'>
+														<label htmlFor={value.name}> {value.label} </label>
+													</div>
+												) : null}
+
+												{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
+
+												<div className={`relative ${value.uitype === "number" ? "inline-block" : ""}`}>
+													<div className='feedback'>
+														<ErrorMessage name={value.name} component='div' />
+														{isValid ? <div>✓</div> : null}
+													</div>
+
+													{value.prefix ? <div className='prefix'>{value.prefix}</div> : null}
+													{value.suffix ? <div className='suffix'>{value.suffix}</div> : null}
+
+													<Field as='select' name={value.name}>
+														{value.data.map(item => {
+															return (
+																<option value={item.value} key={item.value}>
+																	{item.key}
+																</option>
+															);
+														})}
+													</Field>
+												</div>
+											</div>
+										);
 									case "checkbox":
 										return (
 											<div className='form-row checkbox-wrapper' key={`form-row-${value.name}`}>
@@ -305,7 +385,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 												</div>
 											</div>
 										);
-									case "field-array":
+									case "field-array-checbox":
 										return (
 											<div className='form-row checkbox-wrapper' key={`form-row-${value.name}`}>
 												<label className='flex-row'>
@@ -317,9 +397,10 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 														render={() => {
 															return value.data.map(item => {
 																return (
-																	<label className='flex-row' key={item.id}>
-																		<Field type='checkbox' name={`${value.name}-${item.id}`} />
-																		<Interweave content={item.label} />
+																	<label className='flex-row' key={item.value}>
+																		<Field type='checkbox' name={`${value.name}-${item.value}`} />
+
+																		<Interweave content={item.key} />
 																	</label>
 																);
 															});

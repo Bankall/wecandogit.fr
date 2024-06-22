@@ -6,6 +6,8 @@ export default function ErrorPage() {
 
 	return (
 		<section className='flex-row'>
+			{console.log(error)}
+
 			<div className='box big-box'>
 				<div className='title'>
 					<i className='fa-regular fa-face-frown'></i> Oops!
