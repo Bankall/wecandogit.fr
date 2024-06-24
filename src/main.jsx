@@ -21,7 +21,7 @@ const isLoggedIn = async () => {
 		const json = await res.json();
 
 		return !!json.ok;
-	} catch (e) {
+	} catch (err) {
 		console.error(err);
 		return false;
 	}
@@ -78,27 +78,35 @@ const router = createBrowserRouter([
 					},
 					{
 						path: "package/create/",
-						lazy: () => import("./routes/PackageCreate")
+						lazy: () => import("./routes/Account/PackageCreate")
 					},
 					{
 						path: "package/edit/:id",
-						lazy: () => import("./routes/PackageEdit")
+						lazy: () => import("./routes/Account/PackageEdit")
 					},
 					{
 						path: "activity/create/",
-						lazy: () => import("./routes/ActivityCreate")
+						lazy: () => import("./routes/Account/ActivityCreate")
 					},
 					{
 						path: "activity/edit/:id",
-						lazy: () => import("./routes/ActivityEdit")
+						lazy: () => import("./routes/Account/ActivityEdit")
 					},
 					{
 						path: "slot/create/",
-						lazy: () => import("./routes/SlotCreate")
+						lazy: () => import("./routes/Account/SlotCreate")
 					},
 					{
 						path: "slot/edit/:id",
-						lazy: () => import("./routes/SlotEdit")
+						lazy: () => import("./routes/Account/SlotEdit")
+					},
+					{
+						path: "dog/create/",
+						lazy: () => import("./routes/Account/DogCreate")
+					},
+					{
+						path: "dog/edit/:id",
+						lazy: () => import("./routes/Account/DogEdit")
 					}
 				]
 			},

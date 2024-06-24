@@ -2,8 +2,7 @@ import axios from "axios";
 
 import { FormikWrapper } from "../utils/utils.formik";
 import { useNavigate } from "react-router-dom";
-import { Activity } from "../data/dashboard-form-data";
-export function ActivitiyCreate() {
+export function DashboardCreateComponent({ type, rawformData }) {
 	const navigate = useNavigate();
 
 	return (
@@ -13,7 +12,7 @@ export function ActivitiyCreate() {
 				<div className='box big-box'>
 					<FormikWrapper
 						options={{
-							data: Activity,
+							data: rawformData,
 							use_placeholders: false
 						}}
 						submitText='Enregistrer'
@@ -22,7 +21,7 @@ export function ActivitiyCreate() {
 							setSubmitionFeedback("");
 
 							try {
-								const response = await axios.post("/activity", values, { withCredentials: true });
+								const response = await axios.post(`/${type}`, values, { withCredentials: true });
 
 								if (response.data.error) throw response.data.error;
 								if (response.data.id) {
@@ -42,4 +41,4 @@ export function ActivitiyCreate() {
 	);
 }
 
-export { ActivitiyCreate as Component };
+export { DashboardCreateComponent as Component };

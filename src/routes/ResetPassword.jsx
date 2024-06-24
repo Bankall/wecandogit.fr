@@ -29,7 +29,7 @@ export default function ResetPassword() {
 							setSubmitionError("");
 
 							try {
-								const response = await axios.get(`/send-reset-password-link/${encodeURIComponent(values.email)}`);
+								const response = await axios.get(`/password/send-reset-mail/${encodeURIComponent(values.email)}`);
 								if (!response.data.ok) {
 									throw "error";
 								}

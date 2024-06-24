@@ -32,7 +32,7 @@ export default function GenerateNewPassword() {
 						values.token = searchParams.get("token");
 
 						try {
-							const response = await axios.post(`/reset-password`, values);
+							const response = await axios.post(`/password/reset`, values);
 							if (!response.data.ok) {
 								throw "error";
 							}

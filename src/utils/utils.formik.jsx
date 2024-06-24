@@ -65,12 +65,14 @@ const ExtractInitialValues = async data => {
 			const response = await axios(value.data_url, { withCredentials: true });
 			const defaults = (typeof value.default !== "undefined" ? value.default.toString() : "").split(",");
 
-			defaults.forEach(_default => {
-				values[`${value.name}-${_default}`] = true;
-			});
+			if (value.default) {
+				value.default = {};
+			}
 
 			if (response.data?.length) {
 				value.data = response.data?.map(item => {
+					value.default[item.id] = defaults.includes(item.id.toString());
+
 					return {
 						key: item.label,
 						value: item.id
@@ -86,6 +88,8 @@ const ExtractInitialValues = async data => {
 			}
 		}
 
+		console.log(value.name, value.default);
+
 		values[value.name] = (() => {
 			switch (value.uitype) {
 				case "radio":
@@ -95,6 +99,8 @@ const ExtractInitialValues = async data => {
 					return !!value.default;
 				case "field-array-datetime-local":
 					return [""];
+				case "date":
+					return typeof value.default !== "undefined" ? new Date(value.default).toISOString().slice(0, -14) : "";
 				case "datetime-local":
 					return typeof value.default !== "undefined" ? new Date(value.default).toISOString().slice(0, -8) : "";
 				default:
@@ -119,7 +125,7 @@ const HardcodeSpecialRules = data => {
 				break;
 		}
 
-		if (typeof value.required === "undefined" && value.uitype !== "checkbox" && value.uitype !== "field-array-checbox") {
+		if (typeof value.required === "undefined" && value.uitype !== "checkbox" && value.uitype !== "field-array-checkbox") {
 			value.required = true;
 		}
 
@@ -254,6 +260,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 									case "number":
 									case "tel":
 									case "address":
+									case "date":
 									case "datetime-local":
 									case "field-array-datetime-local":
 										return (
@@ -265,7 +272,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 												) : null}
 
 												{value.tooltip && !options.use_placeholders ? <div className='tooltip'> {value.tooltip} </div> : null}
-												<div className={`relative ${["number", "datetime-local", "field-array-datetime-local"].includes(value.uitype) ? "inline-block" : ""}`}>
+												<div className={`relative ${["number", "date", "datetime-local", "field-array-datetime-local"].includes(value.uitype) ? "inline-block" : ""}`}>
 													<div className='feedback'>
 														<ErrorMessage name={value.name} component='div' />
 														{isValid ? <div>✓</div> : null}
@@ -385,7 +392,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 												</div>
 											</div>
 										);
-									case "field-array-checbox":
+									case "field-array-checkbox":
 										return (
 											<div className='form-row checkbox-wrapper' key={`form-row-${value.name}`}>
 												<label className='flex-row'>
@@ -398,7 +405,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 															return value.data.map(item => {
 																return (
 																	<label className='flex-row' key={item.value}>
-																		<Field type='checkbox' name={`${value.name}-${item.value}`} />
+																		<Field type='checkbox' name={`${value.name}.${item.value}`} />
 
 																		<Interweave content={item.key} />
 																	</label>

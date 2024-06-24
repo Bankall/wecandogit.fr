@@ -1,16 +1,12 @@
 import { useFetch } from "../hooks/useFetch";
 import { Link } from "react-router-dom";
 
-export default function DashboardListComponent({ label, type }) {
+export default function DashboardListComponent({ type, title, addLabel }) {
 	const response = useFetch(`/${type}`);
-	const captitalize = word => {
-		word = word.toString();
-		return word.charAt(0).toUpperCase() + word.slice(1);
-	};
 
 	return (
 		<>
-			<div className='title'>{captitalize(label)}</div>
+			<div className='title'>{title}</div>
 			<div className='content'>
 				{response.data?.length
 					? response.data.map(item => {
@@ -29,7 +25,7 @@ export default function DashboardListComponent({ label, type }) {
 					: "Aucun élément pour l'instant"}
 			</div>
 			<Link to={`/account/${type}/create`}>
-				<button>Ajouter une {label}</button>
+				<button>{addLabel}</button>
 			</Link>
 		</>
 	);

@@ -33,11 +33,11 @@ export default function Account() {
 			case "profile":
 				return <AccountInfo />;
 			case "packages":
-				return <DashboardListComponent label='formule' type='package' />;
+				return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
 			case "activities":
-				return <DashboardListComponent label='activité' type='activity' />;
+				return <DashboardListComponent addLabel='Ajouter une activité' title='Mes activités' type='activity' />;
 			case "slots":
-				return <DashboardListComponent label='créneau' type='slot' />;
+				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' />;
 			case "bookings":
 			default:
 				return <Bookings />;

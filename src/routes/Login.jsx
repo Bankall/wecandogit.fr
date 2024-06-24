@@ -4,55 +4,13 @@ import { FormikWrapper } from "../utils/utils.formik";
 
 import axios from "axios";
 
+import { LoginForm, RegisterForm } from "../data/dashboard-form-data";
+
 import "./Login.css";
 export default function Login() {
 	const GoogleOAuthUrl = useFetch("/auth/oauth/get-google-redirect-url");
 	const { hash } = useLocation();
 	const navigate = useNavigate();
-
-	const loginForm = [
-		{
-			name: "email",
-			type: "string",
-			label: "Adresse email",
-			uitype: "email"
-		},
-		{
-			name: "password",
-			type: "string",
-			label: "Mot de passe",
-			uitype: "password"
-		}
-	];
-
-	const registerForm = [...loginForm];
-	registerForm.push(
-		{
-			name: "firstname",
-			type: "string",
-			label: "Prénom",
-			uitype: "text"
-		},
-		{
-			name: "lastname",
-			type: "string",
-			label: "Nom",
-			uitype: "text"
-		},
-		{
-			name: "phone",
-			type: "string",
-			label: "Numéro de téléphone",
-			uitype: "tel"
-		},
-		{
-			name: "instagram",
-			type: "string",
-			prefix: "@",
-			label: "Compte instagram",
-			uitype: "text"
-		}
-	);
 
 	return (
 		<section className='flex-row'>
@@ -74,21 +32,21 @@ export default function Login() {
 					<div className='box'>
 						<FormikWrapper
 							options={{
-								data: hash === "#register" ? registerForm : loginForm,
+								data: hash === "#register" ? RegisterForm : LoginForm,
 								use_placeholders: true
 							}}
 							submitText={hash === "#register" ? "S'enregistrer" : "Se connecter"}
-							onSubmit={async ({ values, setSubmitionError, setCustomIsSubmiting }) => {
+							onSubmit={async ({ values, setSubmitionError, setCustomIsSubmitting }) => {
 								setSubmitionError("");
 
 								try {
-									const response = await axios.post(hash === "#register" ? "/create-user" : "/auth/login", values, { withCredentials: true });
+									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", values, { withCredentials: true });
 
 									if (response.data.error) throw response.data.error;
 									if (response.data.ok) {
 										setTimeout(() => {
 											navigate(response.data.location || "/account");
-										}, 500);
+										}, 200);
 									}
 								} catch (err) {
 									const errMessage = err.message || err;

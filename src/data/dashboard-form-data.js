@@ -96,20 +96,41 @@ const Slot = [
 	}
 ];
 
+const Package = [
+	{
+		name: "label",
+		type: "string",
+		label: "Nom de la formule",
+		uitype: "text"
+	},
+	{
+		name: "number_of_session",
+		type: "number",
+		label: "Nombre de séances",
+		uitype: "number"
+	},
+	{
+		name: "price",
+		type: "number",
+		label: "Prix TTC",
+		suffix: "€",
+		uitype: "number"
+	},
+	{
+		name: "activity",
+		type: "object",
+		label: "Activités inclues",
+		uitype: "field-array-checkbox",
+		data_url: "/activity"
+	}
+];
+
 const UserProfile = [
 	{
 		name: "email",
 		type: "string",
 		label: "Adresse email",
 		uitype: "email"
-	},
-	{
-		name: "password",
-		type: "string",
-		label: "Mot de passe (laisser vide pour ne pas le changer)",
-		uitype: "password",
-		disableAutocomplete: true,
-		required: false
 	},
 	{
 		name: "firstname",
@@ -139,33 +160,76 @@ const UserProfile = [
 	}
 ];
 
-const Package = [
+const LoginForm = [
 	{
-		name: "label",
+		name: "email",
 		type: "string",
-		label: "Nom de la formule",
-		uitype: "text"
+		label: "Adresse email",
+		uitype: "email"
 	},
 	{
-		name: "number_of_session",
-		type: "number",
-		label: "Nombre de séances",
-		uitype: "number"
-	},
-	{
-		name: "price",
-		type: "number",
-		label: "Prix TTC",
-		suffix: "€",
-		uitype: "number"
-	},
-	{
-		name: "activity",
+		name: "password",
 		type: "string",
-		label: "Activités inclues",
-		uitype: "field-array-checbox",
-		data_url: "/activity"
+		label: "Mot de passe",
+		uitype: "password"
 	}
 ];
 
-export { Activity, UserProfile, Package, Slot, SlotCreateForm };
+const RegisterForm = [...LoginForm];
+RegisterForm.push(
+	{
+		name: "firstname",
+		type: "string",
+		label: "Prénom",
+		uitype: "text"
+	},
+	{
+		name: "lastname",
+		type: "string",
+		label: "Nom",
+		uitype: "text"
+	},
+	{
+		name: "phone",
+		type: "string",
+		label: "Numéro de téléphone",
+		uitype: "tel"
+	},
+	{
+		name: "instagram",
+		type: "string",
+		prefix: "@",
+		label: "Compte instagram",
+		uitype: "text"
+	}
+);
+
+const Dog = [
+	{
+		name: "label",
+		type: "string",
+		label: "Nom de l'animal",
+		uitype: "text"
+	},
+	{
+		name: "breed",
+		type: "string",
+		label: "Sa race",
+		uitype: "text"
+	},
+	{
+		name: "birthdate",
+		type: "string",
+		label: "Sa date de naissance",
+		uitype: "date"
+	},
+	{
+		name: "trainer_description",
+		type: "string",
+		label: "Commentaire de l'éducateur",
+		uitype: "textarea",
+		required: false
+	}
+];
+
+export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm };

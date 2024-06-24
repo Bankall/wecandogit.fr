@@ -1,0 +1,4 @@
+.agenda button:focus,
+.agenda button:active {
+	box-shadow: none !important;
+}

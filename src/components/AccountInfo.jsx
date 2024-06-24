@@ -2,6 +2,8 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { FormikWrapper } from "../utils/utils.formik";
 import { UserProfile } from "../data/dashboard-form-data";
+
+import DashboardListComponent from "./DashboardListComponent";
 import Loading from "./Loading";
 
 export default function AccountInfo() {
@@ -64,6 +66,7 @@ export default function AccountInfo() {
 			) : (
 				<Loading />
 			)}
+			<DashboardListComponent title='Mes Animaux' addLabel='Ajouter un animal' type='dog' />
 		</>
 	);
 }
