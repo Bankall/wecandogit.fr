@@ -27,23 +27,20 @@ export default function Footer() {
 					</li>
 				</ul>
 
-				{activities.data?.trainers
-					? activities.data.trainers.map(trainer => {
-							return (
-								<ul key={trainer.id}>
-									<li className='no-list-style'>{trainer.name}</li>
+				{activities.data?.result &&
+					activities.data?.result.map(trainer => (
+						<ul key={trainer.id}>
+							<li className='no-list-style'>{trainer.name}</li>
 
-									{trainer.activities.map(activity => {
-										return (
-											<li key={activity.id}>
-												<Link to={`/activite/${activity.id}/${encodeURIComponent(activity.label.replace(/\s/gi, "-")).toLowerCase()}`}>{activity.label}</Link>
-											</li>
-										);
-									})}
-								</ul>
-							);
-					  })
-					: null}
+							{trainer.activities.map(activity => {
+								return (
+									<li key={activity.id}>
+										<Link to={`/activite/${activity.id}/${encodeURIComponent(activity.label.replace(/\s/gi, "-")).toLowerCase()}`}>{activity.label}</Link>
+									</li>
+								);
+							})}
+						</ul>
+					))}
 				<ul>
 					<li>
 						<Link to='/agenda'>Notre agenda</Link>

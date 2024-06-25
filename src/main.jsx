@@ -62,7 +62,7 @@ const router = createBrowserRouter([
 				lazy: () => import("./routes/Agenda")
 			},
 			{
-				path: "/activities",
+				path: "/activites",
 				lazy: () => import("./routes/ListAllActivities")
 			},
 			{

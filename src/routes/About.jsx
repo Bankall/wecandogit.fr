@@ -55,7 +55,7 @@ export default function About() {
 			<section className='about-us' id='a-propos'>
 				<div className='content'>
 					<h2>We Can Dog It</h2>
-					<div className='flex-row'>
+					<div className='flex-row no-wrap'>
 						<p>
 							C'est la réunion de deux cynologistes qui partagent les mêmes valeurs : accompagner la relation homme-chien en s'appuyant sur la coopération et la motivation du chien comme de son humain, développer le potentiel de chacun en utilisant des méthodes bienveillantes et respectueuses, et se former encore et toujours pour accompagner ces binômes le mieux possible.
 							<br />
@@ -83,7 +83,7 @@ export default function About() {
 											<div className='swiper-slide' key={trainer.id}>
 												<div className='box'>
 													<div className='title'>{trainer.name}</div>
-													<div className='content flex-row'>
+													<div className='content flex-row no-wrap'>
 														<img src={trainer.photo} />
 														<pre>{trainer.description}</pre>
 													</div>

@@ -28,7 +28,7 @@ export default function Reviews() {
 										<div className='content'>
 											<Interweave content={review.text.text} />
 										</div>
-										<div className='author'>{review.authorAttribution.displayName}</div>
+										<div className='bottom-line'>{review.authorAttribution.displayName}</div>
 									</div>
 								);
 						  })

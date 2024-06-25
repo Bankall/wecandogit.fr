@@ -1,0 +1,12 @@
+section.activities h2 {
+	text-align: center;
+}
+
+section.activities .cards {
+	align-items: normal;
+	justify-content: center;
+}
+
+section.activities .card {
+	max-width: 400px;
+}

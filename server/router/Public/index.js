@@ -97,7 +97,7 @@ router.route("/get-activities-by-trainer").get(async (req, res) => {
 		});
 
 		res.send({
-			trainers: shuffle(Object.values(resultByTrainers).filter(trainer => !!trainer.activities.length))
+			result: shuffle(Object.values(resultByTrainers).filter(trainer => !!trainer.activities.length))
 		});
 	} catch (err) {
 		res.send({
@@ -160,7 +160,8 @@ router.route("/get-all-slots").get(async (req, res) => {
 					u.firstname,
 					s.date,
 					a.duration,
-					s.id
+					s.id,
+					a.spots
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
 				INNER JOIN user u on u.id = a.id_trainer
@@ -174,6 +175,51 @@ router.route("/get-all-slots").get(async (req, res) => {
 		);
 
 		res.send(slots);
+	} catch (err) {
+		res.send({
+			error: err.error || err
+		});
+	}
+});
+
+router.route("/get-all-activities").get(async (req, res) => {
+	try {
+		const activities = await backend.handleQuery(
+			`
+				SELECT 
+					id,
+					label,
+					group_label,
+					is_collective,
+					spots,
+					price,
+					description,
+					duration
+
+				FROM activity a
+				WHERE a.is_public = 1
+			`,
+			null,
+			"get-activity",
+			true
+		);
+
+		const activity_group = {};
+		activities.result?.map(activity => {
+			const group_label = activity.group_label.trim();
+
+			if (!activity_group[group_label]) {
+				activity_group[group_label] = {
+					label: group_label,
+					activites: []
+				};
+			}
+			activity_group[group_label].activites.push(activity);
+		});
+
+		res.send({
+			result: shuffle(Object.values(activity_group))
+		});
 	} catch (err) {
 		res.send({
 			error: err.error || err

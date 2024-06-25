@@ -2,3 +2,7 @@
 .agenda button:active {
 	box-shadow: none !important;
 }
+
+.fc-list-event {
+	cursor: pointer;
+}

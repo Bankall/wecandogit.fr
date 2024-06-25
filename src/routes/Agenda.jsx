@@ -1,15 +1,28 @@
 import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
-import timeGridPlugin from "@fullcalendar/timegrid";
 import frLocale from "@fullcalendar/core/locales/fr";
 import axios from "axios";
 
 import "./Agenda.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const renderEventContent = eventInfo => {
+	console.log(eventInfo.event.id);
+	return (
+		<>
+			<b>{eventInfo.timeText}</b>
+			<i>{eventInfo.event.title}</i>
+		</>
+	);
+};
 
 export default function Agenda() {
 	const [events, setEvents] = useState([]);
+	const [once, setOnce] = useState(true);
+
+	const Calendar = useRef();
+
 	useEffect(() => {
 		const fetch = async () => {
 			try {
@@ -19,8 +32,9 @@ export default function Agenda() {
 						id: slot.id,
 						title: slot.label,
 						start: slot.date,
+						timeText: "toto",
 						end: (() => {
-							const end = new Date(slot.date);
+							const end = new Date(slot.date.replace(/T/, " ").slice(0, -1));
 							end.setTime(end.getTime() + slot.duration * 1000 * 60);
 							return end.toISOString();
 						})()
@@ -28,8 +42,6 @@ export default function Agenda() {
 				});
 
 				setEvents(mapped);
-
-				console.log(mapped);
 			} catch (err) {
 				console.error(err);
 			}
@@ -45,7 +57,29 @@ export default function Agenda() {
 
 	return (
 		<section className='agenda'>
-			<FullCalendar locale={frLocale} plugins={[listPlugin, dayGridPlugin, timeGridPlugin]} initialView='dayGridMonth' events={events} />;
+			<FullCalendar
+				ref={Calendar}
+				locale={frLocale}
+				height='auto'
+				expandRows={true}
+				selectable={true}
+				plugins={[listPlugin, interactionPlugin]}
+				noEventsContent={() => {
+					const calendarApi = Calendar.current?.getApi();
+
+					if (calendarApi && events.length && once) {
+						calendarApi.gotoDate(events[0].start);
+						setOnce(false);
+
+						return;
+					}
+
+					return "Aucun évènement à afficher";
+				}}
+				initialView={"listWeek"}
+				events={events}
+				eventContent={renderEventContent}
+			/>
 		</section>
 	);
 }
