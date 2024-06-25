@@ -8,13 +8,21 @@ import "./Agenda.css";
 import { useEffect, useRef, useState } from "react";
 
 const renderEventContent = eventInfo => {
-	console.log(eventInfo.event.id);
 	return (
 		<>
-			<b>{eventInfo.timeText}</b>
 			<i>{eventInfo.event.title}</i>
 		</>
 	);
+};
+
+const convertToLocalDate = (date, increment) => {
+	const converted = new Date(date.replace(/T/, " ").slice(0, -1));
+
+	if (increment) {
+		converted.setTime(converted.getTime() + increment * 1000 * 60);
+	}
+
+	return converted.toISOString();
 };
 
 export default function Agenda() {
@@ -31,13 +39,8 @@ export default function Agenda() {
 					return {
 						id: slot.id,
 						title: slot.label,
-						start: slot.date,
-						timeText: "toto",
-						end: (() => {
-							const end = new Date(slot.date.replace(/T/, " ").slice(0, -1));
-							end.setTime(end.getTime() + slot.duration * 1000 * 60);
-							return end.toISOString();
-						})()
+						start: (() => convertToLocalDate(slot.date))(),
+						end: (() => convertToLocalDate(slot.date, slot.duration))()
 					};
 				});
 
