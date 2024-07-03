@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { FormikWrapper } from "../utils/utils.formik";
 import axios from "axios";
-export default function GenerateNewPassword() {
+function GenerateNewPassword() {
 	const navigate = useNavigate();
 
 	const form = [

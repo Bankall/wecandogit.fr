@@ -2,10 +2,12 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { FormikWrapper, sleep } from "../utils/utils.formik";
 import { useNavigate, useParams } from "react-router-dom";
+import { useCookies } from "react-cookie";
 
 export default function DashboardEditComponent({ type, rawformData }) {
 	const navigate = useNavigate();
 	const params = useParams();
+	const [cookies, setCookies] = useCookies();
 
 	const [dataError, setDataError] = useState(false);
 	const [label, setLabel] = useState(false);
@@ -37,19 +39,21 @@ export default function DashboardEditComponent({ type, rawformData }) {
 
 				if (Object.keys(response.data).length) {
 					setFormData(
-						rawformData.map(row => {
-							const item = Object.assign({}, row);
+						rawformData
+							.filter(row => (row.acl && row.acl.is_trainer ? !!cookies.is_trainer : true))
+							.map(row => {
+								const item = Object.assign({}, row);
 
-							if (typeof response.data[item.name] !== "undefined") {
-								item.default = response.data[item.name] === null ? "" : response.data[item.name];
+								if (typeof response.data[item.name] !== "undefined") {
+									item.default = response.data[item.name] === null ? "" : response.data[item.name];
 
-								if (item.name === "label") {
-									setLabel(response.data[item.name]);
+									if (item.name === "label") {
+										setLabel(response.data[item.name]);
+									}
 								}
-							}
 
-							return item;
-						})
+								return item;
+							})
 					);
 				} else {
 					setDataError(true);

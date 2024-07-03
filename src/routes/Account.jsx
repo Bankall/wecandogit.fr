@@ -8,13 +8,12 @@ import Loading from "../components/Loading";
 import { useLocation } from "react-router-dom";
 
 const AccountInfo = lazy(() => import("../components/AccountInfo"));
-const Bookings = lazy(() => import("../components/Bookings"));
 const DashboardListComponent = lazy(() => import("../components/DashboardListComponent"));
 
-export default function Account() {
+function Account() {
 	const location = useLocation();
 	const [cookies, setCookies] = useCookies();
-	const [currentMenu, setCurrentMenu] = useState(location.hash ? location.hash.slice(1) : "bookings");
+	const [currentMenu, setCurrentMenu] = useState(location.hash ? location.hash.slice(1) : "reservations");
 
 	const me = useFetch("/me");
 
@@ -32,15 +31,14 @@ export default function Account() {
 		switch (param) {
 			case "profile":
 				return <AccountInfo />;
+			case "reservations":
+				return <DashboardListComponent title='Mes réservations' type='reservation' />;
 			case "packages":
 				return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
 			case "activities":
 				return <DashboardListComponent addLabel='Ajouter une activité' title='Mes activités' type='activity' />;
 			case "slots":
 				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' />;
-			case "bookings":
-			default:
-				return <Bookings />;
 		}
 	};
 
@@ -49,14 +47,12 @@ export default function Account() {
 			<div className='content'>
 				<h2>Hello {cookies.username} !</h2>
 
-				<div className='dashboard flex-row'>
+				<div className='dashboard flex-row no-wrap'>
 					<div className='menu'>
 						<ul onClick={onMenuClick}>
-							{me.data?.result.is_trainer === false ? (
-								<li name='bookings' className={currentMenu === "bookings" ? "active" : ""}>
-									Mes Reservations
-								</li>
-							) : null}
+							<li name='reservations' className={currentMenu === "reservations" ? "active" : ""}>
+								Mes Reservations
+							</li>
 							<li name='profile' className={currentMenu === "profile" ? "active" : ""}>
 								Mes Informations
 							</li>

@@ -6,7 +6,6 @@ import "./index.css";
 import Root from "./routes/Root";
 import Home from "./routes/Home";
 import Login from "./routes/Login";
-import ResetPassword from "./routes/ResetPassword";
 import ErrorPage from "./routes/ErrorPage";
 
 import axios from "axios";
@@ -66,6 +65,14 @@ const router = createBrowserRouter([
 				lazy: () => import("./routes/ListAllActivities")
 			},
 			{
+				path: "/formules-et-tarifs",
+				lazy: () => import("./routes/Packages")
+			},
+			{
+				path: "/cart",
+				lazy: () => import("./routes/Cart")
+			},
+			{
 				path: "/account",
 				children: [
 					{
@@ -109,10 +116,6 @@ const router = createBrowserRouter([
 						lazy: () => import("./routes/Account/DogEdit")
 					}
 				]
-			},
-			{
-				path: "/formules-et-tarifs",
-				lazy: () => import("./routes/Pricing")
 			}
 		]
 	},
@@ -131,7 +134,7 @@ const router = createBrowserRouter([
 		children: [
 			{
 				path: "",
-				element: <ResetPassword />
+				lazy: () => import("./routes/ResetPassword")
 			},
 			{
 				path: "new-password/",

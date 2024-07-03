@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateEmail } from "../../lib/utils.js";
+import { validateEmail, assert } from "../../lib/utils.js";
 
 import config from "config";
 import axios from "axios";
@@ -12,7 +12,7 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
-router.route("/oauth/get-google-redirect-url").get(async (req, res) => {
+router.route("/oauth/get-google-redirect-url").all(async (req, res) => {
 	const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
 	const options = {
 		redirect_uri: config.get("GOOGLE_OAUTH_REDIRECT_URI"),
@@ -26,14 +26,14 @@ router.route("/oauth/get-google-redirect-url").get(async (req, res) => {
 	const queryString = new URLSearchParams(options).toString();
 	const url = `${rootUrl}?${queryString.toString()}`;
 
+	req.session.redirect = req.body.redirect;
 	res.send(url);
 });
 
-router.route("/oauth/callback").get(async (req, res) => {
+router.route("/oauth/callback/").get(async (req, res) => {
 	try {
 		const code = req.query.code;
 		const url = "https://oauth2.googleapis.com/token";
-
 		const options = {
 			code,
 			client_id: process.env.AUTH_GOOGLE_ID,
@@ -63,14 +63,19 @@ router.route("/oauth/callback").get(async (req, res) => {
 			return res.redirect(`${config.get("FRONT_URI")}/login#google-error`);
 		}
 
+		const cart = req.session.cart;
+		const redirect = req.session.redirect;
 		req.session.regenerate(async err => {
 			if (err) next(err);
 
 			req.session.email = googleUser.email;
 
+			req.session.redirect = redirect;
+			req.session.cart = cart;
+
 			let user = await backend.get({ table: "user", query: { email: googleUser.email } });
 
-			if (user.result.length) {
+			if (!user.result.length) {
 				user = await backend.post({
 					table: "user",
 					body: {
@@ -91,12 +96,11 @@ router.route("/oauth/callback").get(async (req, res) => {
 			res.cookie("username", googleUser.given_name);
 			res.cookie("email", googleUser.email);
 
-			res.redirect(config.get("FRONT_URI") + (req.body.redirect || "/account"));
+			res.redirect(config.get("FRONT_URI") + (req.body.redirect !== "/" ? req.body.redirect : "/account"));
 		});
 	} catch (err) {
-		res.send({
-			error: err.error
-		});
+		console.log(err);
+		res.redirect(config.get("FRONT_URI") + (req.body.redirect !== "/" ? req.body.redirect : "/account"));
 	}
 });
 
@@ -111,6 +115,7 @@ router.route("/create-user").post(async (req, res, next) => {
 			body: req.body
 		});
 
+		const cart = req.session.cart;
 		req.session.regenerate(async err => {
 			if (err) next(err);
 
@@ -118,17 +123,19 @@ router.route("/create-user").post(async (req, res, next) => {
 			req.session.email = req.body.email;
 			req.session.user_id = newUser.result.id;
 
+			req.session.cart = cart;
+
 			res.cookie("username", req.body.firstname);
 			res.cookie("email", req.body.email);
 
 			res.send({
 				ok: true,
-				location: req.body.redirect || "/account"
+				location: req.body.redirect !== "/" ? req.body.redirect : "/account"
 			});
 		});
 	} catch (err) {
 		res.send({
-			error: err.error.match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
+			error: (err.error || "").match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
 		});
 	}
 });
@@ -165,12 +172,16 @@ router.route("/login").post(async (req, res) => {
 			throw { error: "Mot de passe incorrect" };
 		}
 
+		const cart = req.session.cart;
+
 		req.session.regenerate(async err => {
 			if (err) next(err);
 
 			req.session.email = user.result[0].email;
 			req.session.user_id = user.result[0].id;
 			req.session.is_trainer = user.result[0].is_trainer;
+
+			req.session.cart = cart;
 
 			res.cookie("username", user.result[0].firstname);
 			res.cookie("email", req.body.email);

@@ -1,7 +1,7 @@
 import { Dog } from "../../data/dashboard-form-data";
 import { Component } from "../../components/DashboardEditComponent";
 
-export function EditRoute() {
+function EditRoute() {
 	return <Component type='dog' rawformData={Dog} />;
 }
 

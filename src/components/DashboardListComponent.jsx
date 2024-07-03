@@ -17,16 +17,18 @@ export default function DashboardListComponent({ type, title, addLabel }) {
 										{item.label}
 									</span>
 									<Link to={`/account/${type}/edit/${item.id}`}>
-										<button>Modifier</button>
+										<button className='small'>Modifier</button>
 									</Link>
 								</div>
 							);
 					  })
 					: "Aucun élément pour l'instant"}
 			</div>
-			<Link to={`/account/${type}/create`}>
-				<button>{addLabel}</button>
-			</Link>
+			{addLabel && (
+				<Link to={`/account/${type}/create`}>
+					<button>{addLabel}</button>
+				</Link>
+			)}
 		</>
 	);
 }

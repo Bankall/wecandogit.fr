@@ -1,4 +1,4 @@
-export default function GTC() {
+function GTC() {
 	return (
 		<>
 			<section className='about-us'>

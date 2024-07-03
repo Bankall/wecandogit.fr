@@ -1,4 +1,4 @@
-export default function Privacy() {
+function Privacy() {
 	return (
 		<>
 			<section className='about-us'>

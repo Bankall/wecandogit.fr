@@ -30,4 +30,14 @@ const shuffle = array => {
 	return shuffled;
 };
 
-export { validateEmail, shuffle };
+const assert = (...args) => {
+	for (const value of args) {
+		if (typeof value === "undefined") {
+			return false;
+		}
+	}
+
+	return true;
+};
+
+export { validateEmail, shuffle, assert };

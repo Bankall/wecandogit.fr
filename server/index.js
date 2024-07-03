@@ -16,6 +16,7 @@ import { Auth } from "./router/Auth/index.js";
 import { Private } from "./router/Private/index.js";
 import { Password } from "./router/Password/index.js";
 import { Public } from "./router/Public/index.js";
+import { Cart } from "./router/Cart/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +72,7 @@ app.use(`${API_PATH}/auth`, Auth(backend));
 app.use(`${API_PATH}/password`, Password(backend));
 app.use(`${API_PATH}/`, Private(backend));
 app.use(`${API_PATH}/`, Public(backend));
+app.use(`${API_PATH}/cart`, Cart(backend));
 
 backend.start(() => {
 	app.listen(PORT, () => {

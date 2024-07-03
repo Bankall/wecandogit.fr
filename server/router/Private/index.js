@@ -7,7 +7,7 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
-router.route(["/activity", "/slot", "/package"]).all((req, res, next) => {
+router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, next) => {
 	if (!req.session.is_trainer) {
 		return res.send({
 			error: "Vous n'avez pas accès à cette ressource"
@@ -24,14 +24,54 @@ router.route(["/activity", "/slot", "/package"]).all((req, res, next) => {
 	next();
 });
 
-router.route("/package/:id").put((req, res, next) => {
-	const activities = req.body.activity;
-	req.body.activity = Object.keys(activities)
-		.filter(activity => !!activities[activity])
-		.join(",");
+router
+	.route("/package/:id")
+	.put(async (req, res, next) => {
+		try {
+			const activities = req.body.activity;
+			req.body.activity = Object.keys(activities).filter(activityId => !!activities[activityId]);
 
-	next();
-});
+			const values = req.body.activity.map(activityId => {
+				return [req.params.id, activityId];
+			});
+
+			await backend.handleQuery("DELETE FROM package_activity WHERE id_package = ?", [req.params.id]);
+			await backend.handleQuery("INSERT INTO package_activity (id_package, id_activity) values ?", [values], "put-package", true);
+
+			next();
+		} catch (err) {
+			res.send({
+				error: err.message || err
+			});
+		}
+	})
+	.get(async (req, res) => {
+		try {
+			const data = await backend.get({
+				table: "package",
+				id: req.params.id
+			});
+
+			if (req.params.id) {
+				const package_activities = await backend.get({
+					table: "package_activity",
+					query: {
+						id_package: req.params.id
+					}
+				});
+
+				if (package_activities.result.length) {
+					data.result.activity = package_activities.result.map(item => item.id_activity);
+				}
+			}
+
+			res.send(data.result);
+		} catch (err) {
+			res.send({
+				error: err.message || err
+			});
+		}
+	});
 
 router.route("/slot").get(async (req, res) => {
 	try {
@@ -87,26 +127,59 @@ router.route("/create-slots").post(async (req, res) => {
 	}
 });
 
-router.route("/dog/:id?").get(async (req, res, next) => {
-	if (req.session.is_trainer) {
-		return next();
-	}
+router
+	.route("/dog/:id?")
+	.get(async (req, res) => {
+		try {
+			const query = {};
+			if (req.params.id) {
+				query.id = req.params.id;
+			} else {
+				query.id_user = req.session.user_id;
+			}
 
-	const dog = await backend.get({
-		table: "dog",
-		query: {
-			id: req.session.id
+			const dog = await backend.get({
+				table: "dog",
+				query
+			});
+
+			if (!req.session.is_trainer) {
+				dog.result.forEach(dog => {
+					delete dog.trainer_description;
+				});
+			}
+
+			res.send(req.params.id ? dog.result[0] : dog.result);
+		} catch (err) {
+			res.send({
+				error: err.error || err
+			});
 		}
+	})
+	.post(async (req, res, next) => {
+		req.body.id_user = req.session.user_id;
+		next();
+	})
+	.put(async (req, res, next) => {
+		if (req.session.is_trainer) {
+			return next();
+		}
+
+		if (req.params.id) {
+			const dog = await backend.get({
+				table: "dog",
+				id: req.params.id
+			});
+
+			if (dog.result.id_user !== req.session.user_id) {
+				return res.send({
+					error: "Vous n'avez pas accès à cette ressource"
+				});
+			}
+		}
+
+		next();
 	});
-
-	if (dog.result?.user_id !== req.session.user_id) {
-		return res.send({
-			error: "Vous n'avez pas accès à cette ressource"
-		});
-	}
-
-	next();
-});
 
 const Private = _backend => {
 	backend = _backend;

@@ -6,3 +6,11 @@
 .fc-list-event {
 	cursor: pointer;
 }
+
+.fc .fc-toolbar-title {
+	font-size: 17px;
+}
+
+.fc .fc-list-event-title .flex-row {
+	justify-content: space-between;
+}

@@ -37,9 +37,11 @@ export default function ActivityListing({ endpoint }) {
 							<span className='list-detail'>
 								{row.label} ({row.firstname})
 							</span>
-							<Link to={`/book-activity/${row.id}`}>
-								<button>Réserver</button>
-							</Link>
+							<div style={{ display: "none" }}>
+								<Link to={`/book-activity/${row.id}`}>
+									<button className='small'>Réserver</button>
+								</Link>
+							</div>
 						</div>
 					);
 				})

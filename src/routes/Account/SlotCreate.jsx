@@ -1,8 +1,8 @@
 import { Slot } from "../../data/dashboard-form-data";
 import { Component } from "../../components/DashboardCreateComponent";
 
-export function CreateRoute() {
-	return <Component type='slot' rawformData={Slot} />;
+function CreateRoute() {
+	return <Component type='slot' rawformData={Slot} title='Ajouter un créneau' />;
 }
 
 export { CreateRoute as Component };

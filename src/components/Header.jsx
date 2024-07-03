@@ -1,13 +1,29 @@
 import { NavLink, Link } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 
+import axios from "axios";
 import "./Header.css";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 
 export default function Header() {
-	const cartItems = useFetch("/get-cart-item");
 	const isLoggedIn = useFetch("/is-logged-in");
 	const [menuToogle, setMenuToggle] = useState(false);
+	const [cartCount, setCartCount] = useState(0);
+
+	useEffect(() => {
+		const fetch = () => {
+			axios
+				.get("/cart/count", { withCredentials: true })
+				.then(res => setCartCount(res.data.count))
+				.catch(err => console.error(err));
+		};
+
+		window.addEventListener("cart-item-added", fetch);
+		fetch();
+
+		return () => window.removeEventListener("cart-item-added", fetch);
+	}, []);
 
 	return (
 		<header>
@@ -40,6 +56,12 @@ export default function Header() {
 						<i className='fa-solid fa-magnifying-glass'></i>
 					</Link>
 				</div>
+				<div className={!cartCount ? "disabled" : ""}>
+					<Link to='/cart' className={cartCount ? "has-items" : ""}>
+						<i className='fa-solid fa-cart-shopping'></i>
+						{cartCount ? <span className='cart-item-count'>{cartCount}</span> : null}
+					</Link>
+				</div>
 				<div className={isLoggedIn.loading ? "hidden" : isLoggedIn.data?.ok ? "" : "disabled"}>
 					<Link to='/account' title='Acceder à mon compte'>
 						<i className='fa-regular fa-user'></i>
@@ -48,12 +70,6 @@ export default function Header() {
 				<div className={isLoggedIn.loading ? "hidden" : isLoggedIn.data?.ok ? "" : "disabled"}>
 					<Link to={`${import.meta.env.VITE_API_ENDPOINT}/auth/logout`} title='Se deconnecter'>
 						<i className='fa-solid fa-power-off'></i>
-					</Link>
-				</div>
-				<div className='disabled'>
-					<Link to='/cart' className={cartItems.data?.count ? "has-items" : ""}>
-						<i className='fa-solid fa-cart-shopping'></i>
-						{cartItems.data?.count ? <span className='cart-item-count'>{cartItems.data.count}</span> : null}
 					</Link>
 				</div>
 				<div className={`has-text${isLoggedIn.loading ? " hidden" : isLoggedIn.data?.ok ? " disabled" : ""}`}>

@@ -1,4 +1,4 @@
-export default function Cynologyst() {
+function Cynologyst() {
 	return (
 		<>
 			<section>

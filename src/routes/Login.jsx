@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { FormikWrapper } from "../utils/utils.formik";
 
@@ -8,9 +8,16 @@ import { LoginForm, RegisterForm } from "../data/dashboard-form-data";
 
 import "./Login.css";
 export default function Login() {
-	const GoogleOAuthUrl = useFetch("/auth/oauth/get-google-redirect-url");
 	const { hash } = useLocation();
 	const navigate = useNavigate();
+	const params = useParams();
+
+	const GoogleOAuthUrl = useFetch({
+		url: "/auth/oauth/get-google-redirect-url",
+		data: {
+			redirect: params.redirect ? `/${params.redirect}` : undefined
+		}
+	});
 
 	return (
 		<section className='flex-row'>
@@ -40,7 +47,7 @@ export default function Login() {
 								setSubmitionError("");
 
 								try {
-									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", values, { withCredentials: true });
+									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", { ...values, redirect: `/${params.redirect}` }, { withCredentials: true });
 
 									if (response.data.error) throw response.data.error;
 									if (response.data.ok) {

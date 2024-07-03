@@ -64,10 +64,7 @@ const ExtractInitialValues = async data => {
 		if (value.data_url) {
 			const response = await axios(value.data_url, { withCredentials: true });
 			const defaults = (typeof value.default !== "undefined" ? value.default.toString() : "").split(",");
-
-			if (value.default) {
-				value.default = {};
-			}
+			value.default = {};
 
 			if (response.data?.length) {
 				value.data = response.data?.map(item => {
@@ -87,9 +84,6 @@ const ExtractInitialValues = async data => {
 				});
 			}
 		}
-
-		console.log(value.name, value.default);
-
 		values[value.name] = (() => {
 			switch (value.uitype) {
 				case "radio":
@@ -331,16 +325,16 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 										);
 									case "radio":
 										return (
-											<div className={`form-row`} key={`form-row-${value.name}`}>
-												<div className=''>
+											<div className={`form-row radio-wrapper`} key={`form-row-${value.name}`}>
+												<div className='label-wrapper'>
 													<label> {value.label} </label>
 												</div>
-												<div className='radio-wrapper'>
-													{value.options.map(option => {
+												<div className='relative inline-block'>
+													{value.data.map(option => {
 														let key = Object.keys(option)[0];
 
 														return (
-															<label key={key}>
+															<label key={key} className='radio-col'>
 																<Field type='radio' name={value.name} value={key} />
 																<span>{option[key]}</span>
 															</label>
@@ -398,7 +392,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 												<label className='flex-row'>
 													<Interweave content={value.label} />
 												</label>
-												<div className='checkbox-col'>
+												<div className='checkbox-col flex-row'>
 													<FieldArray
 														name={value.name}
 														render={() => {

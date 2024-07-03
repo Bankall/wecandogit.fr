@@ -58,11 +58,6 @@ router.route("/me").get(async (req, res) => {
 	}
 });
 
-router.route("/get-cart-item").get(async (req, res) => {
-	const count = parseInt(Math.random() * 3);
-	res.send({ count });
-});
-
 router.route("/get-activities-by-trainer").get(async (req, res) => {
 	try {
 		const activities = await backend.get({
@@ -90,10 +85,10 @@ router.route("/get-activities-by-trainer").get(async (req, res) => {
 			resultByTrainers[id] = { id, name: firstname, activities: [] };
 		});
 
-		activities.result.forEach(({ id, id_trainer, label }) => {
+		activities.result.forEach(({ id, id_trainer, label, group_label }) => {
 			if (!resultByTrainers[id_trainer]) return;
 
-			resultByTrainers[id_trainer].activities.push({ id, label });
+			resultByTrainers[id_trainer].activities.push({ id, label, group_label });
 		});
 
 		res.send({
@@ -160,7 +155,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 					u.firstname,
 					s.date,
 					a.duration,
-					s.id,
+					s.id id_spot,
 					a.spots
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
@@ -175,6 +170,57 @@ router.route("/get-all-slots").get(async (req, res) => {
 		);
 
 		res.send(slots);
+	} catch (err) {
+		res.send({
+			error: err.error || err
+		});
+	}
+});
+
+router.route("/get-all-packages").get(async (req, res) => {
+	try {
+		const data = await backend.handleQuery(
+			`SELECT 
+				p.id,
+				p.label,
+				p.price,
+				p.number_of_session,
+				p.validity_period,
+				a.id activity_id,
+				a.label activity_label
+				
+			FROM package p 
+			JOIN package_activity pa on pa.id_package = p.id
+			JOIN activity a on a.id = pa.id_activity
+
+			WHERE p.is_public = 1`,
+			[],
+			null,
+			true
+		);
+
+		const result = {};
+		data.result.forEach(item => {
+			if (!result[item.id]) {
+				result[item.id] = {
+					id: item.id,
+					label: item.label,
+					price: item.price,
+					number_of_session: item.number_of_session,
+					validity_period: item.validity_period,
+					activities: []
+				};
+			}
+
+			result[item.id].activities.push({
+				label: item.activity_label,
+				id: item.activity_id
+			});
+		});
+
+		res.send({
+			result: shuffle(Object.values(result))
+		});
 	} catch (err) {
 		res.send({
 			error: err.error || err
@@ -234,9 +280,9 @@ router.route("/get-trainers-description").get(async (req, res) => {
 			name: "Chloe Ternier",
 			description: `Après avoir été infirmière pendant près de 10 ans, j'ai choisi de changer de voie pour m'investir dans le bien-être canin. Passionnée de sport (course à pied et triathlon), je suis persuadée que la pratique des sports canins peut permettre d'améliorer grandement non seulement la relation humain/chien, mais également aider à résoudre de nombreux troubles du comportement chez le chien.
 	
-	J'ai également conscience que de nombreux propriétaires ont besoin d'être guidés dans l'éducation de leur chien, d'apprendre à communiquer avec lui, à répondre à ses besoins. Mais aussi du fait que ces propriétaires sont de plus en plus soucieux du bien-être de leur animal.  J'ai donc débuté ma formation de cynologiste en septembre 2020, avant de quitter mon poste à l'hôpital au mois de juillet suivant afin de me consacrer entièrement à cette reconversion et à ce projet.
+J'ai également conscience que de nombreux propriétaires ont besoin d'être guidés dans l'éducation de leur chien, d'apprendre à communiquer avec lui, à répondre à ses besoins. Mais aussi du fait que ces propriétaires sont de plus en plus soucieux du bien-être de leur animal.  J'ai donc débuté ma formation de cynologiste en septembre 2020, avant de quitter mon poste à l'hôpital au mois de juillet suivant afin de me consacrer entièrement à cette reconversion et à ce projet.
 	
-	J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`,
+J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`,
 			photo: "/assets/medias/chloe.jpg"
 		},
 		{
@@ -244,9 +290,9 @@ router.route("/get-trainers-description").get(async (req, res) => {
 			name: "Elodie Decouleur",
 			description: `J'ai été commerciale durant 8 ans, avant d'être pendant 2 ans chef de publicité. En septembre 2020, j'ai décidé d'arrêter mon activité salariée, afin de me consacrer pleinement à mon activité secondaire, l'éducation et la rééducation des chiens de compagnie.
 	
-	Je suis passionnée de chiens depuis toujours, mais c'est en 2016 que j'ai validé le diplôme d'éducatrice comportementaliste, Cynologiste et que j'ai ouvert Amity Dog.
+Je suis passionnée de chiens depuis toujours, mais c'est en 2016 que j'ai validé le diplôme d'éducatrice comportementaliste, Cynologiste et que j'ai ouvert Amity Dog.
 	
-	J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`,
+J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`,
 			photo: "/assets/medias/FB_IMG_1599744511817.jpg"
 		}
 	];

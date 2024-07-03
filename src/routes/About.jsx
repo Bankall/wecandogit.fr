@@ -11,7 +11,7 @@ import "./About.css";
 import { useLocation } from "react-router-dom";
 import { Interweave } from "interweave";
 
-export default function About() {
+function About() {
 	const trainers = useFetch("/get-trainers-description", () => {});
 	const location = useLocation();
 

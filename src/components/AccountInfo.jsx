@@ -66,7 +66,9 @@ export default function AccountInfo() {
 			) : (
 				<Loading />
 			)}
-			<DashboardListComponent title='Mes Animaux' addLabel='Ajouter un animal' type='dog' />
+			<div className='box'>
+				<DashboardListComponent title='Mes Animaux' addLabel='Ajouter un animal' type='dog' />
+			</div>
 		</>
 	);
 }

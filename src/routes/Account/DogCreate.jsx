@@ -1,8 +1,8 @@
 import { Dog } from "../../data/dashboard-form-data";
 import { Component } from "../../components/DashboardCreateComponent";
 
-export function CreateRoute() {
-	return <Component type='dog' rawformData={Dog} />;
+function CreateRoute() {
+	return <Component type='dog' rawformData={Dog} title='Ajouter un animal' />;
 }
 
 export { CreateRoute as Component };

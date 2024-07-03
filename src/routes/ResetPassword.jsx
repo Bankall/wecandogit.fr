@@ -1,7 +1,7 @@
 import { FormikWrapper } from "../utils/utils.formik";
 import axios from "axios";
 
-export default function ResetPassword() {
+function ResetPassword() {
 	const form = [
 		{
 			name: "email",
@@ -46,3 +46,5 @@ export default function ResetPassword() {
 		</section>
 	);
 }
+
+export { ResetPassword as Component };

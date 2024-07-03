@@ -35,7 +35,7 @@ export default function Footer() {
 							{trainer.activities.map(activity => {
 								return (
 									<li key={activity.id}>
-										<Link to={`/activite/${activity.id}/${encodeURIComponent(activity.label.replace(/\s/gi, "-")).toLowerCase()}`}>{activity.label}</Link>
+										<Link to={`/activites/#${activity.group_label}`}>{activity.label}</Link>
 									</li>
 								);
 							})}
@@ -46,7 +46,7 @@ export default function Footer() {
 						<Link to='/agenda'>Notre agenda</Link>
 					</li>
 					<li>
-						<Link to='/reservations'>Mes réservations</Link>
+						<Link to='/account/#reservations'>Mes réservations</Link>
 					</li>
 					<li>
 						<Link to='/formules-et-tarifs'>Formules et tarifs</Link>

@@ -75,6 +75,10 @@ header .tools a .cart-item-count {
 	text-align: center;
 }
 
+header .disabled {
+	display: none;
+}
+
 .burger-menu {
 	height: 30px;
 	padding: 6px 0;

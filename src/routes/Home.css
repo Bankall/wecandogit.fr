@@ -68,13 +68,6 @@ section.hero h2 {
 	padding-right: 5px;
 }
 
-.widgets .box button {
-	padding: 0.375rem 0.76rem;
-	font-size: 11px;
-	background: var(--accent-color-2);
-	border: var(--accent-color-2);
-}
-
 .home .center {
 	margin-top: 40px;
 }
