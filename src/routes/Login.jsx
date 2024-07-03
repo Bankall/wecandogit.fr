@@ -15,7 +15,7 @@ export default function Login() {
 	const GoogleOAuthUrl = useFetch({
 		url: "/auth/oauth/get-google-redirect-url",
 		data: {
-			redirect: params.redirect ? `/${params.redirect}` : undefined
+			redirect: params.redirect ? `/${params.redirect}` : ""
 		}
 	});
 
