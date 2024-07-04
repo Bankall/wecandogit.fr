@@ -69,8 +69,6 @@ router.route("/oauth/callback/").get(async (req, res) => {
 			if (err) next(err);
 
 			req.session.email = googleUser.email;
-
-			req.session.redirect = redirect;
 			req.session.cart = cart;
 
 			let user = await backend.get({ table: "user", query: { email: googleUser.email } });
@@ -96,11 +94,10 @@ router.route("/oauth/callback/").get(async (req, res) => {
 			res.cookie("username", googleUser.given_name);
 			res.cookie("email", googleUser.email);
 
-			res.redirect(config.get("FRONT_URI") + (req.body.redirect ? "/" + req.body.redirect : "/account"));
+			res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
 		});
 	} catch (err) {
-		console.log(err);
-		res.redirect(config.get("FRONT_URI") + (req.body.redirect ? "/" + req.body.redirect : "/account"));
+		res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
 	}
 });
 
@@ -130,7 +127,7 @@ router.route("/create-user").post(async (req, res, next) => {
 
 			res.send({
 				ok: true,
-				location: req.body.redirect ? "/" + req.body.redirect : "/account"
+				location: req.body.redirect || "/account"
 			});
 		});
 	} catch (err) {
@@ -189,7 +186,7 @@ router.route("/login").post(async (req, res) => {
 
 			res.send({
 				ok: true,
-				location: req.body.redirect ? "/" + req.body.redirect : "/account"
+				location: req.body.redirect || "/account"
 			});
 		});
 	} catch (err) {
@@ -199,7 +196,7 @@ router.route("/login").post(async (req, res) => {
 	}
 });
 
-router.route("/logout").get((req, res) => {
+router.route("/logout").all((req, res) => {
 	req.session.destroy();
 
 	res.cookie("username", "");

@@ -58,49 +58,6 @@ router.route("/me").get(async (req, res) => {
 	}
 });
 
-router.route("/get-activities-by-trainer").get(async (req, res) => {
-	try {
-		const activities = await backend.get({
-			table: "activity",
-			query: {
-				is_public: 1
-			}
-		});
-
-		const trainers = await backend.get({
-			table: "user",
-			query: {
-				is_trainer: 1
-			}
-		});
-
-		if (!activities.result?.length || !trainers.result?.length) {
-			throw { error: "Aucune activitée disponible" };
-		}
-
-		const resultByTrainers = {};
-
-		trainers.result.forEach(trainer => {
-			const { id, firstname } = trainer;
-			resultByTrainers[id] = { id, name: firstname, activities: [] };
-		});
-
-		activities.result.forEach(({ id, id_trainer, label, group_label }) => {
-			if (!resultByTrainers[id_trainer]) return;
-
-			resultByTrainers[id_trainer].activities.push({ id, label, group_label });
-		});
-
-		res.send({
-			result: shuffle(Object.values(resultByTrainers).filter(trainer => !!trainer.activities.length))
-		});
-	} catch (err) {
-		res.send({
-			error: err.error
-		});
-	}
-});
-
 const getNextSlotsQuery = `
 	SELECT 
 		a.label,
@@ -183,6 +140,7 @@ router.route("/get-all-packages").get(async (req, res) => {
 			`SELECT 
 				p.id,
 				p.label,
+				p.description,
 				p.price,
 				p.number_of_session,
 				p.validity_period,
@@ -205,6 +163,7 @@ router.route("/get-all-packages").get(async (req, res) => {
 				result[item.id] = {
 					id: item.id,
 					label: item.label,
+					description: item.description,
 					price: item.price,
 					number_of_session: item.number_of_session,
 					validity_period: item.validity_period,
@@ -257,10 +216,16 @@ router.route("/get-all-activities").get(async (req, res) => {
 			if (!activity_group[group_label]) {
 				activity_group[group_label] = {
 					label: group_label,
-					activites: []
+					activities: []
 				};
 			}
-			activity_group[group_label].activites.push(activity);
+
+			const alreadyExist = activity_group[group_label].activities.filter(item => item.label === activity.label).length;
+			if (alreadyExist) {
+				return;
+			}
+
+			activity_group[group_label].activities.push(activity);
 		});
 
 		res.send({

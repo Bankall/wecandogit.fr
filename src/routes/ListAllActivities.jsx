@@ -5,13 +5,21 @@ import { useLocation } from "react-router-dom";
 function ListAllActivities() {
 	const location = useLocation();
 	const activities = useFetch("/get-all-activities");
-	const [currentMenu, setCurrentMenu] = useState(location.hash ? decodeURIComponent(location.hash.slice(1)) : false);
+	const [currentMenu, setCurrentMenu] = useState(false);
 
 	useEffect(() => {
 		if (activities.data && !currentMenu) {
 			setCurrentMenu(activities.data.result[0].label);
 		}
 	}, [activities]);
+
+	useEffect(() => {
+		const hash = location.hash.slice(1);
+		if (hash) {
+			setCurrentMenu(decodeURIComponent(hash));
+			document.querySelector(".activities").scrollIntoView({ behavior: "smooth" });
+		}
+	}, [location]);
 
 	const onMenuClick = event => {
 		const name = event.target.getAttribute("name");
@@ -46,7 +54,7 @@ function ListAllActivities() {
 								{currentMenu &&
 									activities.data?.result
 										.filter((item, index) => currentMenu === item.label)[0]
-										.activites.map((activity, index) => (
+										.activities.map((activity, index) => (
 											<div className='card' key={index}>
 												<div className='top-line'>{activity.label}</div>
 												<div className='content'>{activity.long_description || activity.description}</div>

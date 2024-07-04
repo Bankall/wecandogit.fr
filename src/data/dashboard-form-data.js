@@ -112,6 +112,12 @@ const Package = [
 		uitype: "text"
 	},
 	{
+		name: "description",
+		type: "string",
+		label: "Description",
+		uitype: "textarea"
+	},
+	{
 		name: "number_of_session",
 		type: "number",
 		label: "Nombre de séances",

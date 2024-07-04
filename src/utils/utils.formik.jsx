@@ -64,11 +64,16 @@ const ExtractInitialValues = async data => {
 		if (value.data_url) {
 			const response = await axios(value.data_url, { withCredentials: true });
 			const defaults = (typeof value.default !== "undefined" ? value.default.toString() : "").split(",");
-			value.default = {};
+
+			if (value.uitype !== "select") {
+				value.default = {};
+			}
 
 			if (response.data?.length) {
 				value.data = response.data?.map(item => {
-					value.default[item.id] = defaults.includes(item.id.toString());
+					if (value.uitype !== "select") {
+						value.default[item.id] = defaults.includes(item.id.toString());
+					}
 
 					return {
 						key: item.label,

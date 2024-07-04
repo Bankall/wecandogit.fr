@@ -4,7 +4,7 @@ import { useFetch } from "../hooks/useFetch";
 import "./Footer.css";
 
 export default function Footer() {
-	const activities = useFetch("/get-activities-by-trainer");
+	const activities = useFetch("/get-all-activities");
 
 	return (
 		<footer>
@@ -28,14 +28,14 @@ export default function Footer() {
 				</ul>
 
 				{activities.data?.result &&
-					activities.data?.result.map(trainer => (
-						<ul key={trainer.id}>
-							<li className='no-list-style'>{trainer.name}</li>
+					activities.data?.result.map((group, index) => (
+						<ul key={index}>
+							<li className='no-list-style'>{group.label}</li>
 
-							{trainer.activities.map(activity => {
+							{group.activities.map(activity => {
 								return (
 									<li key={activity.id}>
-										<Link to={`/activites/#${activity.group_label}`}>{activity.label}</Link>
+										<Link to={`/activites/#${activity.group_label.trim()}`}>{activity.label}</Link>
 									</li>
 								);
 							})}

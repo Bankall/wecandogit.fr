@@ -6,13 +6,21 @@ import { addToCart } from "../utils/utils.cart.jsx";
 function Packages() {
 	const location = useLocation();
 	const packages = useFetch("/get-all-packages");
-	const [currentMenu, setCurrentMenu] = useState(location.hash ? decodeURIComponent(location.hash.slice(1)) : false);
+	const [currentMenu, setCurrentMenu] = useState(false);
 
 	useEffect(() => {
 		if (packages.data && !currentMenu) {
 			setCurrentMenu(packages.data.result[0].label);
 		}
 	}, [packages]);
+
+	useEffect(() => {
+		const hash = location.hash.slice(1);
+		if (hash) {
+			setCurrentMenu(decodeURIComponent(hash));
+			document.querySelector(".packages").scrollIntoView({ behavior: "smooth" });
+		}
+	}, [location]);
 
 	const onMenuClick = event => {
 		const name = event.target.getAttribute("name");
@@ -48,7 +56,8 @@ function Packages() {
 									.filter((item, index) => item.label === currentMenu)
 									.map((_package, index) => (
 										<div className='card' key={index}>
-											<div className='top-line'>Activités inclues: </div>
+											<div className=''>{_package.description}</div>
+											<div className='top-line margin-t-20'>Activités inclues: </div>
 											<div className='content'>
 												{_package.activities.map(activity => (
 													<div className='row' key={activity.id}>

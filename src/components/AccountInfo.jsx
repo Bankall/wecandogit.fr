@@ -66,7 +66,7 @@ export default function AccountInfo() {
 			) : (
 				<Loading />
 			)}
-			<div className='box'>
+			<div className='box margin-t-20'>
 				<DashboardListComponent title='Mes Animaux' addLabel='Ajouter un animal' type='dog' />
 			</div>
 		</>

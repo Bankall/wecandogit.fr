@@ -2,7 +2,7 @@ import { useCookies } from "react-cookie";
 import { useFetch } from "../hooks/useFetch";
 
 import "./Account.css";
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 
 import Loading from "../components/Loading";
 import { useLocation } from "react-router-dom";
@@ -13,7 +13,7 @@ const DashboardListComponent = lazy(() => import("../components/DashboardListCom
 function Account() {
 	const location = useLocation();
 	const [cookies, setCookies] = useCookies();
-	const [currentMenu, setCurrentMenu] = useState(location.hash ? location.hash.slice(1) : "reservations");
+	const [currentMenu, setCurrentMenu] = useState("reservations");
 
 	const me = useFetch("/me");
 
@@ -27,6 +27,14 @@ function Account() {
 		window.location.hash = `#${name}`;
 	};
 
+	useEffect(() => {
+		const hash = location.hash.slice(1);
+		if (hash) {
+			setCurrentMenu(decodeURIComponent(hash));
+			document.querySelector(".account").scrollIntoView({ behavior: "smooth" });
+		}
+	}, [location]);
+
 	const switchRouter = param => {
 		switch (param) {
 			case "profile":
@@ -36,7 +44,7 @@ function Account() {
 			case "packages":
 				return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
 			case "activities":
-				return <DashboardListComponent addLabel='Ajouter une activité' title='Mes activités' type='activity' />;
+				return <DashboardListComponent addLabel='Ajouter une activité' title='Nos activités' type='activity' />;
 			case "slots":
 				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' />;
 		}
@@ -60,7 +68,7 @@ function Account() {
 							{me.data?.result.is_trainer ? (
 								<>
 									<li name='activities' className={currentMenu === "activities" ? "active" : ""}>
-										Mes Activités
+										Nos Activités
 									</li>
 									<li name='slots' className={currentMenu === "slots" ? "active" : ""}>
 										Mes Créneaux

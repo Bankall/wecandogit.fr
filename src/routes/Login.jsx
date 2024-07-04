@@ -11,11 +11,12 @@ export default function Login() {
 	const { hash } = useLocation();
 	const navigate = useNavigate();
 	const params = useParams();
+	const redirect = params.redirect ? `/${params.redirect}` : "";
 
 	const GoogleOAuthUrl = useFetch({
 		url: "/auth/oauth/get-google-redirect-url",
 		data: {
-			redirect: params.redirect ? `/${params.redirect}` : ""
+			redirect
 		}
 	});
 
@@ -47,7 +48,7 @@ export default function Login() {
 								setSubmitionError("");
 
 								try {
-									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", { ...values, redirect: `/${params.redirect}` }, { withCredentials: true });
+									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", { ...values, redirect }, { withCredentials: true });
 
 									if (response.data.error) throw response.data.error;
 									if (response.data.ok) {

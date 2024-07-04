@@ -76,10 +76,7 @@ router
 router.route("/slot").get(async (req, res) => {
 	try {
 		const activities = await backend.get({
-			table: "activity",
-			query: {
-				id_trainer: req.session.user_id
-			}
+			table: "activity"
 		});
 
 		const slots = await backend.get({
