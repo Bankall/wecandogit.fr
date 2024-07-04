@@ -66,7 +66,7 @@ const getNextSlotsQuery = `
 		s.id
 	FROM slot s
 	INNER JOIN activity a on a.id = s.id_activity
-	INNER JOIN user u on u.id = a.id_trainer
+	INNER JOIN user u on u.id = s.id_trainer
 		WHERE	a.is_public = 1
 		AND 	a.is_collective = ?
 		AND 	s.date > CURRENT_TIMESTAMP()
