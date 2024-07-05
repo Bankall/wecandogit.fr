@@ -2,6 +2,7 @@ import { useState } from "react";
 
 const Button = ({ children, onClick, className }) => {
 	const [error, setError] = useState(false);
+	const [content, setContent] = useState(children);
 	const [isLoading, setIsLoading] = useState(false);
 
 	const clickWrapper = async () => {
@@ -20,7 +21,7 @@ const Button = ({ children, onClick, className }) => {
 	return (
 		<>
 			<button className={`${className}${isLoading ? " loading" : ""}`} onClick={clickWrapper}>
-				{children}
+				{content}
 			</button>
 			{error && <span>{error}</span>}
 		</>

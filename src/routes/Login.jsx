@@ -48,7 +48,7 @@ export default function Login() {
 								setSubmitionError("");
 
 								try {
-									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", { ...values, redirect }, { withCredentials: true });
+									const response = await axios.post(hash === "#register" ? "/auth/create-user" : "/auth/login", { ...values, redirect });
 
 									if (response.data.error) throw response.data.error;
 									if (response.data.ok) {

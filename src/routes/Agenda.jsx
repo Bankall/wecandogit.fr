@@ -16,18 +16,18 @@ const renderEventContent = eventInfo => {
 		<>
 			<span className='flex-row'>
 				<i>
-					{data.label} - ({data.firstname}) - 0/{data.spots}
+					{data.label} - ({data.firstname}) - {data.reserved || 0}/{data.spots}
 				</i>
 
 				<span className='flex-row small-gap'>
 					{data.instant_reservation ||
-						(true && (
+						(false && (
 							<Button
 								className='small disabled'
 								onClick={() => {
 									instantBooking({
 										type: "slot",
-										id: data.id_spot
+										id: data.id_slot
 									});
 								}}>
 								Réserver
@@ -39,7 +39,7 @@ const renderEventContent = eventInfo => {
 						onClick={() => {
 							addToCart({
 								type: "slot",
-								id: data.id_spot
+								id: data.id_slot
 							});
 						}}>
 						Ajouter au panier

@@ -14,6 +14,8 @@ if (import.meta.env.VITE_API_ENDPOINT) {
 	axios.defaults.baseURL = import.meta.env.VITE_API_ENDPOINT;
 }
 
+axios.defaults.withCredentials = true;
+
 const isLoggedIn = async () => {
 	try {
 		const res = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/is-logged-in`, { credentials: "include" });

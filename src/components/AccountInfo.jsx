@@ -12,7 +12,7 @@ export default function AccountInfo() {
 	useEffect(() => {
 		const fetch = async () => {
 			try {
-				const response = await axios.get("/me", { withCredentials: true });
+				const response = await axios.get("/me");
 
 				if (response.data.ok) {
 					setFormData(
@@ -46,7 +46,7 @@ export default function AccountInfo() {
 						setSubmitionFeedback("");
 
 						try {
-							const response = await axios.put("update-user", values, { withCredentials: true });
+							const response = await axios.put("update-user", values);
 
 							if (response.data.error) throw response.data.error;
 							if (response.data.ok) {

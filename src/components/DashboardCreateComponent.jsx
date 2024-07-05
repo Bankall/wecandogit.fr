@@ -30,7 +30,7 @@ export function DashboardCreateComponent({ title, type, rawformData }) {
 									}
 								});
 
-								const response = await axios.post(`/${type}`, fixedValues, { withCredentials: true });
+								const response = await axios.post(`/${type}`, fixedValues);
 
 								if (response.data.error) throw response.data.error;
 								if (response.data.id) {

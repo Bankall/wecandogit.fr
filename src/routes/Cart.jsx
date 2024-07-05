@@ -3,18 +3,25 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const ListItem = ({ item }) => {
-	const updateCartItem = async (item, value) => {
+	const updateCartItem = async (action, item, value) => {
 		try {
-			const response = await axios.put(
-				`/cart/${item.type}/${item.id}`,
-				{
+			const params = {
+				url: `/cart/${item.type}/${item.id}`
+			};
+
+			if (action === "delete") {
+				params.method = "DELETE";
+			} else {
+				params.method = "PUT";
+				params.data = {
 					paid_later: value === "later"
-				},
-				{ withCredentials: true }
-			);
+				};
+			}
+
+			const response = await axios(params);
 
 			if (response.data.ok) {
-				window.dispatchEvent(new Event("cart-item-updated"));
+				window.dispatchEvent(new Event("cart-modified"));
 			}
 		} catch (err) {
 			console.log("Une erreur s'est produite", err);
@@ -24,17 +31,25 @@ const ListItem = ({ item }) => {
 	return (
 		<div className='flex-row row space-between'>
 			<span>{item.label}</span>
-			<span>{item.price}€</span>
 			<span>
 				<select
 					name='payment-options'
 					value={item.paid_later ? "later" : "direct"}
 					onChange={event => {
-						updateCartItem(item, event.currentTarget.value);
+						updateCartItem("update-payment", item, event.currentTarget.value);
 					}}>
 					<option value='direct'>Payer en ligne</option>
 					<option value='later'>Payer en personne</option>
 				</select>
+			</span>
+			<span className='flex-row'>
+				<span>{item.price}€</span>
+				<span
+					onClick={() => {
+						updateCartItem("delete", item);
+					}}>
+					<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
+				</span>
 			</span>
 		</div>
 	);
@@ -42,7 +57,7 @@ const ListItem = ({ item }) => {
 
 const fetchCartItems = async setCartItems => {
 	try {
-		const carItems = await axios.get("/cart/full-cart", { withCredentials: true });
+		const carItems = await axios.get("/cart/full-cart");
 		setCartItems(carItems);
 	} catch (err) {
 		console.error(err);
@@ -58,8 +73,8 @@ function Cart() {
 		};
 
 		fetch();
-		window.addEventListener("cart-item-updated", fetch);
-		return () => window.removeEventListener("cart-item-updated", fetch);
+		window.addEventListener("cart-modified", fetch);
+		return () => window.removeEventListener("cart-modified", fetch);
 	}, []);
 
 	return (
@@ -110,11 +125,11 @@ function Cart() {
 
 									<div className='margin-t-20 right'>
 										{trainer.total > 0 ? (
-											<Link className='disabled' to={`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`}>
+											<Link className='' to={`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`}>
 												<button>Payer</button>
 											</Link>
 										) : (
-											<Link className='disabled' to={`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`}>
+											<Link className='' to={`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`}>
 												<button>Réserver</button>
 											</Link>
 										)}

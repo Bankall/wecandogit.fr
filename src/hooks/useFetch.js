@@ -9,17 +9,21 @@ export function useFetch(options, callback) {
 	const url = typeof options === "string" ? options : options.url;
 	useEffect(() => {
 		const controller = new AbortController();
-
 		setLoading(true);
 
-		axios({
+		const params = {
 			url,
 			method: options.data ? "post" : "get",
 			data: options.data,
 			headers: options.headers,
-			signal: controller.signal,
-			withCredentials: typeof options.withCredentials !== "undefined" ? options.withCredentials : true
-		})
+			signal: controller.signal
+		};
+
+		if (typeof options.withCredentials !== "undefined") {
+			params.withCredentials = options.withCredentials;
+		}
+
+		axios(params)
 			.then(response => {
 				setError(null);
 				setData(response.data);

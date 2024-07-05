@@ -112,19 +112,47 @@ router.route("/get-all-slots").get(async (req, res) => {
 					u.firstname,
 					s.date,
 					a.duration,
-					s.id id_spot,
+					s.id id_slot,
 					a.spots
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
-				INNER JOIN user u on u.id = a.id_trainer
-					WHERE	a.is_public = 1
-					AND 	s.date > CURRENT_TIMESTAMP()
+				INNER JOIN user u on u.id = s.id_trainer
+					WHERE 	s.date > CURRENT_TIMESTAMP()
 
 				ORDER BY date asc`,
 			null,
 			"get-slot",
 			true
 		);
+
+		const reservations = await backend.handleQuery(
+			`
+			SELECT
+				s.id id_slot,
+				count(r.id) reserved
+				
+			FROM reservation r 
+			JOIN slot s on s.id = r.id_slot
+			WHERE s.date > CURRENT_TIMESTAMP()
+			AND r.enabled = 1
+
+			GROUP BY 1`,
+			null,
+			"get-slot",
+			true
+		);
+
+		const reservationBySlot = {};
+		if (reservations.result.length) {
+			reservations.result.forEach(reservation => {
+				reservationBySlot[reservation.id_slot] = reservation.reserved;
+			});
+		}
+
+		slots.result = slots.result.map(slot => {
+			slot.reserved = reservationBySlot[slot.id_slot];
+			return slot;
+		});
 
 		res.send(slots);
 	} catch (err) {

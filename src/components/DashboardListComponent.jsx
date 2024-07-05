@@ -1,8 +1,39 @@
-import { useFetch } from "../hooks/useFetch";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { useState, useEffect } from "react";
 
-export default function DashboardListComponent({ type, title, addLabel }) {
-	const response = useFetch(`/${type}`);
+export default function DashboardListComponent({ type, title, addLabel, allowedActions }) {
+	const [response, setResponse] = useState(false);
+	const handleDelete = async id => {
+		try {
+			const response = await axios.put(`/${type}/${id}`, { enabled: 0 });
+			window.dispatchEvent(new Event(`refresh-list-${type}`));
+		} catch (err) {
+			console.error(err);
+		}
+	};
+
+	useEffect(() => {
+		const fetch = async () => {
+			try {
+				const response = await axios.get(`/${type}`);
+				setResponse(response);
+			} catch (err) {
+				console.error(err);
+			}
+		};
+
+		fetch();
+		window.addEventListener(`refresh-list-${type}`, fetch);
+
+		return () => {
+			window.removeEventListener(`refresh-list-${type}`, fetch);
+		};
+	}, []);
+
+	if (!allowedActions) {
+		allowedActions = ["modify"];
+	}
 
 	return (
 		<>
@@ -16,9 +47,20 @@ export default function DashboardListComponent({ type, title, addLabel }) {
 										{item.group_label ? `${item.group_label} - ` : ""}
 										{item.label}
 									</span>
-									<Link to={`/account/${type}/edit/${item.id}`}>
-										<button className='small'>Modifier</button>
-									</Link>
+									{allowedActions.includes("modify") && (
+										<Link to={`/account/${type}/edit/${item.id}`}>
+											<button className='small'>Modifier</button>
+										</Link>
+									)}
+									{allowedActions.includes("delete") && (
+										<button
+											className='small'
+											onClick={() => {
+												handleDelete(item.id);
+											}}>
+											Supprimer
+										</button>
+									)}
 								</div>
 							);
 					  })

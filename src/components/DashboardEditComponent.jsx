@@ -18,7 +18,7 @@ export default function DashboardEditComponent({ type, rawformData }) {
 		setSubmitionFeedback("");
 
 		try {
-			const response = await axios.put(`/${type}/${params.id}`, values, { withCredentials: true });
+			const response = await axios.put(`/${type}/${params.id}`, values);
 
 			if (response.data.error) throw response.data.error;
 			if (response.data.id) {
@@ -35,7 +35,7 @@ export default function DashboardEditComponent({ type, rawformData }) {
 	useEffect(() => {
 		const fetch = async () => {
 			try {
-				const response = await axios.get(`/${type}/${params.id}`, { withCredentials: true });
+				const response = await axios.get(`/${type}/${params.id}`);
 
 				if (Object.keys(response.data).length) {
 					setFormData(

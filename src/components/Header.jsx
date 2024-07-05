@@ -14,15 +14,15 @@ export default function Header() {
 	useEffect(() => {
 		const fetch = () => {
 			axios
-				.get("/cart/count", { withCredentials: true })
+				.get("/cart/count")
 				.then(res => setCartCount(res.data.count))
 				.catch(err => console.error(err));
 		};
 
-		window.addEventListener("cart-item-added", fetch);
+		window.addEventListener("cart-modified", fetch);
 		fetch();
 
-		return () => window.removeEventListener("cart-item-added", fetch);
+		return () => window.removeEventListener("cart-modified", fetch);
 	}, []);
 
 	return (

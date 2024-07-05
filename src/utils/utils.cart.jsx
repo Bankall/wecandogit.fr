@@ -2,8 +2,8 @@ import axios from "axios";
 
 const addToCart = async ({ type, id }) => {
 	try {
-		await axios.post(`/cart/add/`, { type, id }, { withCredentials: true });
-		window.dispatchEvent(new Event("cart-item-added"));
+		await axios.post(`/cart/add/`, { type, id });
+		window.dispatchEvent(new Event("cart-modified"));
 		return true;
 	} catch (err) {
 		console.log(err);

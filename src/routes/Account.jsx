@@ -40,7 +40,7 @@ function Account() {
 			case "profile":
 				return <AccountInfo />;
 			case "reservations":
-				return <DashboardListComponent title='Mes réservations' type='reservation' />;
+				return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete"]} />;
 			case "packages":
 				return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
 			case "activities":

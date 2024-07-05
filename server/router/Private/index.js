@@ -73,6 +73,32 @@ router
 		}
 	});
 
+router.route("/reservation").get(async (req, res) => {
+	try {
+		const reservation = await backend.handleQuery(
+			`SELECT 
+				CONCAT(s.date, ' - ', a.label, ' - ', d.label) label,
+				r.id
+
+			FROM reservation r 
+			JOIN slot s on s.id = r.id_slot
+			JOIN activity a on a.id = s.id_activity
+			JOIN dog d on d.id = r.id_dog
+			JOIN user u on u.id = d.id_user
+			WHERE u.id = ? AND enabled = 1`,
+			[req.session.user_id],
+			null,
+			true
+		);
+
+		res.send(reservation.result);
+	} catch (err) {
+		res.send({
+			error: err.message || err
+		});
+	}
+});
+
 router.route("/slot").get(async (req, res) => {
 	try {
 		const activities = await backend.get({
