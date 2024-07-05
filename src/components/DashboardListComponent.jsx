@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useState, useEffect } from "react";
 
 export default function DashboardListComponent({ type, title, addLabel, allowedActions }) {
 	const [response, setResponse] = useState(false);
+	const hash = useLocation();
 	const handleDelete = async id => {
 		try {
 			const response = await axios.put(`/${type}/${id}`, { enabled: 0 });
@@ -29,7 +30,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 		return () => {
 			window.removeEventListener(`refresh-list-${type}`, fetch);
 		};
-	}, []);
+	}, [hash]);
 
 	if (!allowedActions) {
 		allowedActions = ["modify"];

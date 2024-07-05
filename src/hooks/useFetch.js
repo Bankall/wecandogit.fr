@@ -30,7 +30,9 @@ export function useFetch(options, callback) {
 				setLoading(false);
 
 				if (typeof callback === "function") {
-					callback(response.data);
+					setTimeout(() => {
+						callback(response.data);
+					}, 10);
 				}
 			})
 			.catch(error => {

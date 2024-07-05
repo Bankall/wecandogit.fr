@@ -16,7 +16,17 @@ const renderEventContent = eventInfo => {
 		<>
 			<span className='flex-row'>
 				<i>
-					{data.label} - ({data.firstname}) - {data.reserved || 0}/{data.spots}
+					<span>
+						{data.label} - ({data.firstname}) - {(data.reserved || []).length}/{data.spots}
+					</span>
+
+					{data.reserved && data.reserved.length && (
+						<ul>
+							{data.reserved.map((dog, index) => (
+								<li key={index}>{dog}</li>
+							))}
+						</ul>
+					)}
 				</i>
 
 				<span className='flex-row small-gap'>

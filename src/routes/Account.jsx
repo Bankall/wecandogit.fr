@@ -13,9 +13,15 @@ const DashboardListComponent = lazy(() => import("../components/DashboardListCom
 function Account() {
 	const location = useLocation();
 	const [cookies, setCookies] = useCookies();
-	const [currentMenu, setCurrentMenu] = useState("reservations");
+	const [currentMenu, setCurrentMenu] = useState(false);
 
-	const me = useFetch("/me");
+	const me = useFetch("/me", me => {
+		if (me.result.is_trainer) {
+			setCurrentMenu("slots");
+		} else {
+			setCurrentMenu("reservations");
+		}
+	});
 
 	const onMenuClick = event => {
 		const name = event.target.getAttribute("name");
@@ -58,9 +64,12 @@ function Account() {
 				<div className='dashboard flex-row no-wrap'>
 					<div className='menu'>
 						<ul onClick={onMenuClick}>
-							<li name='reservations' className={currentMenu === "reservations" ? "active" : ""}>
-								Mes Reservations
-							</li>
+							{me.data?.result.is_trainer === 0 ? (
+								<li name='reservations' className={currentMenu === "reservations" ? "active" : ""}>
+									Mes Reservations
+								</li>
+							) : null}
+
 							<li name='profile' className={currentMenu === "profile" ? "active" : ""}>
 								Mes Informations
 							</li>

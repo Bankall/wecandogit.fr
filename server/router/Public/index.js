@@ -129,10 +129,11 @@ router.route("/get-all-slots").get(async (req, res) => {
 			`
 			SELECT
 				s.id id_slot,
-				count(r.id) reserved
+				concat(d.label, ' (', d.breed, ' ', d.sexe, ')') label
 				
 			FROM reservation r 
 			JOIN slot s on s.id = r.id_slot
+			JOIN dog d on d.id = r.id_dog
 			WHERE s.date > CURRENT_TIMESTAMP()
 			AND r.enabled = 1
 
@@ -145,7 +146,11 @@ router.route("/get-all-slots").get(async (req, res) => {
 		const reservationBySlot = {};
 		if (reservations.result.length) {
 			reservations.result.forEach(reservation => {
-				reservationBySlot[reservation.id_slot] = reservation.reserved;
+				if (!reservationBySlot[reservation.id_slot]) {
+					reservationBySlot[reservation.id_slot] = [];
+				}
+
+				reservationBySlot[reservation.id_slot].push(reservation.label);
 			});
 		}
 
