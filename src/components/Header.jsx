@@ -68,9 +68,9 @@ export default function Header() {
 					</Link>
 				</div>
 				<div className={isLoggedIn.loading ? "hidden" : isLoggedIn.data?.ok ? "" : "disabled"}>
-					<Link to={`${import.meta.env.VITE_API_ENDPOINT}/auth/logout`} title='Se deconnecter'>
+					<a href={`${import.meta.env.VITE_API_ENDPOINT}/auth/logout`} title='Se deconnecter'>
 						<i className='fa-solid fa-power-off'></i>
-					</Link>
+					</a>
 				</div>
 				<div className={`has-text${isLoggedIn.loading ? " hidden" : isLoggedIn.data?.ok ? " disabled" : ""}`}>
 					<Link to='/login'>

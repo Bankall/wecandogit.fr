@@ -125,13 +125,13 @@ function Cart() {
 
 									<div className='margin-t-20 right'>
 										{trainer.total > 0 ? (
-											<Link className='' to={`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`}>
+											<a className='' href={`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`}>
 												<button>Payer</button>
-											</Link>
+											</a>
 										) : (
-											<Link className='' to={`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`}>
+											<a className='' href={`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`}>
 												<button>Réserver</button>
-											</Link>
+											</a>
 										)}
 									</div>
 								</div>
