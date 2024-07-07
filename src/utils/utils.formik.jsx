@@ -4,6 +4,7 @@ import axios from "axios";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Formik, Form, Field, ErrorMessage, useFormikContext, FieldArray } from "formik";
 import { Interweave } from "interweave";
+import { useParams } from "react-router-dom";
 
 const JSONToYupSchemeConverter = data => {
 	const scheme = {};
@@ -57,7 +58,7 @@ const JSONToYupSchemeConverter = data => {
 	return Yup.object(scheme);
 };
 
-const ExtractInitialValues = async data => {
+const ExtractInitialValues = async (data, params) => {
 	const values = {};
 
 	for await (const value of data) {
@@ -88,6 +89,11 @@ const ExtractInitialValues = async data => {
 					key: "Selectionner une valeur"
 				});
 			}
+		}
+
+		if (value.default && value.default.toString().match(/^params:[a-z]+/)) {
+			const key = value.default.split(":")[1];
+			value.default = params[key];
 		}
 		values[value.name] = (() => {
 			switch (value.uitype) {
@@ -136,7 +142,7 @@ const HardcodeSpecialRules = data => {
 	});
 };
 
-const FormikBootstrapper = async data => {
+const FormikBootstrapper = async (data, params) => {
 	if (!data) {
 		return;
 	}
@@ -146,7 +152,7 @@ const FormikBootstrapper = async data => {
 	const bootstrapped = {};
 
 	bootstrapped.validationSchema = JSONToYupSchemeConverter(data);
-	bootstrapped.initialValues = await ExtractInitialValues(data);
+	bootstrapped.initialValues = await ExtractInitialValues(data, params);
 	bootstrapped.data = data;
 
 	return bootstrapped;
@@ -222,13 +228,14 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 	const [submitionError, setSubmitionError] = useState("");
 	const [submitionFeedback, setSubmitionFeedback] = useState("");
 	const [customIsSubmitting, setCustomIsSubmitting] = useState(false);
-
 	const [formOptions, setFormOptions] = useState(false);
+
+	const params = useParams();
 
 	useEffect(() => {
 		if (options.data) {
 			const bootStrap = async () => {
-				const { validationSchema, initialValues, data } = await FormikBootstrapper(options.data);
+				const { validationSchema, initialValues, data } = await FormikBootstrapper(options.data, params);
 				setFormOptions({ validationSchema, initialValues, data });
 			};
 

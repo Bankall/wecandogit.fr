@@ -1,9 +1,20 @@
 import axios from "axios";
 
-const addToCart = async ({ type, id }) => {
+const addToCart = async ({ type, id, element }) => {
 	try {
+		if (element) {
+			element.classList.add("loading");
+		}
+
 		await axios.post(`/cart/add/`, { type, id });
 		window.dispatchEvent(new Event("cart-modified"));
+
+		if (element) {
+			setTimeout(() => {
+				element?.classList?.remove("loading");
+			}, 1000);
+		}
+
 		return true;
 	} catch (err) {
 		console.log(err);

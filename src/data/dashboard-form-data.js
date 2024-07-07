@@ -104,7 +104,14 @@ const Slot = [
 	}
 ];
 
-const SlotBook = [
+const SlotBookForm = [
+	{
+		name: "id_slot",
+		label: "ID du créneau",
+		type: "number",
+		uitype: "hidden",
+		default: "params:id"
+	},
 	{
 		name: "dog_label",
 		label: "Nom du chien",
@@ -292,4 +299,4 @@ const Dog = [
 	}
 ];
 
-export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm, SlotBook };
+export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm, SlotBookForm };

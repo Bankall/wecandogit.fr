@@ -71,8 +71,8 @@ function Packages() {
 
 											<div className='center margin-t-10'>
 												<button
-													onClick={() => {
-														addToCart({ type: "package", id: _package.id });
+													onClick={event => {
+														addToCart({ type: "package", id: _package.id, element: event.target });
 													}}>
 													Ajouter au panier
 												</button>

@@ -73,10 +73,12 @@ router
 		}
 	});
 
-router.route("/reservation").get(async (req, res) => {
-	try {
-		const reservation = await backend.handleQuery(
-			`SELECT 
+router
+	.route("/reservation")
+	.get(async (req, res) => {
+		try {
+			const reservation = await backend.handleQuery(
+				`SELECT 
 				CONCAT(s.date, ' - ', a.label, ' - ', d.label) label,
 				r.id
 
@@ -86,18 +88,39 @@ router.route("/reservation").get(async (req, res) => {
 			JOIN dog d on d.id = r.id_dog
 			JOIN user u on u.id = d.id_user
 			WHERE u.id = ? AND enabled = 1`,
-			[req.session.user_id],
-			null,
-			true
-		);
+				[req.session.user_id],
+				null,
+				true
+			);
 
-		res.send(reservation.result);
-	} catch (err) {
-		res.send({
-			error: err.message || err
-		});
-	}
-});
+			res.send(reservation.result);
+		} catch (err) {
+			res.send({
+				error: err.message || err
+			});
+		}
+	})
+	.post(async (req, res, next) => {
+		try {
+			if (!req.body.id_dog && req.body.dog_label) {
+				const dog = await backend.post({
+					table: "dog",
+					body: {
+						id_user: 2,
+						label: req.body.dog_label
+					}
+				});
+
+				req.body.id_dog = dog.result.id;
+			}
+
+			next();
+		} catch (err) {
+			res.send({
+				error: err.message || err
+			});
+		}
+	});
 
 router.route("/slot").get(async (req, res) => {
 	try {
@@ -112,9 +135,12 @@ router.route("/slot").get(async (req, res) => {
 			}
 		});
 
-		for await (const slot of slots.result) {
-			slot.label = `${activities.result.filter(activity => activity.id === slot.id_activity)[0].label} - ${new Date(slot.date).toLocaleString()}`;
-		}
+		slots.result = slots.result
+			.filter(slot => new Date(slot.date) > Date.now())
+			.map(slot => {
+				slot.label = `${activities.result.filter(activity => activity.id === slot.id_activity)[0].label} - ${new Date(slot.date).toLocaleString()}`;
+				return slot;
+			});
 
 		res.send(slots.result);
 	} catch (err) {
@@ -146,6 +172,32 @@ router.route("/create-slots").post(async (req, res) => {
 	} catch (err) {
 		res.send({
 			error: err.error
+		});
+	}
+});
+
+router.route("/user_package").get(async (req, res) => {
+	try {
+		const user_packages = await backend.get({
+			table: "user_package",
+			query: {
+				id_user: req.session.user_id
+			}
+		});
+
+		for await (const user_package of user_packages.result) {
+			const _package = await backend.get({
+				table: "package",
+				id: user_package.id_package
+			});
+
+			user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session}`;
+		}
+
+		res.send(user_packages.result);
+	} catch (err) {
+		res.send({
+			error: err.message || error
 		});
 	}
 });

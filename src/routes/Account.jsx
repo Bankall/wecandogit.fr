@@ -16,6 +16,9 @@ function Account() {
 	const [currentMenu, setCurrentMenu] = useState(false);
 
 	const me = useFetch("/me", me => {
+		if (location.hash) {
+			return;
+		}
 		if (me.result.is_trainer) {
 			setCurrentMenu("slots");
 		} else {
@@ -49,6 +52,8 @@ function Account() {
 				return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete"]} />;
 			case "packages":
 				return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
+			case "user_packages":
+				return <DashboardListComponent title='Mes formules' type='user_package' allowedActions={[]} />;
 			case "activities":
 				return <DashboardListComponent addLabel='Ajouter une activité' title='Nos activités' type='activity' />;
 			case "slots":
@@ -65,16 +70,21 @@ function Account() {
 					<div className='menu'>
 						<ul onClick={onMenuClick}>
 							{me.data?.result.is_trainer === 0 ? (
-								<li name='reservations' className={currentMenu === "reservations" ? "active" : ""}>
-									Mes Reservations
-								</li>
+								<>
+									<li name='reservations' className={currentMenu === "reservations" ? "active" : ""}>
+										Mes Reservations
+									</li>
+									<li name='user_packages' className={currentMenu === "user_packages" ? "active" : ""}>
+										Mes Formules
+									</li>
+								</>
 							) : null}
 
 							<li name='profile' className={currentMenu === "profile" ? "active" : ""}>
 								Mes Informations
 							</li>
 
-							{me.data?.result.is_trainer ? (
+							{me.data?.result.is_trainer === 1 ? (
 								<>
 									<li name='activities' className={currentMenu === "activities" ? "active" : ""}>
 										Nos Activités

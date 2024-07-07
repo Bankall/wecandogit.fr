@@ -128,6 +128,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 		const reservations = await backend.handleQuery(
 			`
 			SELECT
+				r.id,
 				s.id id_slot,
 				concat(d.label, ' (', d.breed, ' ', d.sexe, ')') label
 				
@@ -137,7 +138,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 			WHERE s.date > CURRENT_TIMESTAMP()
 			AND r.enabled = 1
 
-			GROUP BY 1`,
+			GROUP BY 1, 2`,
 			null,
 			"get-slot",
 			true

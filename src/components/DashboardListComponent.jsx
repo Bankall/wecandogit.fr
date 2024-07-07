@@ -49,7 +49,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 										{item.label}
 									</span>
 									{allowedActions.includes("book-reservation") && (
-										<Link to={`/account/${type}/book/`}>
+										<Link to={`/account/${type}/book/${item.id}`}>
 											<button className='small'>Inscire un chien</button>
 										</Link>
 									)}

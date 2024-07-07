@@ -14,7 +14,7 @@ const ListItem = ({ item }) => {
 			} else {
 				params.method = "PUT";
 				params.data = {
-					paid_later: value === "later"
+					payment_type: value
 				};
 			}
 
@@ -34,16 +34,23 @@ const ListItem = ({ item }) => {
 			<span>
 				<select
 					name='payment-options'
-					value={item.paid_later ? "later" : "direct"}
+					value={item.payment_type || "direct"}
 					onChange={event => {
 						updateCartItem("update-payment", item, event.currentTarget.value);
 					}}>
 					<option value='direct'>Payer en ligne</option>
 					<option value='later'>Payer en personne</option>
+					{item.type === "slot" &&
+						item.package_available?.length &&
+						item.package_available.map((_package, index) => (
+							<option value={_package.id} key={index}>
+								Utiliser la formule {_package.label}
+							</option>
+						))}
 				</select>
 			</span>
 			<span className='flex-row'>
-				<span>{item.price}€</span>
+				<span className='price'>{item.price}€</span>
 				<span
 					onClick={() => {
 						updateCartItem("delete", item);

@@ -11,6 +11,7 @@ import { Button } from "../components/Button";
 
 const renderEventContent = eventInfo => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
+	const full = (data.reserved || []).length >= data.spots;
 
 	return (
 		<>
@@ -23,7 +24,7 @@ const renderEventContent = eventInfo => {
 					{data.reserved && data.reserved.length && (
 						<ul>
 							{data.reserved.map((dog, index) => (
-								<li key={index}>{dog}</li>
+								<li key={index}>{dog.replace(" ( )", "")}</li>
 							))}
 						</ul>
 					)}
@@ -45,7 +46,7 @@ const renderEventContent = eventInfo => {
 						))}
 
 					<Button
-						className='small'
+						className={`small${full ? " disabled" : ""}`}
 						onClick={() => {
 							addToCart({
 								type: "slot",

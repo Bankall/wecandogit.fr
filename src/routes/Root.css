@@ -232,6 +232,11 @@ button:focus {
 	row-gap: 10px;
 }
 
+.flex-row span.price {
+	min-width: 50px;
+	text-align: right;
+}
+
 .flex-row.small-gap {
 	gap: 10px;
 }

@@ -1,8 +1,21 @@
-import { Router } from "express";
+import { query, Router } from "express";
 import { Stripe } from "stripe";
 import config from "config";
 
 let backend;
+
+const currentUserPackage = `SELECT 
+	up.id_package id,
+	p.label label
+    
+FROM user_package up
+JOIN package p on p.id = up.id_package
+JOIN package_activity pa on pa.id_package = p.id
+
+WHERE	up.usage < p.number_of_session 
+AND 	up.start < CURRENT_TIMESTAMP
+AND 	up.id_user = ?
+and		pa.id_activity = ?`;
 
 const router = Router();
 router.route("/ping").get((req, res) => {
@@ -40,7 +53,7 @@ router
 	.put((req, res) => {
 		req.session.cart = req.session.cart.map(item => {
 			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10)) {
-				item.paid_later = req.body.paid_later;
+				item.payment_type = req.body.payment_type;
 			}
 
 			return item;
@@ -73,12 +86,13 @@ const getPackageDetail = async _package => {
 	}
 };
 
-const getSlotDetail = async slot => {
+const getSlotDetail = async (req, slot) => {
 	try {
 		const data = await backend.handleQuery(
 			`
 				SELECT
 					a.label,
+					a.id id_activity,
 					a.price,
 					s.id_trainer
 				FROM activity a
@@ -90,19 +104,21 @@ const getSlotDetail = async slot => {
 			false
 		);
 
-		return { label: data.result.label, price: data.result.price, id_trainer: data.result.id_trainer };
+		const user_packages = await backend.handleQuery(currentUserPackage, [req.session.user_id, data.result.id_activity], "get-user_package", true);
+		return { label: data.result.label, price: data.result.price, id_trainer: data.result.id_trainer, package_available: user_packages.result };
 	} catch (err) {
+		console.log(err);
 		return err;
 	}
 };
 
-const getCartItemDetail = async item => {
+const getCartItemDetail = async (req, item) => {
 	try {
 		switch (item.type) {
 			case "package":
 				return await getPackageDetail(item);
 			case "slot":
-				return await getSlotDetail(item);
+				return await getSlotDetail(req, item);
 			default:
 				throw { error: "Produit inconnu dans le panier" };
 		}
@@ -129,7 +145,7 @@ const sortCartItemByTrainers = async req => {
 		});
 
 		for (const item of req.session.cart) {
-			const data = await getCartItemDetail(item);
+			const data = await getCartItemDetail(req, item);
 
 			if (!byTrainers[data.id_trainer]) {
 				byTrainers[data.id_trainer] = {
@@ -143,12 +159,16 @@ const sortCartItemByTrainers = async req => {
 
 			data.type = item.type;
 			data.id = item.id;
-			data.paid_later = item.paid_later;
+			data.payment_type = item.payment_type;
 			data.id_dog = dog.result[0].id;
+
+			if (data.package_available && data.package_available.length && !data.payment_type) {
+				data.payment_type = data.package_available[0].id;
+			}
 
 			byTrainers[data.id_trainer][item.type].push(data);
 
-			if (!data.paid_later) {
+			if (data.payment_type === "direct" || !data.payment_type) {
 				byTrainers[data.id_trainer].total += data.price;
 			}
 		}
@@ -248,7 +268,49 @@ const handleReservation = async (req, itemToReserve) => {
 					body: {
 						id_slot: item.id,
 						id_dog: item.id_dog,
-						paid: !item.paid_later
+						paid: item.payment_type !== "later"
+					}
+				});
+
+				if (!["direct", "later"].includes(item.payment_type)) {
+					const current_usage = await backend.get({
+						table: "user_package",
+						query: {
+							id_user: req.session.user_id,
+							id_package: item.payment_type
+						}
+					});
+
+					const _package = await backend.get({
+						table: "package",
+						id: item.payment_type
+					});
+
+					if (current_usage.result[0].usage < _package.result.number_of_session) {
+						await backend.put({
+							table: "user_package",
+							where: {
+								id_package: item.payment_type
+							},
+							body: {
+								usage: current_usage.result[0].usage + 1
+							}
+						});
+
+						continue;
+					}
+
+					return { error: `Vous avez dépassez le nombre d'utilisation de votre formule ${_package.result.label}` };
+				}
+			}
+
+			if (item.type === "package") {
+				await backend.post({
+					table: "user_package",
+					body: {
+						id_package: item.id,
+						id_user: req.session.user_id,
+						paid: item.payment_type !== "later"
 					}
 				});
 			}
@@ -285,9 +347,8 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 			return res.redirect("/cart#payment-error");
 		}
 
-		await handleReservation(req, req.session.stripe_session_cart);
-
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account"));
+		const allReserved = await handleReservation(req, req.session.stripe_session_cart);
+		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
 	} catch (e) {}
 });
 
@@ -296,9 +357,8 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 		const allCartItems = await sortCartItemByTrainers(req);
 		const cartItems = allCartItems[req.params.idTrainer].slot.concat(allCartItems[req.params.idTrainer].package);
 
-		await handleReservation(req, cartItems);
-
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account"));
+		const allReserved = await handleReservation(req, cartItems);
+		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
 	} catch (err) {
 		console.error(err);
 		return false;
