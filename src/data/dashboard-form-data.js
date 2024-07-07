@@ -104,6 +104,15 @@ const Slot = [
 	}
 ];
 
+const SlotBook = [
+	{
+		name: "dog_label",
+		label: "Nom du chien",
+		type: "string",
+		uitype: "text"
+	}
+];
+
 const Package = [
 	{
 		name: "label",
@@ -283,4 +292,4 @@ const Dog = [
 	}
 ];
 
-export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm };
+export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm, SlotBook };

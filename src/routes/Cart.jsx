@@ -29,8 +29,8 @@ const ListItem = ({ item }) => {
 	};
 
 	return (
-		<div className='flex-row row space-between'>
-			<span>{item.label}</span>
+		<div className='flex-row row'>
+			<span className='flex-grow'>{item.label}</span>
 			<span>
 				<select
 					name='payment-options'
@@ -119,7 +119,7 @@ function Cart() {
 									))}
 
 									<div className='flex-row row space-between margin-t-20'>
-										<span>TOTAL</span>
+										<span className='uppercase'>Total a payer maintenant: </span>
 										<span>{trainer.total}€</span>
 									</div>
 

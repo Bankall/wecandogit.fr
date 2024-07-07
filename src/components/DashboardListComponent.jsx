@@ -43,16 +43,22 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				{response.data?.length
 					? response.data.map(item => {
 							return (
-								<div className='row' key={item.id}>
+								<div className='row flex-row' key={item.id}>
 									<span className='list-detail'>
 										{item.group_label ? `${item.group_label} - ` : ""}
 										{item.label}
 									</span>
+									{allowedActions.includes("book-reservation") && (
+										<Link to={`/account/${type}/book/`}>
+											<button className='small'>Inscire un chien</button>
+										</Link>
+									)}
 									{allowedActions.includes("modify") && (
 										<Link to={`/account/${type}/edit/${item.id}`}>
 											<button className='small'>Modifier</button>
 										</Link>
 									)}
+
 									{allowedActions.includes("delete") && (
 										<button
 											className='small'

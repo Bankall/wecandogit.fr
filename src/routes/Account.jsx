@@ -52,7 +52,7 @@ function Account() {
 			case "activities":
 				return <DashboardListComponent addLabel='Ajouter une activité' title='Nos activités' type='activity' />;
 			case "slots":
-				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' />;
+				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["modify", "book-reservation"]} />;
 		}
 	};
 

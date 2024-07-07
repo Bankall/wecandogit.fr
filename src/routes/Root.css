@@ -36,6 +36,10 @@ select {
 	padding: 6px 10px;
 }
 
+.uppercase {
+	text-transform: uppercase;
+}
+
 .hidden {
 	visibility: hidden;
 }
@@ -246,6 +250,10 @@ button:focus {
 
 .flex-row.space-between {
 	justify-content: space-between;
+}
+
+.flex-grow {
+	flex-grow: 1;
 }
 
 .flex-col {

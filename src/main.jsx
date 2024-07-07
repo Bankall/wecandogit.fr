@@ -110,6 +110,10 @@ const router = createBrowserRouter([
 						lazy: () => import("./routes/Account/SlotEdit")
 					},
 					{
+						path: "slot/book/",
+						lazy: () => import("./routes/Account/SlotBook")
+					},
+					{
 						path: "dog/create/",
 						lazy: () => import("./routes/Account/DogCreate")
 					},

@@ -118,7 +118,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 				INNER JOIN activity a on a.id = s.id_activity
 				INNER JOIN user u on u.id = s.id_trainer
 					WHERE 	s.date > CURRENT_TIMESTAMP()
-
+				
 				ORDER BY date asc`,
 			null,
 			"get-slot",

@@ -291,6 +291,20 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 	} catch (e) {}
 });
 
+router.route("/make-reservation/:idTrainer").get(async (req, res) => {
+	try {
+		const allCartItems = await sortCartItemByTrainers(req);
+		const cartItems = allCartItems[req.params.idTrainer].slot.concat(allCartItems[req.params.idTrainer].package);
+
+		await handleReservation(req, cartItems);
+
+		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account"));
+	} catch (err) {
+		console.error(err);
+		return false;
+	}
+});
+
 const Cart = _backend => {
 	backend = _backend;
 	return router;
