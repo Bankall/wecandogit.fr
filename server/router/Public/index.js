@@ -129,16 +129,18 @@ router.route("/get-all-slots").get(async (req, res) => {
 			`
 			SELECT
 				r.id,
+				u.id id_user,
 				s.id id_slot,
 				concat(d.label, ' (', d.breed, ' ', d.sexe, ')') label
 				
 			FROM reservation r 
 			JOIN slot s on s.id = r.id_slot
 			JOIN dog d on d.id = r.id_dog
+			JOIN user u on u.id = d.id_user
 			WHERE s.date > CURRENT_TIMESTAMP()
 			AND r.enabled = 1
 
-			GROUP BY 1, 2`,
+			GROUP BY 1, 2, 3`,
 			null,
 			"get-slot",
 			true
@@ -148,15 +150,21 @@ router.route("/get-all-slots").get(async (req, res) => {
 		if (reservations.result.length) {
 			reservations.result.forEach(reservation => {
 				if (!reservationBySlot[reservation.id_slot]) {
-					reservationBySlot[reservation.id_slot] = [];
+					reservationBySlot[reservation.id_slot] = {
+						reservations: [],
+						reserved: false
+					};
 				}
 
-				reservationBySlot[reservation.id_slot].push(reservation.label);
+				reservationBySlot[reservation.id_slot].reservations.push(reservation.label);
+				if (reservation.id_user === req.session.user_id) {
+					reservationBySlot[reservation.id_slot].reserved = true;
+				}
 			});
 		}
-
 		slots.result = slots.result.map(slot => {
-			slot.reserved = reservationBySlot[slot.id_slot];
+			slot.reservations = (reservationBySlot[slot.id_slot] || {}).reservations;
+			slot.reserved = (reservationBySlot[slot.id_slot] || {}).reserved;
 			return slot;
 		});
 

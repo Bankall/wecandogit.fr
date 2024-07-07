@@ -11,19 +11,19 @@ import { Button } from "../components/Button";
 
 const renderEventContent = eventInfo => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
-	const full = (data.reserved || []).length >= data.spots;
-
+	const full = (data.reservations || []).length >= data.spots;
+	console.log(data);
 	return (
 		<>
 			<span className='flex-row'>
 				<i>
 					<span>
-						{data.label} - ({data.firstname}) - {(data.reserved || []).length}/{data.spots}
+						{data.label} - ({data.firstname}) - {(data.reservations || []).length}/{data.spots}
 					</span>
 
-					{data.reserved && data.reserved.length && (
+					{data.reservations && data.reservations.length && (
 						<ul>
-							{data.reserved.map((dog, index) => (
+							{data.reservations.map((dog, index) => (
 								<li key={index}>{dog.replace(" ( )", "")}</li>
 							))}
 						</ul>
@@ -46,7 +46,7 @@ const renderEventContent = eventInfo => {
 						))}
 
 					<Button
-						className={`small${full ? " disabled" : ""}`}
+						className={`small${full || data.reserved ? " disabled" : ""}`}
 						onClick={() => {
 							addToCart({
 								type: "slot",
