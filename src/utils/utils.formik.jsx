@@ -91,10 +91,11 @@ const ExtractInitialValues = async (data, params) => {
 			}
 		}
 
-		if (value.default && value.default.toString().match(/^params:[a-z]+/)) {
-			const key = value.default.split(":")[1];
+		if (value.query && value.query.toString().match(/^params:[a-z]+/)) {
+			const key = value.query.split(":")[1];
 			value.default = params[key];
 		}
+
 		values[value.name] = (() => {
 			switch (value.uitype) {
 				case "radio":

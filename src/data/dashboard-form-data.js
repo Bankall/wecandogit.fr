@@ -110,7 +110,7 @@ const SlotBookForm = [
 		label: "ID du créneau",
 		type: "number",
 		uitype: "hidden",
-		default: "params:id"
+		query: "params:id"
 	},
 	{
 		name: "dog_label",
