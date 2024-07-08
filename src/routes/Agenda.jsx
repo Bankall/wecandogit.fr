@@ -24,7 +24,7 @@ const renderEventContent = eventInfo => {
 					{data.reservations && data.reservations.length && (
 						<ul>
 							{data.reservations.map((dog, index) => (
-								<li key={index}>{dog.replace(" ( )", "")}</li>
+								<li key={index}>{dog ? dog.replace(" ( )", "") : "Anonyme"}</li>
 							))}
 						</ul>
 					)}

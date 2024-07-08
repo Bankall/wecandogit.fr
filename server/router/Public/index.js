@@ -131,8 +131,12 @@ router.route("/get-all-slots").get(async (req, res) => {
 				r.id,
 				u.id id_user,
 				s.id id_slot,
-				concat(d.label, ' (', d.breed, ' ', d.sexe, ')') label
-				
+                CASE 
+                WHEN (d.breed IS NOT NULL AND d.sexe IS NOT NULL) THEN
+					concat(d.label, ' (', d.breed, ' ', d.sexe, ')')
+				else 
+					d.label
+				end label
 			FROM reservation r 
 			JOIN slot s on s.id = r.id_slot
 			JOIN dog d on d.id = r.id_dog
