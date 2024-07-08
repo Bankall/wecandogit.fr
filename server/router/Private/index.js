@@ -140,6 +140,9 @@ router.route("/slot").get(async (req, res) => {
 			.map(slot => {
 				slot.label = `${activities.result.filter(activity => activity.id === slot.id_activity)[0].label} - ${new Date(slot.date).toLocaleString()}`;
 				return slot;
+			})
+			.sort((a, b) => {
+				return a.date < b.date ? -1 : 1;
 			});
 
 		res.send(slots.result);

@@ -101,7 +101,7 @@ function Cart() {
 							</div>
 						)}
 
-						{cartItems.data?.notice?.has_dog_profile === false && (
+						{cartItems.data?.notice?.is_logged_in !== false && cartItems.data?.notice?.has_dog === false && (
 							<div className='box notice'>
 								Vous devez premièrement créer le profil de votre animal
 								<div className='margin-t-20 center'>

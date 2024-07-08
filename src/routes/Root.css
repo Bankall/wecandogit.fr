@@ -87,6 +87,10 @@ select {
 	margin-top: 20px !important;
 }
 
+.margin-t-50 {
+	margin-top: 50px !important;
+}
+
 .bold {
 	font-weight: 700;
 }

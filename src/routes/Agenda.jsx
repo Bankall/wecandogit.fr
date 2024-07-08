@@ -12,7 +12,7 @@ import { Button } from "../components/Button";
 const renderEventContent = eventInfo => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
 	const full = (data.reservations || []).length >= data.spots;
-	console.log(data);
+
 	return (
 		<>
 			<span className='flex-row'>
