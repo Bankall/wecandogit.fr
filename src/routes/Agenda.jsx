@@ -62,7 +62,7 @@ const renderEventContent = eventInfo => {
 };
 
 const convertToLocalDate = (date, increment) => {
-	const converted = new Date(date.replace(/T/, " ").slice(0, -1));
+	const converted = new Date(date.replace(/T|Z/g, " "));
 
 	if (increment) {
 		converted.setTime(converted.getTime() + increment * 1000 * 60);
