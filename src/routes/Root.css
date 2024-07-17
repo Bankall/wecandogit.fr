@@ -96,6 +96,11 @@ select {
 	margin-bottom: 20px !important;
 }
 
+.margin-10 {
+	margin-top: 10px !important;
+	margin-bottom: 10px !important;
+}
+
 .bold {
 	font-weight: 700;
 }
@@ -284,8 +289,18 @@ button:focus {
 	justify-content: space-between;
 }
 
+@media screen and (max-width: 900px) {
+	.flex-row {
+		column-gap: 10px;
+	}
+}
+
 .flex-grow {
 	flex-grow: 1;
+}
+
+.flex-stretch {
+	align-items: stretch !important;
 }
 
 .flex-col {

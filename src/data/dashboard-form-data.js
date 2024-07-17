@@ -179,6 +179,57 @@ const Package = [
 	}
 ];
 
+const UserPackage = [
+	{
+		name: "id_package",
+		type: "string",
+		label: "Formule",
+		uitype: "select",
+		data_url: "/package"
+	},
+	{
+		name: "usage",
+		type: "number",
+		label: "Utilisation",
+		uitype: "number"
+	},
+	{
+		name: "start",
+		label: "Date de début",
+		type: "string",
+		uitype: "datetime-local"
+	}
+];
+
+const UserPackageAdd = [
+	{
+		name: "id_user",
+		label: "USER ID",
+		type: "number",
+		uitype: "hidden",
+		query: "params:id_user"
+	},
+	{
+		name: "id_package",
+		type: "string",
+		label: "Formule",
+		uitype: "select",
+		data_url: "/package"
+	},
+	{
+		name: "usage",
+		type: "number",
+		label: "Utilisation",
+		uitype: "number"
+	},
+	{
+		name: "start",
+		label: "Date de début",
+		type: "string",
+		uitype: "datetime-local"
+	}
+];
+
 const UserProfile = [
 	{
 		name: "email",
@@ -308,4 +359,4 @@ const Dog = [
 	}
 ];
 
-export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm, SlotBookForm };
+export { Dog, UserProfile, LoginForm, RegisterForm, Activity, Package, Slot, SlotCreateForm, SlotBookForm, UserPackage, UserPackageAdd };

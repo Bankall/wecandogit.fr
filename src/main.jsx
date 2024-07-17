@@ -86,6 +86,14 @@ const router = createBrowserRouter([
 						lazy: () => import("./routes/Account/PackageEdit")
 					},
 					{
+						path: "user_package/create/:id_user",
+						lazy: () => import("./routes/Account/UserPackageCreate")
+					},
+					{
+						path: "user_package/edit/:id",
+						lazy: () => import("./routes/Account/UserPackageEdit")
+					},
+					{
 						path: "activity/create/",
 						lazy: () => import("./routes/Account/ActivityCreate")
 					},

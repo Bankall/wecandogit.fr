@@ -31,10 +31,11 @@ function Account() {
 	}, [params]);
 
 	const switchRouter = () => {
+		console.log(params);
 		if (params.action) {
 			switch (params.action) {
-				case "manage":
-					break;
+				case "user-package":
+					return <DashboardListComponent addLabel='Ajouter une formule' title='Formules' type='user_package' id_user={params.id} />;
 			}
 		}
 
@@ -42,7 +43,7 @@ function Account() {
 			case "profile":
 				return <AccountInfo />;
 			case "reservations":
-				return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete"]} />;
+				return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete-24"]} />;
 			case "packages":
 				return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
 			case "user_packages":
@@ -52,7 +53,7 @@ function Account() {
 			case "users":
 				return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage"]} />;
 			case "slots":
-				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["modify", "book-reservation"]} />;
+				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation"]} />;
 		}
 	};
 

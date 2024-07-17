@@ -1,15 +1,26 @@
 import { Link, useParams } from "react-router-dom";
-import axios from "axios";
 import { useState, useEffect } from "react";
+
+import axios from "axios";
 
 const formatDate = date => {
 	date = new Date(date);
 	return date.toLocaleString().slice(0, 16);
 };
 
-export default function DashboardListComponent({ type, title, addLabel, allowedActions }) {
+const isNotTooLate = date => {
+	if (!date) {
+		return false;
+	}
+
+	date = new Date(date);
+	return date.getTime() - Date.now() > 86400 * 1000;
+};
+
+export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user }) {
 	const [response, setResponse] = useState(false);
 	const [filter, setFilter] = useState(false);
+	const [extraTitle, setExtraTitle] = useState(false);
 
 	const params = useParams();
 	const handleDelete = async id => {
@@ -22,10 +33,23 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 	};
 
 	useEffect(() => {
+		let exited = false;
 		const fetch = async () => {
 			try {
-				const response = await axios.get(`/${type}`);
-				setResponse(response);
+				const params = {};
+				if (id_user) {
+					params.id_user = id_user;
+				}
+
+				const response = await axios({
+					url: `/${type}`,
+					method: "GET",
+					params
+				});
+
+				if (!exited) {
+					setResponse(response);
+				}
 			} catch (err) {
 				console.error(err);
 			}
@@ -36,7 +60,19 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 		setFilter(false);
 
+		(async () => {
+			try {
+				if (id_user) {
+					const user = await axios.get(`/user/${id_user}`);
+					setExtraTitle(`${user.data.firstname} ${user.data.lastname}`);
+				}
+			} catch (err) {
+				console.log(err);
+			}
+		})();
+
 		return () => {
+			exited = true;
 			window.removeEventListener(`refresh-list-${type}`, fetch);
 		};
 	}, [params]);
@@ -47,7 +83,10 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 	return (
 		<>
-			<div className='title'>{title}</div>
+			<div className='title'>
+				{title}
+				{extraTitle ? " - " + extraTitle : ""}
+			</div>
 			<div className='content'>
 				{response.data?.length && response.data?.length > 10 ? (
 					<div className='filter-box margin-b-20'>
@@ -63,7 +102,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				) : null}
 
 				{addLabel && (
-					<Link className='margin-b-20' to={`/account/${type}/create`}>
+					<Link className='margin-b-20' to={`/account/${type}/create${id_user ? `/${id_user}` : ""}`}>
 						<button>{addLabel}</button>
 					</Link>
 				)}
@@ -71,8 +110,9 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				{response.data?.length
 					? response.data.map((item, index) => {
 							if (filter) {
-								const words = filter.split(/\s/);
-								const fullString = `${item.date ? formatDate(item.date) : ""} ${item.group_label || ""} ${item.label}`;
+								const words = filter.split(/\s/).map(word => word.toLowerCase());
+								const fullString = `${item.date ? formatDate(item.date) : ""} ${item.group_label || ""} ${item.label}`.toLowerCase();
+
 								let everyWordsMatch = true;
 
 								words.forEach(word => {
@@ -119,14 +159,20 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 										</Link>
 									)}
 
-									{allowedActions.includes("delete") && (
-										<button
-											className='small'
+									{allowedActions.includes("handleUserPackage") && (
+										<Link to={`/account/users/user-package/${item.id}`}>
+											<button className='small'>Voir les formules</button>
+										</Link>
+									)}
+
+									{(allowedActions.includes("delete") || (allowedActions.includes("delete-24") && isNotTooLate(item.date))) && (
+										<i
+											className='fa-solid fa-trash-can'
+											aria-hidden='true'
+											style={{ color: "var(--invalid-color)", cursor: "pointer" }}
 											onClick={() => {
 												handleDelete(item.id);
-											}}>
-											Supprimer
-										</button>
+											}}></i>
 									)}
 								</div>
 							);

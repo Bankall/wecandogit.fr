@@ -117,7 +117,9 @@ router.route("/get-all-slots").get(async (req, res) => {
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
 				INNER JOIN user u on u.id = s.id_trainer
-					WHERE 	s.date > CURRENT_TIMESTAMP()
+				
+				WHERE 	s.date > CURRENT_TIMESTAMP()
+				AND 	s.enabled = 1
 				
 				ORDER BY date asc`,
 			null,
@@ -166,6 +168,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 				}
 			});
 		}
+
 		slots.result = slots.result.map(slot => {
 			slot.reservations = (reservationBySlot[slot.id_slot] || {}).reservations;
 			slot.reserved = (reservationBySlot[slot.id_slot] || {}).reserved;

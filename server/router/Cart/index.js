@@ -53,7 +53,13 @@ router
 	.put((req, res) => {
 		req.session.cart = req.session.cart.map(item => {
 			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10)) {
-				item.payment_type = req.body.payment_type;
+				if (req.body.payment_type) {
+					item.payment_type = req.body.payment_type;
+				}
+
+				if (req.body.id_dog) {
+					item.id_dog = parseInt(req.body.id_dog, 10);
+				}
 			}
 
 			return item;
@@ -105,7 +111,22 @@ const getSlotDetail = async (req, slot) => {
 		);
 
 		const user_packages = await backend.handleQuery(currentUserPackage, [req.session.user_id, data.result.id_activity], "get-user_package", true);
-		return { label: data.result.label, price: data.result.price, id_trainer: data.result.id_trainer, package_available: user_packages.result };
+		const dogs = await backend.get({
+			table: "dog",
+			query: {
+				id_user: req.session.user_id
+			}
+		});
+
+		return {
+			label: data.result.label,
+			price: data.result.price,
+			id_trainer: data.result.id_trainer,
+			package_available: user_packages.result,
+			dogs: dogs.result.map(dog => {
+				return { label: dog.label, id: dog.id };
+			})
+		};
 	} catch (err) {
 		console.log(err);
 		return err;
@@ -160,7 +181,7 @@ const sortCartItemByTrainers = async req => {
 			data.type = item.type;
 			data.id = item.id;
 			data.payment_type = item.payment_type;
-			data.id_dog = dog.result[0].id;
+			data.id_dog = item.id_dog || dog.result[0].id;
 
 			if (data.package_available && data.package_available.length && !data.payment_type) {
 				data.payment_type = data.package_available[0].id;

@@ -85,4 +85,8 @@
 	.dashboard .content {
 		width: 100%;
 	}
+
+	.dashboard .widgets .box .list-detail {
+		min-width: 100%;
+	}
 }

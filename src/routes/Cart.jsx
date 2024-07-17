@@ -13,9 +13,15 @@ const ListItem = ({ item }) => {
 				params.method = "DELETE";
 			} else {
 				params.method = "PUT";
-				params.data = {
-					payment_type: value
-				};
+				params.data = {};
+
+				if (action === "update-payment") {
+					params.data.payment_type = value;
+				}
+
+				if (action === "update-dog") {
+					params.data.id_dog = value;
+				}
 			}
 
 			const response = await axios(params);
@@ -29,9 +35,36 @@ const ListItem = ({ item }) => {
 	};
 
 	return (
-		<div className='flex-row row'>
-			<span className='flex-grow'>{item.label}</span>
+		<div className='row flex-col flex-stretch'>
 			<span className='flex-row'>
+				<span className='flex-grow'>{item.label}</span>
+				<span className='flex-row'>
+					<span className='price'>{item.price}€</span>
+					<span
+						onClick={() => {
+							updateCartItem("delete", item);
+						}}>
+						<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
+					</span>
+				</span>
+			</span>
+			<span className='flex-row margin-10'>
+				<span className='flex-grow'>
+					{item.dogs && item.dogs.length > 1 && (
+						<select
+							name='dog-selector'
+							value={item.id_dog || items.dogs[0].id}
+							onChange={event => {
+								updateCartItem("update-dog", item, event.currentTarget.value);
+							}}>
+							{item.dogs.map((dog, index) => (
+								<option key={index} value={dog.id}>
+									{dog.label}
+								</option>
+							))}
+						</select>
+					)}
+				</span>
 				<span className='flex-grow'>
 					<select
 						name='payment-options'
@@ -49,15 +82,6 @@ const ListItem = ({ item }) => {
 								</option>
 							))}
 					</select>
-				</span>
-				<span className='flex-row'>
-					<span className='price'>{item.price}€</span>
-					<span
-						onClick={() => {
-							updateCartItem("delete", item);
-						}}>
-						<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
-					</span>
 				</span>
 			</span>
 		</div>

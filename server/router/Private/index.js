@@ -7,7 +7,7 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
-router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, next) => {
+router.route(["/activity/:id?", "/slot/:id?", "/package/:id"]).all((req, res, next) => {
 	if (!req.session.is_trainer) {
 		return res.send({
 			error: "Vous n'avez pas accès à cette ressource"
@@ -20,6 +20,16 @@ router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, n
 
 	req.where = Object.assign({ id_trainer: req.body.id_trainer }, req.where);
 	req.query = Object.assign({ id_trainer: req.body.id_trainer }, req.query);
+
+	next();
+});
+
+router.route("/user_package").all((req, res, next) => {
+	if (req.query.id && !req.session.is_trainer) {
+		return res.send({
+			error: "Vous n'avez pas accès à cette ressource"
+		});
+	}
 
 	next();
 });
@@ -79,7 +89,8 @@ router
 		try {
 			const reservation = await backend.handleQuery(
 				`SELECT 
-				CONCAT(s.date, ' - ', a.label, ' - ', d.label) label,
+				s.date,
+				CONCAT(a.label, ' - ', d.label) label,
 				r.id
 
 			FROM reservation r 
@@ -90,6 +101,7 @@ router
 			WHERE 	u.id = ? 
 			AND 	r.enabled = 1 
 			AND 	s.enabled = 1
+			AND 	s.date > current_timestamp()
 			ORDER BY s.date ASC`,
 				[req.session.user_id],
 				null,
@@ -125,10 +137,12 @@ router
 		}
 	});
 
-router.route("/slot").get(async (req, res) => {
-	try {
-		const slots = await backend.handleQuery(
-			`SELECT 
+router
+	.route("/slot")
+	.get(async (req, res) => {
+		try {
+			const slots = await backend.handleQuery(
+				`SELECT 
 				s.id,
 				s.date,
 				a.label,
@@ -141,29 +155,35 @@ router.route("/slot").get(async (req, res) => {
 
 			WHERE	s.id_trainer = ?
 			AND 	s.date > current_timestamp()
+			AND 	s.enabled = 1
 
 			GROUP BY s.id
 			ORDER BY s.date ASC`,
-			[req.session.user_id],
-			null,
-			true
-		);
+				[req.session.user_id],
+				null,
+				true
+			);
 
-		slots.result = slots.result.map(slot => {
-			const full = slot.reservations >= slot.spots;
-			slot.group_label = slot.label;
-			slot.label = `${full ? "Complet" : `${slot.reservations} / ${slot.spots}`}`;
+			slots.result = slots.result.map(slot => {
+				const full = slot.reservations >= slot.spots;
+				slot.group_label = slot.label;
+				slot.label = `${full ? "Complet" : `${slot.reservations} / ${slot.spots}`}`;
 
-			return slot;
-		});
+				return slot;
+			});
 
-		res.send(slots.result);
-	} catch (err) {
-		res.send({
-			error: err.error
-		});
-	}
-});
+			res.send(slots.result);
+		} catch (err) {
+			res.send({
+				error: err.error || err
+			});
+		}
+	})
+	.put(async (req, res, next) => {
+		try {
+			// TODO handle refund here
+		} catch (err) {}
+	});
 
 router.route("/create-slots").post(async (req, res) => {
 	try {
@@ -186,7 +206,7 @@ router.route("/create-slots").post(async (req, res) => {
 		});
 	} catch (err) {
 		res.send({
-			error: err.error
+			error: err.error || err
 		});
 	}
 });
@@ -219,9 +239,8 @@ router.route("/user").get(async (req, res) => {
 				.filter(user => user.id !== 2)
 		);
 	} catch (err) {
-		console.log(err);
 		res.send({
-			error: err.error
+			error: err.error || err
 		});
 	}
 });
@@ -231,17 +250,19 @@ router.route("/user_package").get(async (req, res) => {
 		const user_packages = await backend.get({
 			table: "user_package",
 			query: {
-				id_user: req.session.user_id
+				id_user: req.query.id_user || req.session.user_id
 			}
 		});
 
-		for await (const user_package of user_packages.result) {
-			const _package = await backend.get({
-				table: "package",
-				id: user_package.id_package
-			});
+		if (user_packages.result.length) {
+			for await (const user_package of user_packages.result) {
+				const _package = await backend.get({
+					table: "package",
+					id: user_package.id_package
+				});
 
-			user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session}`;
+				user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session}`;
+			}
 		}
 
 		res.send(user_packages.result);
@@ -339,7 +360,6 @@ router.route("/all-dogs").get(async (req, res) => {
 				})
 		);
 	} catch (err) {
-		console.log(err);
 		res.send({
 			error: err.error || err
 		});
