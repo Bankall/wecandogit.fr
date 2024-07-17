@@ -2,50 +2,43 @@ import { useCookies } from "react-cookie";
 import { useFetch } from "../hooks/useFetch";
 
 import "./Account.css";
-import { Suspense, lazy, useState, useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 
 import Loading from "../components/Loading";
-import { useLocation } from "react-router-dom";
+import { useParams, useNavigate, NavLink } from "react-router-dom";
 
 const AccountInfo = lazy(() => import("../components/AccountInfo"));
 const DashboardListComponent = lazy(() => import("../components/DashboardListComponent"));
 
 function Account() {
-	const location = useLocation();
+	const params = useParams();
+	const navigate = useNavigate();
 	const [cookies, setCookies] = useCookies();
-	const [currentMenu, setCurrentMenu] = useState(false);
 
 	const me = useFetch("/me", me => {
-		if (location.hash) {
+		if (params.menu) {
 			return;
 		}
 		if (me.result.is_trainer) {
-			setCurrentMenu("slots");
+			navigate("/account/slots");
 		} else {
-			setCurrentMenu("reservations");
+			navigate("/account/reservations");
 		}
 	});
 
-	const onMenuClick = event => {
-		const name = event.target.getAttribute("name");
-		if (!name) {
-			return;
-		}
-
-		setCurrentMenu(name);
-		window.location.hash = `#${name}`;
-	};
-
 	useEffect(() => {
-		const hash = location.hash.slice(1);
-		if (hash) {
-			setCurrentMenu(decodeURIComponent(hash));
-			document.querySelector(".account").scrollIntoView({ behavior: "smooth" });
-		}
-	}, [location]);
+		document.querySelector(".account").scrollIntoView();
+	}, [params]);
 
-	const switchRouter = param => {
-		switch (param) {
+	const switchRouter = () => {
+		if (params.action) {
+			switch (params.action) {
+				case "manage":
+					break;
+			}
+		}
+
+		switch (params.menu) {
 			case "profile":
 				return <AccountInfo />;
 			case "reservations":
@@ -56,6 +49,8 @@ function Account() {
 				return <DashboardListComponent title='Mes formules' type='user_package' allowedActions={[]} />;
 			case "activities":
 				return <DashboardListComponent addLabel='Ajouter une activité' title='Nos activités' type='activity' />;
+			case "users":
+				return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage"]} />;
 			case "slots":
 				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["modify", "book-reservation"]} />;
 		}
@@ -68,32 +63,35 @@ function Account() {
 
 				<div className='dashboard flex-row no-wrap'>
 					<div className='menu'>
-						<ul onClick={onMenuClick}>
+						<ul>
 							{me.data?.result.is_trainer === 0 ? (
 								<>
-									<li name='reservations' className={currentMenu === "reservations" ? "active" : ""}>
-										Mes Reservations
+									<li>
+										<NavLink to='/account/reservations'>Mes Reservations</NavLink>
 									</li>
-									<li name='user_packages' className={currentMenu === "user_packages" ? "active" : ""}>
-										Mes Formules
+									<li>
+										<NavLink to='/account/user_packages'>Mes Formules</NavLink>
 									</li>
 								</>
 							) : null}
 
-							<li name='profile' className={currentMenu === "profile" ? "active" : ""}>
-								Mes Informations
+							<li>
+								<NavLink to='/account/profile'>Mes Informations</NavLink>
 							</li>
 
 							{me.data?.result.is_trainer === 1 ? (
 								<>
-									<li name='activities' className={currentMenu === "activities" ? "active" : ""}>
-										Nos Activités
+									<li>
+										<NavLink to='/account/activities'>Nos Activités</NavLink>
 									</li>
-									<li name='slots' className={currentMenu === "slots" ? "active" : ""}>
-										Mes Créneaux
+									<li>
+										<NavLink to='/account/slots'>Mes Créneaux</NavLink>
 									</li>
-									<li name='packages' className={currentMenu === "packages" ? "active" : ""}>
-										Mes Formules
+									<li>
+										<NavLink to='/account/packages'>Mes Formules</NavLink>
+									</li>
+									<li>
+										<NavLink to='/account/users'>Membres</NavLink>
 									</li>
 								</>
 							) : null}
@@ -101,7 +99,7 @@ function Account() {
 					</div>
 					<div className='content widgets'>
 						<div className='box'>
-							<Suspense fallback={<Loading />}>{switchRouter(currentMenu)}</Suspense>
+							<Suspense fallback={<Loading />}>{switchRouter()}</Suspense>
 						</div>
 					</div>
 				</div>

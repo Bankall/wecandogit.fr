@@ -3,7 +3,7 @@ import axios from "axios";
 import { FormikWrapper } from "../utils/utils.formik";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
-export function DashboardCreateComponent({ title, type, rawformData }) {
+export function DashboardCreateComponent({ title, type, rawformData, endpoint }) {
 	const navigate = useNavigate();
 	const [cookies, setCookies] = useCookies();
 
@@ -30,10 +30,10 @@ export function DashboardCreateComponent({ title, type, rawformData }) {
 									}
 								});
 
-								const response = await axios.post(`/${type}`, fixedValues);
+								const response = await axios.post(`/${endpoint || type}`, fixedValues);
 
 								if (response.data.error) throw response.data.error;
-								if (response.data.id) {
+								if (response.data.id || response.data.ok) {
 									setTimeout(() => {
 										navigate(-1);
 									}, 2000);

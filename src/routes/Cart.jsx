@@ -31,31 +31,33 @@ const ListItem = ({ item }) => {
 	return (
 		<div className='flex-row row'>
 			<span className='flex-grow'>{item.label}</span>
-			<span>
-				<select
-					name='payment-options'
-					value={item.payment_type || "direct"}
-					onChange={event => {
-						updateCartItem("update-payment", item, event.currentTarget.value);
-					}}>
-					<option value='direct'>Payer en ligne</option>
-					<option value='later'>Payer en personne</option>
-					{item.type === "slot" &&
-						item.package_available?.length &&
-						item.package_available.map((_package, index) => (
-							<option value={_package.id} key={index}>
-								Utiliser la formule {_package.label}
-							</option>
-						))}
-				</select>
-			</span>
 			<span className='flex-row'>
-				<span className='price'>{item.price}€</span>
-				<span
-					onClick={() => {
-						updateCartItem("delete", item);
-					}}>
-					<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
+				<span className='flex-grow'>
+					<select
+						name='payment-options'
+						value={item.payment_type || "direct"}
+						onChange={event => {
+							updateCartItem("update-payment", item, event.currentTarget.value);
+						}}>
+						<option value='direct'>Payer en ligne</option>
+						<option value='later'>Payer en personne</option>
+						{item.type === "slot" &&
+							item.package_available?.length &&
+							item.package_available.map((_package, index) => (
+								<option value={_package.id} key={index}>
+									Utiliser la formule {_package.label}
+								</option>
+							))}
+					</select>
+				</span>
+				<span className='flex-row'>
+					<span className='price'>{item.price}€</span>
+					<span
+						onClick={() => {
+							updateCartItem("delete", item);
+						}}>
+						<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
+					</span>
 				</span>
 			</span>
 		</div>
@@ -105,7 +107,7 @@ function Cart() {
 							<div className='box notice'>
 								Vous devez premièrement créer le profil de votre animal
 								<div className='margin-t-20 center'>
-									<Link to='/account#profile'>
+									<Link to='/account/profile'>
 										<button>Créer son profil</button>
 									</Link>
 								</div>

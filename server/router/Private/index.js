@@ -87,7 +87,10 @@ router
 			JOIN activity a on a.id = s.id_activity
 			JOIN dog d on d.id = r.id_dog
 			JOIN user u on u.id = d.id_user
-			WHERE u.id = ? AND enabled = 1`,
+			WHERE 	u.id = ? 
+			AND 	r.enabled = 1 
+			AND 	s.enabled = 1
+			ORDER BY s.date ASC`,
 				[req.session.user_id],
 				null,
 				true
@@ -124,26 +127,35 @@ router
 
 router.route("/slot").get(async (req, res) => {
 	try {
-		const activities = await backend.get({
-			table: "activity"
-		});
+		const slots = await backend.handleQuery(
+			`SELECT 
+				s.id,
+				s.date,
+				a.label,
+				a.spots,
+				sum(case when r.enabled = 1 then 1 else 0 end) reservations
+				
+			FROM slot s
+			JOIN activity a on a.id = s.id_activity
+			LEFT JOIN reservation r on r.id_slot = s.id
 
-		const slots = await backend.get({
-			table: "slot",
-			query: {
-				id_trainer: req.session.user_id
-			}
-		});
+			WHERE	s.id_trainer = ?
+			AND 	s.date > current_timestamp()
 
-		slots.result = slots.result
-			.filter(slot => new Date(slot.date) > Date.now())
-			.map(slot => {
-				slot.label = `${activities.result.filter(activity => activity.id === slot.id_activity)[0].label} - ${new Date(slot.date).toLocaleString()}`;
-				return slot;
-			})
-			.sort((a, b) => {
-				return a.date < b.date ? -1 : 1;
-			});
+			GROUP BY s.id
+			ORDER BY s.date ASC`,
+			[req.session.user_id],
+			null,
+			true
+		);
+
+		slots.result = slots.result.map(slot => {
+			const full = slot.reservations >= slot.spots;
+			slot.group_label = slot.label;
+			slot.label = `${full ? "Complet" : `${slot.reservations} / ${slot.spots}`}`;
+
+			return slot;
+		});
 
 		res.send(slots.result);
 	} catch (err) {
@@ -173,6 +185,41 @@ router.route("/create-slots").post(async (req, res) => {
 			ok: true
 		});
 	} catch (err) {
+		res.send({
+			error: err.error
+		});
+	}
+});
+
+router.route("/user").get(async (req, res) => {
+	try {
+		const users = await backend.get({
+			table: "user"
+		});
+
+		const dogByUser = {};
+		const dogs = await backend.get({
+			table: "dog"
+		});
+
+		dogs.result.forEach(dog => {
+			if (!dogByUser[dog.id_user]) {
+				dogByUser[dog.id_user] = [];
+			}
+
+			dogByUser[dog.id_user].push(dog.label);
+		});
+
+		res.send(
+			users.result
+				.map(user => {
+					user.label = `${user.firstname} ${user.lastname} / ${user.email} ${dogByUser[user.id] ? `\n${dogByUser[user.id].join(", ")}` : ""}`;
+					return user;
+				})
+				.filter(user => user.id !== 2)
+		);
+	} catch (err) {
+		console.log(err);
 		res.send({
 			error: err.error
 		});
@@ -258,6 +305,46 @@ router
 
 		next();
 	});
+
+router.route("/all-dogs").get(async (req, res) => {
+	try {
+		const dogs = await backend.get({
+			table: "dog"
+		});
+
+		const users = await backend.get({
+			table: "user"
+		});
+
+		const usersById = {};
+		users.result.forEach(user => {
+			usersById[user.id] = `${user.firstname} ${user.lastname}`;
+		});
+
+		res.send(
+			dogs.result
+				.map(dog => {
+					if (!dog.breed) {
+						return;
+					}
+
+					return {
+						label: `${dog.label} (${dog.breed} ${dog.sexe}) - ${usersById[dog.id_user]}`,
+						id: dog.id
+					};
+				})
+				.filter(dog => !!dog)
+				.sort((a, b) => {
+					return a.label.localeCompare(b.label);
+				})
+		);
+	} catch (err) {
+		console.log(err);
+		res.send({
+			error: err.error || err
+		});
+	}
+});
 
 const Private = _backend => {
 	backend = _backend;

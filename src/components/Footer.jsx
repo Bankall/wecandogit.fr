@@ -46,7 +46,7 @@ export default function Footer() {
 						<Link to='/agenda'>Notre agenda</Link>
 					</li>
 					<li>
-						<Link to='/account/#reservations'>Mes réservations</Link>
+						<Link to='/account/reservations'>Mes réservations</Link>
 					</li>
 					<li>
 						<Link to='/formules-et-tarifs'>Formules et tarifs</Link>

@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider, redirect } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, redirect, ScrollRestoration } from "react-router-dom";
 import "./index.css";
 
 import Root from "./routes/Root";
@@ -78,14 +78,6 @@ const router = createBrowserRouter([
 				path: "/account",
 				children: [
 					{
-						path: "",
-						lazy: () => import("./routes/Account"),
-						loader: async () => {
-							const ok = await isLoggedIn();
-							return !ok ? redirect("/login") : null;
-						}
-					},
-					{
 						path: "package/create/",
 						lazy: () => import("./routes/Account/PackageCreate")
 					},
@@ -120,6 +112,14 @@ const router = createBrowserRouter([
 					{
 						path: "dog/edit/:id",
 						lazy: () => import("./routes/Account/DogEdit")
+					},
+					{
+						path: ":menu?/:action?/:id?",
+						lazy: () => import("./routes/Account"),
+						loader: async () => {
+							const ok = await isLoggedIn();
+							return !ok ? redirect("/login") : null;
+						}
 					}
 				]
 			}

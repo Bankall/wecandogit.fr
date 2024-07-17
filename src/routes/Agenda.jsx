@@ -16,7 +16,7 @@ const renderEventContent = eventInfo => {
 	return (
 		<>
 			<span className='flex-row'>
-				<i>
+				<i id={data.id_slot}>
 					<span>
 						{data.label} - ({data.firstname}) - {(data.reservations || []).length}/{data.spots}
 					</span>

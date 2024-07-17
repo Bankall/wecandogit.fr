@@ -95,7 +95,6 @@ const ExtractInitialValues = async (data, params) => {
 			const key = value.query.split(":")[1];
 			value.default = params[key];
 		}
-
 		values[value.name] = (() => {
 			switch (value.uitype) {
 				case "radio":
@@ -108,7 +107,7 @@ const ExtractInitialValues = async (data, params) => {
 				case "date":
 					return typeof value.default !== "undefined" ? new Date(value.default).toISOString().slice(0, -14) : "";
 				case "datetime-local":
-					return typeof value.default !== "undefined" ? new Date(value.default).toISOString().slice(0, -8) : "";
+					return typeof value.default !== "undefined" ? value.default : "";
 				default:
 					return typeof value.default !== "undefined" ? value.default : "";
 			}
@@ -287,30 +286,47 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 
 													{value.prefix ? <div className='prefix'>{value.prefix}</div> : null}
 													{value.suffix ? <div className='suffix'>{value.suffix}</div> : null}
-
 													{value.uitype === "field-array-datetime-local" ? (
 														<FieldArray
 															name={value.name}
 															render={arrayHelpers => (
-																<div className='flex-row flex-row-reverse'>
-																	{values[value.name].map((key, index) => (
-																		<div key={`${value.name}.${index}`}>
-																			<Field
-																				name={`${value.name}.${index}`}
-																				onBlur={event => {
-																					if (event.target.value) {
-																						return arrayHelpers.push("");
-																					}
+																<div className='margin-t-20'>
+																	<div
+																		className='small fake-button'
+																		onClick={() => {
+																			arrayHelpers.unshift("");
+																		}}>
+																		Ajouter une date
+																	</div>
+																	<div className='flex-row margin-t-10'>
+																		{values[value.name].map((key, index) => (
+																			<div key={`${value.name}.${index}`}>
+																				<div className='flex-row no-wrap small-gap'>
+																					<Field name={`${value.name}.${index}`} type='datetime-local' min={new Date().toISOString().slice(0, -8)} />
 
-																					if (values.date.length > 1) {
-																						arrayHelpers.remove(index);
-																					}
-																				}}
-																				type='datetime-local'
-																				min={new Date().toISOString().slice(0, -8)}
-																			/>
-																		</div>
-																	))}
+																					<div
+																						className='remove-button'
+																						onClick={() => {
+																							arrayHelpers.remove(index);
+																						}}>
+																						X
+																					</div>
+																				</div>
+																				<div
+																					className={`link-button${!key ? " hidden" : ""}`}
+																					onClick={() => {
+																						const date = new Date(key);
+
+																						date.setDate(date.getDate() + 7);
+																						date.setHours(date.getHours() - date.getTimezoneOffset() / 60);
+
+																						arrayHelpers.insert(index, date.toISOString().slice(0, -8));
+																					}}>
+																					Répeter dans 7 jours
+																				</div>
+																			</div>
+																		))}
+																	</div>
 																</div>
 															)}
 														/>

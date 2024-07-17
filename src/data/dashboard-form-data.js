@@ -113,10 +113,19 @@ const SlotBookForm = [
 		query: "params:id"
 	},
 	{
-		name: "dog_label",
-		label: "Nom du chien",
+		name: "id_dog",
+		label: "Choisir un chien dans la liste",
 		type: "string",
-		uitype: "text"
+		uitype: "select",
+		data_url: "/all-dogs",
+		required: false
+	},
+	{
+		name: "dog_label",
+		label: "Ou écrire son nom du chien si son profil n'existe pas encore",
+		type: "string",
+		uitype: "text",
+		required: false
 	}
 ];
 
