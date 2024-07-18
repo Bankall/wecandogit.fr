@@ -31,7 +31,6 @@ function Account() {
 	}, [params]);
 
 	const switchRouter = () => {
-		console.log(params);
 		if (params.action) {
 			switch (params.action) {
 				case "user-package":

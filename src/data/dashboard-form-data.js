@@ -190,7 +190,7 @@ const UserPackage = [
 	{
 		name: "usage",
 		type: "number",
-		label: "Utilisation",
+		label: "Séances déjà utilisées",
 		uitype: "number"
 	},
 	{
@@ -219,7 +219,7 @@ const UserPackageAdd = [
 	{
 		name: "usage",
 		type: "number",
-		label: "Utilisation",
+		label: "Séances déjà utilisées",
 		uitype: "number"
 	},
 	{

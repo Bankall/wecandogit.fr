@@ -147,32 +147,54 @@ router
 				s.date,
 				a.label,
 				a.spots,
-				sum(case when r.enabled = 1 then 1 else 0 end) reservations
+				r.id_dog,
+				r.id id_reservation,
+                CASE WHEN d.breed != "" THEN concat(d.label, ' (', d.breed, ' ', d.sexe, ')') ELSE concat(d.label, " *") END label_dog
 				
 			FROM slot s
 			JOIN activity a on a.id = s.id_activity
-			LEFT JOIN reservation r on r.id_slot = s.id
+			LEFT JOIN reservation r on r.id_slot = s.id and r.enabled = 1
+            LEFT JOIN dog d on d.id = r.id_dog
 
 			WHERE	s.id_trainer = ?
 			AND 	s.date > current_timestamp()
 			AND 	s.enabled = 1
 
-			GROUP BY s.id
+			GROUP BY s.id, r.id
 			ORDER BY s.date ASC`,
 				[req.session.user_id],
 				null,
 				true
 			);
 
-			slots.result = slots.result.map(slot => {
-				const full = slot.reservations >= slot.spots;
-				slot.group_label = slot.label;
-				slot.label = `${full ? "Complet" : `${slot.reservations} / ${slot.spots}`}`;
+			const results = {};
+			slots.result.forEach(slot => {
+				if (!results[slot.id]) {
+					results[slot.id] = {
+						id: slot.id,
+						label: `0 / ${slot.spots}`,
+						date: slot.date,
+						group_label: slot.label,
+						spots: slot.spots,
+						reservations: 0,
+						dogs: []
+					};
+				}
 
-				return slot;
+				if (slot.id_dog) {
+					results[slot.id].dogs.push({
+						id: slot.id_reservation,
+						label: slot.label_dog
+					});
+
+					results[slot.id].reservations += 1;
+					const full = results[slot.id].reservations >= results[slot.id].spots;
+
+					results[slot.id].label = `${full ? "Complet" : `${results[slot.id].reservations} / ${slot.spots}`}`;
+				}
 			});
 
-			res.send(slots.result);
+			res.send(Object.values(results));
 		} catch (err) {
 			res.send({
 				error: err.error || err
@@ -227,13 +249,16 @@ router.route("/user").get(async (req, res) => {
 				dogByUser[dog.id_user] = [];
 			}
 
-			dogByUser[dog.id_user].push(dog.label);
+			dogByUser[dog.id_user].push({
+				label: `${dog.label} (${dog.breed} ${dog.sexe})`
+			});
 		});
 
 		res.send(
 			users.result
 				.map(user => {
-					user.label = `${user.firstname} ${user.lastname} / ${user.email} ${dogByUser[user.id] ? `\n${dogByUser[user.id].join(", ")}` : ""}`;
+					user.label = `<a href="tel:${user.phone}"><i class="fa-solid fa-phone"></i></a> ${user.firstname} ${user.lastname} <a href="mailto:${user.email}" target="_blank">&lt;${user.email}&gt;</a>`;
+					user.dogs = dogByUser[user.id];
 					return user;
 				})
 				.filter(user => user.id !== 2)

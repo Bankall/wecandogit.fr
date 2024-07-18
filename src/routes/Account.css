@@ -2,23 +2,30 @@
 	align-items: stretch;
 }
 
+.dashboard .fa-phone {
+	margin: 4px 8px;
+}
+
+.dashboard a {
+	color: var(--main-txt-color);
+}
+
 .dashboard .menu ul {
 	border-right: 1px solid var(--light-borders);
 	position: sticky;
 	top: 60px;
 }
 
-.dashboard .menu ul li {
+.dashboard ul li {
 	list-style: none;
+}
+
+.dashboard .menu ul li {
 	padding: 20px 40px;
 	margin: 0 20px;
 	cursor: pointer;
 	border-bottom: 1px solid var(--light-borders);
 	min-width: 250px;
-}
-
-.dashboard .menu ul li a {
-	color: var(--main-txt-color);
 }
 
 .dashboard .menu ul li a.active {
@@ -27,6 +34,11 @@
 
 .dashboard .menu ul li:last-child {
 	border-bottom: 0;
+}
+
+.dashboard .widgets .box .row {
+	flex-direction: column;
+	align-items: stretch;
 }
 
 .dashboard .widgets .box {

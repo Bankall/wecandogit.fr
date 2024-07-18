@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Interweave } from "interweave";
 
 import axios from "axios";
 
@@ -23,9 +24,9 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 	const [extraTitle, setExtraTitle] = useState(false);
 
 	const params = useParams();
-	const handleDelete = async id => {
+	const handleDelete = async (id, typeOverride) => {
 		try {
-			await axios.put(`/${type}/${id}`, { enabled: 0 });
+			await axios.put(`/${typeOverride || type}/${id}`, { enabled: 0 });
 			window.dispatchEvent(new Event(`refresh-list-${type}`));
 		} catch (err) {
 			console.error(err);
@@ -127,53 +128,76 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 							}
 
 							return (
-								<div className='row flex-row' key={index}>
-									<span className='list-detail'>
-										{item.date ? `${formatDate(item.date)} - ` : ""}
-										{item.group_label ? (
-											<>
-												{item.date ? (
-													<>
-														<b>{item.group_label}</b> - {item.label}
-													</>
-												) : (
-													<>
-														{item.group_label} - <b>{item.label}</b>
-													</>
-												)}
-											</>
-										) : (
-											item.label
+								<div className='row' key={index}>
+									<div className='flex-row'>
+										<span className='list-detail'>
+											{item.date ? `${formatDate(item.date)} - ` : ""}
+											{item.group_label ? (
+												<>
+													{item.date ? (
+														<>
+															<b>{item.group_label}</b> - <Interweave content={item.label} />
+														</>
+													) : (
+														<>
+															{item.group_label} - <Interweave content={item.label} />
+														</>
+													)}
+												</>
+											) : (
+												<Interweave content={item.label} />
+											)}
+										</span>
+
+										{allowedActions.includes("book-reservation") && (
+											<Link to={`/account/${type}/book/${item.id}`}>
+												<button className='small'>Inscire un chien</button>
+											</Link>
 										)}
-									</span>
 
-									{allowedActions.includes("book-reservation") && (
-										<Link to={`/account/${type}/book/${item.id}`}>
-											<button className='small'>Inscire un chien</button>
-										</Link>
-									)}
+										{allowedActions.includes("modify") && (
+											<Link to={`/account/${type}/edit/${item.id}`}>
+												<button className='small'>Modifier</button>
+											</Link>
+										)}
 
-									{allowedActions.includes("modify") && (
-										<Link to={`/account/${type}/edit/${item.id}`}>
-											<button className='small'>Modifier</button>
-										</Link>
-									)}
+										{allowedActions.includes("handleUserPackage") && (
+											<Link to={`/account/users/user-package/${item.id}`}>
+												<button className='small'>Voir les formules</button>
+											</Link>
+										)}
 
-									{allowedActions.includes("handleUserPackage") && (
-										<Link to={`/account/users/user-package/${item.id}`}>
-											<button className='small'>Voir les formules</button>
-										</Link>
-									)}
+										{(allowedActions.includes("delete") || (allowedActions.includes("delete-24") && isNotTooLate(item.date))) && (
+											<i
+												className='fa-solid fa-trash-can'
+												aria-hidden='true'
+												style={{ color: "var(--invalid-color)", cursor: "pointer" }}
+												onClick={() => {
+													handleDelete(item.id);
+												}}></i>
+										)}
+									</div>
 
-									{(allowedActions.includes("delete") || (allowedActions.includes("delete-24") && isNotTooLate(item.date))) && (
-										<i
-											className='fa-solid fa-trash-can'
-											aria-hidden='true'
-											style={{ color: "var(--invalid-color)", cursor: "pointer" }}
-											onClick={() => {
-												handleDelete(item.id);
-											}}></i>
-									)}
+									{item.dogs && item.dogs.length ? (
+										<div>
+											<ul>
+												{item.dogs.map((dog, index) => (
+													<li key={index} className='flex-row'>
+														{dog.id && (
+															<i
+																className='fa-solid fa-trash-can'
+																aria-hidden='true'
+																style={{ color: "var(--invalid-color)", cursor: "pointer" }}
+																onClick={() => {
+																	handleDelete(dog.id, "reservation");
+																}}></i>
+														)}
+														{dog.label}
+													</li>
+												))}
+											</ul>
+										</div>
+									) : null}
 								</div>
 							);
 					  })
