@@ -192,7 +192,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 																	handleDelete(dog.id, "reservation");
 																}}></i>
 														)}
-														{dog.label}
+														- {dog.label}
 													</li>
 												))}
 											</ul>
