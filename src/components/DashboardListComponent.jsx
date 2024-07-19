@@ -208,7 +208,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 									{item.dogs && item.dogs.length ? (
 										<div>
-											<ul>
+											<ul className='margin-t-10'>
 												{item.dogs.map((dog, index) => (
 													<li key={index} className='flex-row'>
 														{dog.id && (
