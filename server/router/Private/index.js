@@ -244,7 +244,11 @@ router
 				}
 			});
 
-			res.send(Object.values(results));
+			res.send(
+				Object.values(results).sort((a, b) => {
+					return a.date > b.date ? 1 : -1;
+				})
+			);
 		} catch (err) {
 			res.send({
 				error: err.error || err
