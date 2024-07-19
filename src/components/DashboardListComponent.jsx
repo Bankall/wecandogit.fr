@@ -62,7 +62,6 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 	useEffect(() => {
 		let exited = false;
-		console.log(params);
 		const fetch = async () => {
 			try {
 				const params = {};
