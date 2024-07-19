@@ -8,26 +8,31 @@ router.route("/ping").get((req, res) => {
 });
 
 const getUserPackageFromIdReservation = async id_reservation => {
-	const user_package = await backend.handleQuery(
-		`
-		SELECT
+	try {
+		const user_package = await backend.handleQuery(
+			`
+			SELECT
 			up.id,
 			up.usage,
 			p.number_of_session
 			
-		FROM user_package up
-		JOIN package p on p.id = up.id_package
-		JOIN dog d on d.id_user = up.id_user
-		JOIN reservation r on r.id_dog = d.id
-		JOIN slot s on s.id = r.id_slot
-		JOIN package_activity pa on pa.id_activity = s.id_activity
-
+			FROM user_package up
+			JOIN package p on p.id = up.id_package
+			JOIN dog d on d.id_user = up.id_user
+			JOIN reservation r on r.id_dog = d.id
+			JOIN slot s on s.id = r.id_slot
+			JOIN package_activity pa on pa.id_activity = s.id_activity
+			
 		WHERE r.id = ?
 		GROUP BY up.id`,
-		[id_reservation]
-	);
+			[id_reservation]
+		);
 
-	return user_package.result;
+		return user_package.result;
+	} catch (err) {
+		console.log(err);
+		return false;
+	}
 };
 
 router.route(["/activity/:id?", "/slot/:id?", "/package/:id"]).all((req, res, next) => {
@@ -160,22 +165,25 @@ router
 		}
 	})
 	.put(async (req, res, next) => {
-		if (req.body.enabled === 0) {
-			const user_package = await getUserPackageFromIdReservation(req.params.id);
+		try {
+			if (req.body.enabled === 0) {
+				const user_package = await getUserPackageFromIdReservation(req.params.id);
 
-			if (user_package) {
-				await backend.put({
-					table: "user_package",
-					where: {
-						id: user_package.id
-					},
-					body: {
-						usage: user_package.usage - 1
-					}
-				});
+				if (user_package && user_package.usage > 0) {
+					await backend.put({
+						table: "user_package",
+						where: {
+							id: user_package.id
+						},
+						body: {
+							usage: user_package.usage - 1
+						}
+					});
+				}
 			}
+		} catch (err) {
+			console.log(err);
 		}
-
 		next();
 	});
 
