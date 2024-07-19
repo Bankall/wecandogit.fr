@@ -109,6 +109,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 			`
 				SELECT 
 					a.label,
+					u.id id_trainer,
 					u.firstname,
 					s.date,
 					a.duration,
@@ -172,6 +173,8 @@ router.route("/get-all-slots").get(async (req, res) => {
 		slots.result = slots.result.map(slot => {
 			slot.reservations = (reservationBySlot[slot.id_slot] || {}).reservations;
 			slot.reserved = (reservationBySlot[slot.id_slot] || {}).reserved;
+			slot.is_mine = slot.id_trainer === req.session.user_id;
+
 			return slot;
 		});
 

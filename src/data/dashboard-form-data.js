@@ -331,7 +331,7 @@ const Dog = [
 	{
 		name: "breed",
 		type: "string",
-		label: "Sa race",
+		label: "Race de l'animal",
 		uitype: "text"
 	},
 	{

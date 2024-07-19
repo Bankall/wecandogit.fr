@@ -7,9 +7,11 @@ import axios from "axios";
 import "./Agenda.css";
 import { useEffect, useRef, useState } from "react";
 import { instantBooking, addToCart } from "../utils/utils.cart";
+import { Link } from "react-router-dom";
 import { Button } from "../components/Button";
+import { useCookies } from "react-cookie";
 
-const renderEventContent = eventInfo => {
+const renderEventContent = (eventInfo, cookies) => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
 	const full = (data.reservations || []).length >= data.spots;
 
@@ -18,7 +20,7 @@ const renderEventContent = eventInfo => {
 			<span className='flex-row'>
 				<i id={data.id_slot}>
 					<span>
-						{data.label} - ({data.firstname}) - {(data.reservations || []).length}/{data.spots}
+						<b>{data.label}</b> - ({data.firstname}) - <b>{full ? "Complet" : `${(data.reservations || []).length}/${data.spots}`}</b>
 					</span>
 
 					{data.reservations && data.reservations.length && (
@@ -44,6 +46,12 @@ const renderEventContent = eventInfo => {
 								Réserver
 							</Button>
 						))}
+
+					{data.is_mine ? (
+						<Link to={`/account/slots/filter/${data.id_slot}`}>
+							<button className='small'>Modifier</button>
+						</Link>
+					) : null}
 
 					<Button
 						className={`small${full || data.reserved ? " disabled" : ""}`}
@@ -98,6 +106,7 @@ const fetchEvents = async setEvents => {
 export default function Agenda() {
 	const [events, setEvents] = useState([]);
 	const [once, setOnce] = useState(true);
+	const [cookies, setCookies] = useCookies();
 
 	const Calendar = useRef();
 
@@ -115,6 +124,13 @@ export default function Agenda() {
 	};
 
 	useEffect(() => {
+		const buttons = Array.from(document.querySelectorAll(".fc-button"));
+		buttons.forEach(button => {
+			button.addEventListener("click", () => {
+				document.querySelector(".agenda").scrollIntoView({ behavior: "smooth" });
+			});
+		});
+
 		const fetch = () => {
 			fetchEvents(setEvents);
 		};
@@ -126,7 +142,24 @@ export default function Agenda() {
 
 	return (
 		<section className='agenda'>
-			<FullCalendar ref={Calendar} locale={frLocale} height='auto' expandRows={true} selectable={true} plugins={[listPlugin, interactionPlugin]} noEventsContent={NoEventRender} initialView={"listWeek"} events={events} eventContent={renderEventContent} />
+			<FullCalendar
+				ref={Calendar}
+				locale={frLocale}
+				height='auto'
+				expandRows={true}
+				selectable={true}
+				plugins={[listPlugin, interactionPlugin]}
+				noEventsContent={NoEventRender}
+				initialView={"listWeek"}
+				events={events}
+				eventContent={eventInfo => renderEventContent(eventInfo, cookies)}
+				scrollTime={false}
+				footerToolbar={{
+					start: "",
+					center: "",
+					end: "today prev,next"
+				}}
+			/>
 		</section>
 	);
 }

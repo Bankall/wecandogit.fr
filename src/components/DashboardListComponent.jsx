@@ -17,6 +17,41 @@ const isNotTooLate = date => {
 	date = new Date(date);
 	return date.getTime() - Date.now() > 86400 * 1000;
 };
+const handleDelete = async (id, typeOverride, type) => {
+	try {
+		await axios.put(`/${typeOverride || type}/${id}`, { enabled: 0 });
+		window.dispatchEvent(new Event(`refresh-list-${type}`));
+	} catch (err) {
+		console.error(err);
+	}
+};
+
+const shouldBeFiltered = (filter, item) => {
+	if (filter.match(/^id\:/)) {
+		const filterId = parseInt(filter.split(":")[1], 10);
+
+		if (item.id !== filterId) {
+			return true;
+		}
+
+		return false;
+	}
+
+	const words = filter.split(/\s/).map(word => word.toLowerCase());
+	const fullString = `${item.date ? formatDate(item.date) : ""} ${item.group_label || ""} ${item.label}`.toLowerCase();
+
+	let everyWordsMatch = true;
+
+	words.forEach(word => {
+		if (!fullString.includes(word)) {
+			everyWordsMatch = false;
+		}
+	});
+
+	if (!everyWordsMatch) {
+		return true;
+	}
+};
 
 export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user }) {
 	const [response, setResponse] = useState(false);
@@ -24,17 +59,10 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 	const [extraTitle, setExtraTitle] = useState(false);
 
 	const params = useParams();
-	const handleDelete = async (id, typeOverride) => {
-		try {
-			await axios.put(`/${typeOverride || type}/${id}`, { enabled: 0 });
-			window.dispatchEvent(new Event(`refresh-list-${type}`));
-		} catch (err) {
-			console.error(err);
-		}
-	};
 
 	useEffect(() => {
 		let exited = false;
+		console.log(params);
 		const fetch = async () => {
 			try {
 				const params = {};
@@ -60,6 +88,10 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 		window.addEventListener(`refresh-list-${type}`, fetch);
 
 		setFilter(false);
+
+		if (params.action === "filter") {
+			setFilter(`id:${params.id}`);
+		}
 
 		(async () => {
 			try {
@@ -89,16 +121,26 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				{extraTitle ? " - " + extraTitle : ""}
 			</div>
 			<div className='content'>
-				{response.data?.length && response.data?.length > 10 ? (
+				{response.data?.length && (response.data?.length > 10 || params.action === "filter") ? (
 					<div className='filter-box margin-b-20'>
 						<input
 							type='text'
+							name='filter'
+							defaultValue={filter ? filter : ""}
 							onKeyUp={event => {
 								setFilter(event.target.value);
 							}}
 							placeholder='Filtrer les résultats'
 							key={type}
 						/>
+						<span
+							className='clear-filter'
+							onClick={() => {
+								document.querySelector("input[name=filter]").value = "";
+								setFilter(false);
+							}}>
+							x
+						</span>
 					</div>
 				) : null}
 
@@ -110,21 +152,8 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 				{response.data?.length
 					? response.data.map((item, index) => {
-							if (filter) {
-								const words = filter.split(/\s/).map(word => word.toLowerCase());
-								const fullString = `${item.date ? formatDate(item.date) : ""} ${item.group_label || ""} ${item.label}`.toLowerCase();
-
-								let everyWordsMatch = true;
-
-								words.forEach(word => {
-									if (!fullString.includes(word)) {
-										everyWordsMatch = false;
-									}
-								});
-
-								if (!everyWordsMatch) {
-									return <div key={index}></div>;
-								}
+							if (filter && shouldBeFiltered(filter, item)) {
+								return <div key={index}></div>;
 							}
 
 							return (
@@ -189,7 +218,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 																aria-hidden='true'
 																style={{ color: "var(--invalid-color)", cursor: "pointer" }}
 																onClick={() => {
-																	handleDelete(dog.id, "reservation");
+																	handleDelete(dog.id, "reservation", "slot");
 																}}></i>
 														)}
 														- {dog.label}
