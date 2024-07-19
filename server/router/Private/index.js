@@ -22,7 +22,7 @@ const getUserPackageFromIdReservation = async id_reservation => {
 		JOIN slot s on s.id = r.id_slot
 		JOIN package_activity pa on pa.id_activity = s.id_activity
 
-		WHERE r.id_slot = ?
+		WHERE r.id = ?
 		GROUP BY up.id`,
 		[id_reservation]
 	);
@@ -162,15 +162,18 @@ router
 	.put(async (req, res, next) => {
 		if (req.body.enabled === 0) {
 			const user_package = await getUserPackageFromIdReservation(req.params.id);
-			await backend.put({
-				table: "user_package",
-				where: {
-					id: user_package.id
-				},
-				body: {
-					usage: user_package.usage - 1
-				}
-			});
+
+			if (user_package) {
+				await backend.put({
+					table: "user_package",
+					where: {
+						id: user_package.id
+					},
+					body: {
+						usage: user_package.usage - 1
+					}
+				});
+			}
 		}
 
 		next();

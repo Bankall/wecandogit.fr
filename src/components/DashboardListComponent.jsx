@@ -20,7 +20,7 @@ const isNotTooLate = date => {
 const handleDelete = async (id, typeOverride, type) => {
 	try {
 		await axios.put(`/${typeOverride || type}/${id}`, { enabled: 0 });
-		window.dispatchEvent(new Event(`refresh-list-${type}`));
+		window.dispatchEvent(new Event(`refresh-list-${type || typeOverride}`));
 	} catch (err) {
 		console.error(err);
 	}
@@ -202,7 +202,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 												aria-hidden='true'
 												style={{ color: "var(--invalid-color)", cursor: "pointer" }}
 												onClick={() => {
-													handleDelete(item.id);
+													handleDelete(item.id, type);
 												}}></i>
 										)}
 									</div>
