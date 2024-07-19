@@ -19,6 +19,10 @@ const isNotTooLate = date => {
 };
 const handleDelete = async (id, typeOverride, type) => {
 	try {
+		if (typeOverride === "slot" && !window.confirm("Es tu sur de vouloir supprimer ce créneau ?")) {
+			return;
+		}
+
 		await axios.put(`/${typeOverride || type}/${id}`, { enabled: 0 });
 		window.dispatchEvent(new Event(`refresh-list-${type || typeOverride}`));
 	} catch (err) {
