@@ -7,7 +7,7 @@ import axios from "axios";
 import "./Agenda.css";
 import { useEffect, useRef, useState } from "react";
 import { instantBooking, addToCart } from "../utils/utils.cart";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/Button";
 import { useCookies } from "react-cookie";
 
@@ -107,13 +107,15 @@ export default function Agenda() {
 	const [events, setEvents] = useState([]);
 	const [once, setOnce] = useState(true);
 	const [cookies, setCookies] = useCookies();
+	const [initialDate, setInitialDate] = useState(new Date());
+	const params = useParams();
 
 	const Calendar = useRef();
 
 	const NoEventRender = () => {
 		const calendarApi = Calendar.current?.getApi();
 
-		if (calendarApi && events.length && once) {
+		if (calendarApi && events.length && once && !(params.year && params.week)) {
 			calendarApi.gotoDate(events[0].start);
 			setOnce(false);
 
@@ -140,6 +142,15 @@ export default function Agenda() {
 		return () => window.removeEventListener("reservations-made", fetch);
 	}, []);
 
+	useEffect(() => {
+		if (params.year && params.week) {
+			const date = new Date(params.year, 0, 1 + (params.week - 1) * 7);
+			const calendarApi = Calendar.current?.getApi();
+
+			calendarApi.gotoDate(date);
+		}
+	}, [params]);
+
 	return (
 		<section className='agenda'>
 			<FullCalendar
@@ -155,7 +166,7 @@ export default function Agenda() {
 				eventContent={eventInfo => renderEventContent(eventInfo, cookies)}
 				scrollTime={false}
 				footerToolbar={{
-					start: "",
+					start: "title",
 					center: "",
 					end: "today prev,next"
 				}}

@@ -53,6 +53,10 @@ function Account() {
 				return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage"]} />;
 			case "slots":
 				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation"]} />;
+			case "past-slots":
+				return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={[]} />;
+			case "user-packages":
+				return <DashboardListComponent title='Formules en attente de paiement' type='unpaid_user_package' allowedActions={["marked-package-as-paid"]} />;
 		}
 	};
 
@@ -88,7 +92,13 @@ function Account() {
 										<NavLink to='/account/slots'>Mes Créneaux</NavLink>
 									</li>
 									<li>
+										<NavLink to='/account/past-slots'>Mes Créneaux passés</NavLink>
+									</li>
+									<li>
 										<NavLink to='/account/packages'>Mes Formules</NavLink>
+									</li>
+									<li>
+										<NavLink to='/account/user-packages'>Formules en attente de paiement</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/users'>Membres</NavLink>

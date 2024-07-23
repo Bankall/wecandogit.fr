@@ -10,30 +10,17 @@
 	color: var(--main-txt-color);
 }
 
-.dashboard .menu ul {
-	border-right: 1px solid var(--light-borders);
-	position: sticky;
-	top: 60px;
+.dashboard ul {
+	padding: 0;
 }
 
 .dashboard ul li {
 	list-style: none;
+	margin: 10px 0;
 }
 
-.dashboard .menu ul li {
-	padding: 20px 40px;
-	margin: 0 20px;
-	cursor: pointer;
-	border-bottom: 1px solid var(--light-borders);
-	min-width: 250px;
-}
-
-.dashboard .menu ul li a.active {
-	font-weight: 550;
-}
-
-.dashboard .menu ul li:last-child {
-	border-bottom: 0;
+.dashboard ul li i {
+	margin-right: 5px;
 }
 
 .dashboard .widgets .box .row {
@@ -80,6 +67,22 @@
 	right: 10px;
 	font-size: 21px;
 	cursor: pointer;
+}
+
+.dashboard .paid,
+.dashboard .unpaid {
+	padding: 4px 10px;
+	border-radius: 6px;
+	font-size: 11px;
+	color: #fff;
+}
+
+.dashboard .paid {
+	background: var(--valid-color);
+}
+
+.dashboard .unpaid {
+	background: var(--invalid-color);
 }
 
 @media screen and (max-width: 900px) {

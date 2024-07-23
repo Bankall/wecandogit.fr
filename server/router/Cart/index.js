@@ -4,19 +4,6 @@ import config from "config";
 
 let backend;
 
-const currentUserPackage = `SELECT 
-	up.id_package id,
-	p.label label
-    
-FROM user_package up
-JOIN package p on p.id = up.id_package
-JOIN package_activity pa on pa.id_package = p.id
-
-WHERE	up.usage < p.number_of_session 
-AND 	up.start < CURRENT_TIMESTAMP
-AND 	up.id_user = ?
-and		pa.id_activity = ?`;
-
 const router = Router();
 router.route("/ping").get((req, res) => {
 	res.send("pong");
@@ -100,7 +87,8 @@ const getSlotDetail = async (req, slot) => {
 					a.label,
 					a.id id_activity,
 					a.price,
-					s.id_trainer
+					s.id_trainer,
+					s.date
 				FROM activity a
 				JOIN slot s on s.id_activity = a.id
 				WHERE s.id = ?
@@ -110,7 +98,7 @@ const getSlotDetail = async (req, slot) => {
 			false
 		);
 
-		const user_packages = await backend.handleQuery(currentUserPackage, [req.session.user_id, data.result.id_activity], "get-user_package", true);
+		const user_packages = await backend.getUserPackageForID({ id_slot: slot.id, available: true, req });
 		const dogs = await backend.get({
 			table: "dog",
 			query: {
@@ -118,11 +106,17 @@ const getSlotDetail = async (req, slot) => {
 			}
 		});
 
+		const date = new Date(data.result.date);
+		const formattedDate = new Intl.DateTimeFormat("fr-FR", {
+			day: "2-digit",
+			month: "2-digit"
+		}).format(date);
+
 		return {
-			label: data.result.label,
+			label: `${data.result.label} - ${formattedDate}`,
 			price: data.result.price,
 			id_trainer: data.result.id_trainer,
-			package_available: user_packages.result,
+			package_available: user_packages,
 			dogs: dogs.result.map(dog => {
 				return { label: dog.label, id: dog.id };
 			})
@@ -180,7 +174,7 @@ const sortCartItemByTrainers = async req => {
 
 			data.type = item.type;
 			data.id = item.id;
-			data.payment_type = item.payment_type;
+			data.payment_type = item.payment_type || "direct";
 			data.id_dog = item.id_dog || dog.result[0].id;
 
 			if (data.package_available && data.package_available.length && !data.payment_type) {
@@ -237,18 +231,23 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 	try {
 		const allCartItems = await sortCartItemByTrainers(req);
 		const cartItems = allCartItems[req.params.idTrainer].slot.concat(allCartItems[req.params.idTrainer].package);
-		const lineItems = cartItems.map(item => {
-			return {
-				price_data: {
-					currency: "EUR",
-					product_data: {
-						name: item.label
+
+		console.log(cartItems);
+
+		const lineItems = cartItems
+			.filter(item => item.payment_type === "direct")
+			.map(item => {
+				return {
+					price_data: {
+						currency: "EUR",
+						product_data: {
+							name: item.label
+						},
+						unit_amount: item.price * 100
 					},
-					unit_amount: item.price * 100
-				},
-				quantity: 1
-			};
-		});
+					quantity: 1
+				};
+			});
 
 		const trainer = await backend.get({
 			table: "user",
@@ -275,54 +274,50 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 
 		res.redirect(303, session.url);
 	} catch (err) {
-		console.log(err);
 		res.send({ error: err.message || err });
 	}
 });
 
-const handleReservation = async (req, itemToReserve) => {
+const handleReservation = async (req, itemToReserve, stripe_id) => {
 	try {
 		for await (const item of itemToReserve) {
 			if (item.type === "slot") {
+				if (!["direct", "later"].includes(item.payment_type)) {
+					const current_usage = await backend.get({
+						table: "user_package",
+						id: item.payment_type
+					});
+
+					const _package = await backend.get({
+						table: "package",
+						id: current_usage.result.id_package
+					});
+
+					if (current_usage.result.usage < _package.result.number_of_session) {
+						await backend.put({
+							table: "user_package",
+							where: {
+								id: item.payment_type
+							},
+							body: {
+								usage: current_usage.result.usage + 1
+							}
+						});
+					} else {
+						return { error: `Vous avez dépassez le nombre d'utilisation de votre formule ${_package.result.label}` };
+					}
+				}
+
 				await backend.post({
 					table: "reservation",
 					body: {
 						id_slot: item.id,
 						id_dog: item.id_dog,
-						paid: item.payment_type !== "later"
+						paid: item.payment_type !== "later",
+						payment_type: typeof item.payment_type === "number" ? "package" : item.payment_type,
+						payment_details: typeof item.payment_type === "number" ? item.payment_type : stripe_id
 					}
 				});
-
-				if (!["direct", "later"].includes(item.payment_type)) {
-					const current_usage = await backend.get({
-						table: "user_package",
-						query: {
-							id_user: req.session.user_id,
-							id_package: item.payment_type
-						}
-					});
-
-					const _package = await backend.get({
-						table: "package",
-						id: item.payment_type
-					});
-
-					if (current_usage.result[0].usage < _package.result.number_of_session) {
-						await backend.put({
-							table: "user_package",
-							where: {
-								id_package: item.payment_type
-							},
-							body: {
-								usage: current_usage.result[0].usage + 1
-							}
-						});
-
-						continue;
-					}
-
-					return { error: `Vous avez dépassez le nombre d'utilisation de votre formule ${_package.result.label}` };
-				}
 			}
 
 			if (item.type === "package") {
@@ -331,7 +326,9 @@ const handleReservation = async (req, itemToReserve) => {
 					body: {
 						id_package: item.id,
 						id_user: req.session.user_id,
-						paid: item.payment_type !== "later"
+						paid: item.payment_type !== "later",
+						payment_type: item.payment_type,
+						payment_details: stripe_id
 					}
 				});
 			}
@@ -368,7 +365,7 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 			return res.redirect("/cart#payment-error");
 		}
 
-		const allReserved = await handleReservation(req, req.session.stripe_session_cart);
+		const allReserved = await handleReservation(req, req.session.stripe_session_cart, session.id);
 		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
 	} catch (e) {}
 });

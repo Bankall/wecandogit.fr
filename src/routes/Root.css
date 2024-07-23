@@ -260,7 +260,7 @@ button:focus {
 	flex-direction: row;
 	flex-wrap: wrap;
 	align-items: center;
-	column-gap: 20px;
+	column-gap: 10px;
 	row-gap: 10px;
 }
 
@@ -490,4 +490,31 @@ input[type="number"] {
 
 input:focus {
 	box-shadow: 0 8px 18px rgba(37, 37, 37, 0.16);
+}
+
+.menu {
+	align-self: stretch;
+}
+
+.menu ul {
+	border-right: 1px solid var(--light-borders);
+	position: sticky;
+	top: 60px;
+}
+
+.menu ul li {
+	padding: 20px 40px;
+	margin: 0 20px;
+	cursor: pointer;
+	border-bottom: 1px solid var(--light-borders);
+	min-width: 250px;
+	list-style: none;
+}
+
+.menu ul li a.active {
+	font-weight: 550;
+}
+
+.menu ul li:last-child {
+	border-bottom: 0;
 }

@@ -7,35 +7,39 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
-const getUserPackageFromIdReservation = async id_reservation => {
+const handleRefund = async ({ id_reservation, req, refundValue, updateReservation }) => {
 	try {
-		const user_package = await backend.handleQuery(
-			`
-			SELECT
-			up.id,
-			up.usage,
-			p.number_of_session
-			
-			FROM user_package up
-			JOIN package p on p.id = up.id_package
-			JOIN dog d on d.id_user = up.id_user
-			JOIN reservation r on r.id_dog = d.id
-			JOIN slot s on s.id = r.id_slot
-			JOIN package_activity pa on pa.id_activity = s.id_activity
-			
-		WHERE r.id = ?
-		GROUP BY up.id`,
-			[id_reservation]
-		);
+		const user_package = await backend.getUserPackageForID({ id_reservation, req });
 
-		return user_package.result;
-	} catch (err) {
-		console.log(err);
-		return false;
-	}
+		if (user_package && user_package.length && (refundValue < 0 || user_package[0].usage > 0)) {
+			await backend.put({
+				table: "user_package",
+				where: {
+					id: user_package[0].id
+				},
+				body: {
+					usage: user_package[0].usage - (refundValue || 1)
+				}
+			});
+
+			if (updateReservation && refundValue) {
+				await backend.put({
+					table: "reservation",
+					where: {
+						id: id_reservation
+					},
+					body: {
+						paid: 1,
+						payment_type: "package",
+						payment_details: user_package[0].id
+					}
+				});
+			}
+		}
+	} catch (err) {}
 };
 
-router.route(["/activity/:id?", "/slot/:id?", "/package/:id"]).all((req, res, next) => {
+router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, next) => {
 	if (!req.session.is_trainer) {
 		return res.send({
 			error: "Vous n'avez pas accès à cette ressource"
@@ -157,7 +161,14 @@ router
 				req.body.id_dog = dog.result.id;
 			}
 
-			next();
+			const reservation = await backend.post({
+				table: "reservation",
+				body: req.body
+			});
+
+			handleRefund({ id_reservation: reservation.result.id, req, refundValue: -1, updateReservation: true });
+
+			res.send(reservation.result);
 		} catch (err) {
 			res.send({
 				error: err.message || err
@@ -167,19 +178,7 @@ router
 	.put(async (req, res, next) => {
 		try {
 			if (req.body.enabled === 0) {
-				const user_package = await getUserPackageFromIdReservation(req.params.id);
-
-				if (user_package && user_package.usage > 0) {
-					await backend.put({
-						table: "user_package",
-						where: {
-							id: user_package.id
-						},
-						body: {
-							usage: user_package.usage - 1
-						}
-					});
-				}
+				handleRefund({ id_reservation: req.params.id, req });
 			}
 		} catch (err) {
 			console.log(err);
@@ -188,7 +187,7 @@ router
 	});
 
 router
-	.route("/slot")
+	.route("/slot/:past?")
 	.get(async (req, res) => {
 		try {
 			const slots = await backend.handleQuery(
@@ -199,6 +198,8 @@ router
 				a.spots,
 				r.id_dog,
 				r.id id_reservation,
+				r.paid,
+				r.payment_type,
                 CASE WHEN d.breed != "" THEN concat(d.label, ' (', d.breed, ' ', d.sexe, ')') ELSE concat(d.label, " *") END label_dog
 				
 			FROM slot s
@@ -207,7 +208,7 @@ router
             LEFT JOIN dog d on d.id = r.id_dog
 
 			WHERE	s.id_trainer = ?
-			AND 	s.date > current_timestamp()
+			AND 	s.date ${req.params.past ? "<" : ">"} current_timestamp()
 			AND 	s.enabled = 1
 
 			GROUP BY s.id, r.id
@@ -234,7 +235,9 @@ router
 				if (slot.id_dog) {
 					results[slot.id].dogs.push({
 						id: slot.id_reservation,
-						label: slot.label_dog
+						label: slot.label_dog,
+						paid: slot.paid,
+						payment_type: slot.payment_type
 					});
 
 					results[slot.id].reservations += 1;
@@ -245,9 +248,15 @@ router
 			});
 
 			res.send(
-				Object.values(results).sort((a, b) => {
-					return a.date > b.date ? 1 : -1;
-				})
+				Object.values(results)
+					.sort((a, b) => {
+						if (req.params.past) {
+							return a.date < b.date ? 1 : -1;
+						}
+
+						return a.date > b.date ? 1 : -1;
+					})
+					.filter(item => !req.params.past || item.reservations > 0)
 			);
 		} catch (err) {
 			res.send({
@@ -260,6 +269,16 @@ router
 			// TODO handle refund here
 		} catch (err) {}
 	});
+
+router.route("/past_slot").get(async (req, res) => {
+	try {
+		res.redirect("slot/past");
+	} catch (err) {
+		res.send({
+			error: err.error || err
+		});
+	}
+});
 
 router.route("/create-slots").post(async (req, res) => {
 	try {
@@ -343,6 +362,36 @@ router.route("/user_package").get(async (req, res) => {
 				user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session}`;
 			}
 		}
+
+		res.send(user_packages.result);
+	} catch (err) {
+		res.send({
+			error: err.message || error
+		});
+	}
+});
+
+router.route("/unpaid_user_package").get(async (req, res) => {
+	try {
+		const user_packages = await backend.handleQuery(
+			`
+			SELECT 
+				up.id,
+				concat(u.firstname, " ", u.lastname, " - ", p.label) label
+
+			FROM user_package up
+			JOIN package p on p.id = up.id_package
+			JOIN user u on u.id = up.id_user
+
+			WHERE 	p.id_trainer = ?
+			AND 	up.paid = 0
+
+			ORDER BY up.start DESC
+			`,
+			[req.session.user_id],
+			null,
+			true
+		);
 
 		res.send(user_packages.result);
 	} catch (err) {

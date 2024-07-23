@@ -74,6 +74,25 @@ app.use(`${API_PATH}/`, Private(backend));
 app.use(`${API_PATH}/`, Public(backend));
 app.use(`${API_PATH}/cart`, Cart(backend));
 
+app.get(`${API_PATH}/fake-user/:id?`, async (req, res) => {
+	if (![1, 36].includes(req.session.user_id)) {
+		return res.send({
+			error: "Vous n'avez pas accès à cette page"
+		});
+	}
+
+	const user = await backend.get({
+		table: "user",
+		id: req.params.id
+	});
+
+	req.session.email = user.result.email;
+	req.session.user_id = user.result.id;
+	req.session.is_trainer = user.result.is_trainer;
+
+	res.send("Done");
+});
+
 backend.start(() => {
 	app.listen(PORT, () => {
 		console.log(`App listening on port ${PORT}!`);
@@ -82,4 +101,42 @@ backend.start(() => {
 	app.get("*", (req, res) => {
 		res.sendFile(path.join(__dirname, "../dist", "index.html"));
 	});
+
+	backend.getUserPackageForID = async ({ id_reservation, id_slot, available, req }) => {
+		try {
+			const user_package = await backend.handleQuery(
+				`
+				SELECT
+					up.id,
+					up.usage,
+					p.label,
+					p.number_of_session
+					
+				FROM user_package up
+				JOIN package p ON p.id = up.id_package
+				JOIN package_activity pa ON pa.id_package = p.id
+				JOIN slot s ON s.id_activity = pa.id_activity AND (s.id_trainer = p.id_trainer OR p.id_trainer = 36)
+
+				${id_reservation ? "JOIN reservation r on r.id_slot = s.id and up.id_user = (select id_user from dog where id = r.id_dog)" : ""}
+
+				WHERE 	1 = 1
+
+				${id_slot ? "AND 	s.id = ?" : id_reservation ? "AND	r.id = ?" : ""}
+				${available ? "AND up.usage < p.number_of_session AND up.start < CURRENT_TIMESTAMP" : ""}
+
+				${!id_reservation ? "AND 	up.id_user = ?" : ""}
+				
+				GROUP BY up.id
+				ORDER BY up.start ASC`,
+				[id_reservation || id_slot, req.session.user_id],
+				null,
+				true
+			);
+
+			return user_package.result;
+		} catch (err) {
+			console.log(err);
+			return {};
+		}
+	};
 });

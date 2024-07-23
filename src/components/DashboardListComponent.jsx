@@ -17,9 +17,22 @@ const isNotTooLate = date => {
 	date = new Date(date);
 	return date.getTime() - Date.now() > 86400 * 1000;
 };
+
+const markAsPaid = async (id, typeOverride, type) => {
+	try {
+		await axios.put(`/${typeOverride || type}/${id}`, { paid: 1 });
+		window.dispatchEvent(new Event(`refresh-list-${type || typeOverride}`));
+	} catch (err) {
+		console.log(err);
+	}
+};
 const handleDelete = async (id, typeOverride, type) => {
 	try {
 		if (typeOverride === "slot" && !window.confirm("Es tu sur de vouloir supprimer ce créneau ?")) {
+			return;
+		}
+
+		if (typeOverride === "reservation" && !window.confirm("Es tu sur de vouloir supprimer cette réservation ?")) {
 			return;
 		}
 
@@ -160,7 +173,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 							}
 
 							return (
-								<div className='row' key={index}>
+								<div className='row' key={index} id={item.id}>
 									<div className='flex-row'>
 										<span className='list-detail'>
 											{item.date ? `${formatDate(item.date)} - ` : ""}
@@ -199,6 +212,16 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 											</Link>
 										)}
 
+										{allowedActions.includes("marked-package-as-paid") && (
+											<button
+												className='small'
+												onClick={() => {
+													markAsPaid(item.id, "user_package", type);
+												}}>
+												Marquer comme payé
+											</button>
+										)}
+
 										{(allowedActions.includes("delete") || (allowedActions.includes("delete-24") && isNotTooLate(item.date))) && (
 											<i
 												className='fa-solid fa-trash-can'
@@ -214,7 +237,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 										<div>
 											<ul className='margin-t-10'>
 												{item.dogs.map((dog, index) => (
-													<li key={index} className='flex-row'>
+													<li className='flex-row' key={index}>
 														{dog.id && (
 															<i
 																className='fa-solid fa-trash-can'
@@ -224,7 +247,8 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 																	handleDelete(dog.id, "reservation", "slot");
 																}}></i>
 														)}
-														- {dog.label}
+														<span className='flex-grow'>&nbsp;- {dog.label}</span>
+														{typeof dog.paid !== "undefined" && <span className={dog.paid ? "paid" : "unpaid"}>{dog.paid ? `Réglé${dog.payment_type === "package" ? " avec une formule" : dog.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
 													</li>
 												))}
 											</ul>

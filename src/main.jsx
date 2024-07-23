@@ -59,7 +59,7 @@ const router = createBrowserRouter([
 				lazy: async () => import("./routes/Privacy")
 			},
 			{
-				path: "/agenda",
+				path: "/agenda/:year?/:week?",
 				lazy: () => import("./routes/Agenda")
 			},
 			{
