@@ -170,6 +170,7 @@ router
 
 			res.send(reservation.result);
 		} catch (err) {
+			console.log(error);
 			res.send({
 				error: err.message || err
 			});
@@ -266,8 +267,29 @@ router
 	})
 	.put(async (req, res, next) => {
 		try {
+			const id_slot = req.params.past;
+			if (req.body.enabled === 0) {
+				const reservations = await backend.get({
+					table: "reservation",
+					query: {
+						id_slot,
+						enabled: 1,
+						payment_type: "package"
+					}
+				});
+
+				if (reservations.result.length) {
+					for await (const reservation of reservations.result) {
+						await handleRefund({ id_reservation: reservation.id, req });
+					}
+				}
+
+				next();
+			}
 			// TODO handle refund here
-		} catch (err) {}
+		} catch (err) {
+			console.log(err);
+		}
 	});
 
 router.route("/past_slot").get(async (req, res) => {
