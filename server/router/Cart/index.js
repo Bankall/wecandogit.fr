@@ -174,7 +174,7 @@ const sortCartItemByTrainers = async req => {
 
 			data.type = item.type;
 			data.id = item.id;
-			data.payment_type = item.payment_type || "direct";
+			data.payment_type = item.payment_type;
 			data.id_dog = item.id_dog || dog.result[0].id;
 
 			if (data.package_available && data.package_available.length && !data.payment_type) {
@@ -306,6 +306,10 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					} else {
 						return { error: `Vous avez dépassez le nombre d'utilisation de votre formule ${_package.result.label}` };
 					}
+				}
+
+				if (parseInt(item.payment_type, 10).toString() === item.payment_type) {
+					item.payment_type = parseInt(item.payment_type, 10);
 				}
 
 				await backend.post({

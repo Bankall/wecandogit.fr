@@ -187,92 +187,99 @@ router
 		next();
 	});
 
+const getSlotsListing = async (req, res) => {
+	try {
+		const slots = await backend.handleQuery(
+			`SELECT 
+			s.id,
+			s.date,
+			a.label,
+			a.spots,
+			r.id_dog,
+			r.id id_reservation,
+			r.paid,
+			r.payment_type,
+			CASE WHEN d.breed != "" THEN concat(d.label, ' (', d.breed, ' ', d.sexe, ')') ELSE concat(d.label, " *") END label_dog
+			
+		FROM slot s
+		JOIN activity a on a.id = s.id_activity
+		LEFT JOIN reservation r on r.id_slot = s.id and r.enabled = 1
+		LEFT JOIN dog d on d.id = r.id_dog
+
+		WHERE	s.id_trainer = ?
+		AND 	s.date ${req.body.past ? "<" : ">"} current_timestamp()
+		AND 	s.enabled = 1
+
+		GROUP BY s.id, r.id
+		ORDER BY s.date ASC`,
+			[req.session.user_id],
+			null,
+			true
+		);
+
+		const results = {};
+		slots.result.forEach(slot => {
+			if (!results[slot.id]) {
+				results[slot.id] = {
+					id: slot.id,
+					label: `0 / ${slot.spots}`,
+					date: slot.date,
+					group_label: slot.label,
+					spots: slot.spots,
+					reservations: 0,
+					dogs: []
+				};
+			}
+
+			if (slot.id_dog) {
+				results[slot.id].dogs.push({
+					id: slot.id_reservation,
+					label: slot.label_dog,
+					paid: slot.paid,
+					payment_type: slot.payment_type
+				});
+
+				results[slot.id].reservations += 1;
+				const full = results[slot.id].reservations >= results[slot.id].spots;
+
+				results[slot.id].label = `${full ? "Complet" : `${results[slot.id].reservations} / ${slot.spots}`}`;
+			}
+		});
+
+		res.send(
+			Object.values(results)
+				.sort((a, b) => {
+					if (req.body.past) {
+						return a.date < b.date ? 1 : -1;
+					}
+
+					return a.date > b.date ? 1 : -1;
+				})
+				.filter(item => !req.body.past || item.reservations > 0)
+		);
+	} catch (err) {
+		res.send({
+			error: err.error || err
+		});
+	}
+};
+
 router
-	.route("/slot/:past?")
-	.get(async (req, res) => {
-		try {
-			const slots = await backend.handleQuery(
-				`SELECT 
-				s.id,
-				s.date,
-				a.label,
-				a.spots,
-				r.id_dog,
-				r.id id_reservation,
-				r.paid,
-				r.payment_type,
-                CASE WHEN d.breed != "" THEN concat(d.label, ' (', d.breed, ' ', d.sexe, ')') ELSE concat(d.label, " *") END label_dog
-				
-			FROM slot s
-			JOIN activity a on a.id = s.id_activity
-			LEFT JOIN reservation r on r.id_slot = s.id and r.enabled = 1
-            LEFT JOIN dog d on d.id = r.id_dog
-
-			WHERE	s.id_trainer = ?
-			AND 	s.date ${req.params.past ? "<" : ">"} current_timestamp()
-			AND 	s.enabled = 1
-
-			GROUP BY s.id, r.id
-			ORDER BY s.date ASC`,
-				[req.session.user_id],
-				null,
-				true
-			);
-
-			const results = {};
-			slots.result.forEach(slot => {
-				if (!results[slot.id]) {
-					results[slot.id] = {
-						id: slot.id,
-						label: `0 / ${slot.spots}`,
-						date: slot.date,
-						group_label: slot.label,
-						spots: slot.spots,
-						reservations: 0,
-						dogs: []
-					};
-				}
-
-				if (slot.id_dog) {
-					results[slot.id].dogs.push({
-						id: slot.id_reservation,
-						label: slot.label_dog,
-						paid: slot.paid,
-						payment_type: slot.payment_type
-					});
-
-					results[slot.id].reservations += 1;
-					const full = results[slot.id].reservations >= results[slot.id].spots;
-
-					results[slot.id].label = `${full ? "Complet" : `${results[slot.id].reservations} / ${slot.spots}`}`;
-				}
-			});
-
-			res.send(
-				Object.values(results)
-					.sort((a, b) => {
-						if (req.params.past) {
-							return a.date < b.date ? 1 : -1;
-						}
-
-						return a.date > b.date ? 1 : -1;
-					})
-					.filter(item => !req.params.past || item.reservations > 0)
-			);
-		} catch (err) {
-			res.send({
-				error: err.error || err
-			});
+	.route("/slot/:id?")
+	.get(async (req, res, next) => {
+		if (req.params.id) {
+			return next();
 		}
+
+		return await getSlotsListing(req, res);
 	})
 	.put(async (req, res, next) => {
 		try {
-			const id_slot = req.params.past;
 			if (req.body.enabled === 0) {
 				const reservations = await backend.get({
 					table: "reservation",
 					query: {
-						id_slot,
+						id_slot: req.params.id,
 						enabled: 1,
 						payment_type: "package"
 					}
@@ -283,10 +290,9 @@ router
 						await handleRefund({ id_reservation: reservation.id, req });
 					}
 				}
-
-				next();
 			}
-			// TODO handle refund here
+
+			next();
 		} catch (err) {
 			console.log(err);
 		}
@@ -294,7 +300,8 @@ router
 
 router.route("/past_slot").get(async (req, res) => {
 	try {
-		res.redirect("slot/past");
+		req.body.past = true;
+		return await getSlotsListing(req, res);
 	} catch (err) {
 		res.send({
 			error: err.error || err
