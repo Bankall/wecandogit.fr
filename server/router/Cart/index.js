@@ -181,6 +181,10 @@ const sortCartItemByTrainers = async req => {
 				data.payment_type = data.package_available[0].id;
 			}
 
+			if (!data.payment_type) {
+				data.payment_type = "direct";
+			}
+
 			byTrainers[data.id_trainer][item.type].push(data);
 
 			if (data.payment_type === "direct" || !data.payment_type) {
