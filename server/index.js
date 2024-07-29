@@ -93,6 +93,35 @@ app.get(`${API_PATH}/fake-user/:id?`, async (req, res) => {
 	res.send("Done");
 });
 
+app.get(`${API_PATH}/optout/:type/:email`, async (req, res) => {
+	try {
+		const body = {};
+
+		if (req.params.type === "newsletter") {
+			body.newsletter_optin = 0;
+		} else if (req.params.type === "reminder") {
+			body.reminder_optin = 0;
+		}
+
+		const response = await backend.put({
+			table: "user",
+			where: {
+				email: req.params.email
+			},
+			body
+		});
+
+		if (response.result) {
+			res.send({ ok: true });
+		}
+	} catch (err) {
+		console.log(err);
+		res.send({
+			error: err.message || err
+		});
+	}
+});
+
 backend.start(() => {
 	app.listen(PORT, () => {
 		console.log(`App listening on port ${PORT}!`);

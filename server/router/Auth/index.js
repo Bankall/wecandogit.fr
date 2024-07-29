@@ -106,11 +106,27 @@ router.route("/create-user").post(async (req, res, next) => {
 		await assert(req.body.email, req.body.password, req.body.firstname, req.body.lastname, req.body.phone);
 
 		req.body.password = await bcrypt.hash(req.body.password, 10);
-
-		const newUser = await backend.post({
+		const existingUser = await backend.get({
 			table: "user",
-			body: req.body
+			query: {
+				email: req.body.email
+			}
 		});
+
+		if (existingUser.result.length && !existingUser.result[0].password) {
+			const newUser = await backend.put({
+				table: "user",
+				body: req.body,
+				where: {
+					id: existingUser.result[0].id
+				}
+			});
+		} else {
+			const newUser = await backend.post({
+				table: "user",
+				body: req.body
+			});
+		}
 
 		const cart = req.session.cart;
 		req.session.regenerate(async err => {
@@ -131,6 +147,8 @@ router.route("/create-user").post(async (req, res, next) => {
 			});
 		});
 	} catch (err) {
+		console.log("Create-user", err);
+
 		res.send({
 			error: (err.error || "").match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
 		});
