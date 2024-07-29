@@ -9,6 +9,7 @@ import { useParams, useNavigate, NavLink } from "react-router-dom";
 
 const AccountInfo = lazy(() => import("../components/AccountInfo"));
 const DashboardListComponent = lazy(() => import("../components/DashboardListComponent"));
+const MailEditor = lazy(() => import("../components/MailEditor"));
 
 function Account() {
 	const params = useParams();
@@ -57,6 +58,8 @@ function Account() {
 				return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={[]} />;
 			case "user-packages":
 				return <DashboardListComponent title='Formules en attente de paiement' type='unpaid_user_package' allowedActions={["marked-package-as-paid"]} />;
+			case "mail-composer":
+				return <MailEditor />;
 		}
 	};
 
@@ -102,6 +105,9 @@ function Account() {
 									</li>
 									<li>
 										<NavLink to='/account/users'>Membres</NavLink>
+									</li>
+									<li>
+										<NavLink to='/account/mail-composer'>Messages</NavLink>
 									</li>
 								</>
 							) : null}

@@ -43,22 +43,23 @@
 			.container {
 				display: block;
 				margin: 0 auto !important;
-				max-width: 580px;
+				max-width: 660px;
 				padding: 10px;
-				width: 580px;
+				width: 660px;
 			}
 
 			.content {
 				box-sizing: border-box;
 				display: block;
 				margin: 0 auto;
-				max-width: 580px;
+				max-width: 660px;
 				padding: 10px;
+				background: #ffffff;
+				border-radius: 6px;
+				box-shadow: 0 0.0625rem 0.1875rem rgba(45, 46, 92, 0.15);
 			}
 
 			.main {
-				background: #ffffff;
-				border-radius: 3px;
 				width: 100%;
 			}
 
@@ -74,9 +75,9 @@
 
 			.footer {
 				clear: both;
-				margin-top: 10px;
+				margin: 10px 20px;
 				text-align: center;
-				width: 100%;
+				border-top: 1px solid #CCC;
 			}
 			.footer td,
 			.footer p,
@@ -85,13 +86,18 @@
 				color: #999999;
 				font-size: 12px;
 				text-align: center;
+				margin-bottom: 15px;
+			}
+
+			.footer .footer-link p {
+				margin-bottom: 5px;
 			}
 
 			h1,
 			h2,
 			h3,
 			h4 {
-				color: #000000;
+				color: #333333;
 				font-family: sans-serif;
 				font-weight: 400;
 				line-height: 1.4;
@@ -123,7 +129,7 @@
 			}
 
 			a {
-				color: #3498db;
+				color: rgb(135, 41, 133);
 				text-decoration: underline;
 			}
 
@@ -132,7 +138,8 @@
 				width: 100%;
 			}
 			.btn > tbody > tr > td {
-				padding-bottom: 15px; }
+				padding-bottom: 15px;
+			}
 			.btn table {
 				width: auto;
 			}
@@ -143,10 +150,10 @@
 			}
 			.btn a {
 				background-color: #ffffff;
-				border: solid 1px #3498db;
+				border: solid 1px rgb(135, 41, 133);
 				border-radius: 5px;
 				box-sizing: border-box;
-				color: #3498db;
+				color: #ffffff;
 				cursor: pointer;
 				display: inline-block;
 				font-size: 14px;
@@ -157,22 +164,24 @@
 				text-transform: capitalize;
 			}
 
-			.btn-primary table td {
-				background-color: #3498db;
+			.btn-primary {
+				margin-top: 20px;
+			}
+
+			.btn-primary table {
+				width: auto;
+				display: inline-block;
 			}
 
 			.btn-primary a {
-				background-color: #3498db;
-				border-color: #3498db;
+				background-color: rgb(135, 41, 133);
+				border-color: rgb(135, 41, 133);
 				color: #ffffff;
-			}
-
-			.last {
-				margin-bottom: 0;
-			}
-
-			.first {
-				margin-top: 0;
+				text-decoration: none;
+				padding: 10px 20px;
+				border-radius: 6px;
+				cursor: pointer;
+				display: block;
 			}
 
 			.align-center {
@@ -276,7 +285,7 @@
 				.ExternalClass div {
 					line-height: 100%;
 				}
-				.apple-link a {
+				.footer-link a {
 					color: inherit !important;
 					font-family: inherit !important;
 					font-size: inherit !important;
@@ -292,18 +301,16 @@
 					font-weight: inherit;
 					line-height: inherit;
 				}
-				.btn-primary table td:hover {
-					background-color: #34495e !important;
-				}
+
 				.btn-primary a:hover {
-					background-color: #34495e !important;
-					border-color: #34495e !important;
+					background-color: rgb(112, 33, 111) !important;
+					border-color: rgb(112, 33, 111) !important;
 				}
 			}
 		</style>
 	</head>
 	<body>
-		<span class="preheader">Vous y êtes presque.</span>
+		<span class="preheader">{{PRE_HEADER}}</span>
 		<table role="presentation" border="0" cellpadding="0" cellspacing="0" class="body">
 			<tr>
 				<td>&nbsp;</td>
@@ -315,9 +322,13 @@
 									<table role="presentation" border="0" cellpadding="0" cellspacing="0">
 										<tr>
 											<td align="center">
-												<p><img style="width: 100%;" src="https://wecandogit.com/assets/medias/header-background.webp" /></p>
-												<p></p>
-												<p>{{CONTENT_HTML}}</p>
+												<p><img style="width: 100px;" src="https://wecandogit.com/logo.png" /></p>
+												<p>&nbsp;</p>
+											</td>
+										</tr>
+										<tr>
+											<td>
+												<div>{{CONTENT_HTML}}</div>
 											</td>
 										</tr>
 									</table>
@@ -328,15 +339,66 @@
 						<div class="footer">
 							<table role="presentation" border="0" cellpadding="0" cellspacing="0">
 								<tr>
+									<td>
+										<div class="btn-primary center">
+											<table role="presentation" border="0" cellpadding="0" cellspacing="0">
+												<tr>
+													<td>
+														<a href="https://www.facebook.com/groups/3253168581672933/" target="_blank">
+															Ne ratez aucune info,
+															<br />
+															rejoignez le groupe privé
+														</a>
+													</td>
+												</tr>
+											</table>
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td class="wrapper">
+										<table role="presentation" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td align="center">
+													<p style="font-size: 18px; color: #333">Suivez-nous</p>
+												</td>
+											</tr>
+											<tr>
+												<td align="center">
+													<p>
+														<a href="https://www.facebook.com/wecandogit" target="_blank" style="padding: 0 10px;">
+															<img src="https://wecandogit.com/assets/medias/facebook.png" width="30px" />
+														</a>
+														<a href="https://www.instagram.com/wecandogit/" target="_blank" style="padding: 0 10px;">
+															<img src="https://wecandogit.com/assets/medias/instagram.png" width="30px" />
+														</a>
+													</p>
+												</td>
+											</tr>
+										</table>
+									</td>
+								</tr>
+								<tr>
 									<td class="content-block">
-										<span class="apple-link">
-											Merci,
-											<br />
-											We Can Dog It, Parc de loisirs, éducateurs canin comportementalistes
-											<br />
-											0688477801
-											<br />
-											contact.wecandogit@gmail.com
+										<span class="footer-link">
+											<p>We Can Dog It, Parc de loisirs, éducateurs canin comportementalistes</p>
+											<p>
+												<a target="_blank" href="tel:+33688477801">06 88 47 78 01</a>
+											</p>
+											<p>
+												<a target="_blank" href="mailto:contact.wecandogit@gmail.com">contact.wecandogit@gmail.com</a>
+											</p>
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td class="content-block">
+										<span class="">
+											<p>
+												Si vous ne souhaitez plus recevoir cet e-mail,
+												<a target="_blank" style="text-decoration: underline;" href="https://wecandogit.com/optout/{{EMAIL_TYPE}}/{{EMAIL}}">modifiez vos préférences ici.</a>
+											</p>
+											<p></p>
 										</span>
 									</td>
 								</tr>

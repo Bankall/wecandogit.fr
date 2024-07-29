@@ -1,4 +1,5 @@
 import { Router } from "express";
+import MailSender from "../../lib/mail-sender/index.cjs";
 
 let backend;
 
@@ -358,12 +359,12 @@ router.route("/user").get(async (req, res) => {
 
 		res.send(
 			users.result
+				.filter(user => user.id !== 2 && user.firstname)
 				.map(user => {
 					user.label = `<a href="tel:${user.phone}"><i class="fa-solid fa-phone"></i></a> ${user.firstname} ${user.lastname} <a href="mailto:${user.email}" target="_blank">&lt;${user.email}&gt;</a>`;
 					user.dogs = dogByUser[user.id];
 					return user;
 				})
-				.filter(user => user.id !== 2)
 		);
 	} catch (err) {
 		res.send({
@@ -516,6 +517,50 @@ router.route("/all-dogs").get(async (req, res) => {
 					return a.label.localeCompare(b.label);
 				})
 		);
+	} catch (err) {
+		res.send({
+			error: err.error || err
+		});
+	}
+});
+
+router.route("/send-mail").post(async (req, res) => {
+	try {
+		const content = req.body.content;
+		const tos = [];
+		let EMAIL_TYPE;
+
+		if (req.body.to === "all") {
+			EMAIL_TYPE = "newsletter";
+
+			const users = await backend.get({
+				table: "user",
+				query: {
+					newsletter_optin: 1
+				}
+			});
+
+			users.result.forEach(item => {
+				tos.push(item.email);
+			});
+		}
+
+		for await (const to of tos) {
+			await MailSender.send({
+				subject: req.body.subject,
+				email: to,
+				macros: {
+					PRE_HEADER: req.body.subject,
+					CONTENT_HTML: content,
+					EMAIL_TYPE,
+					EMAIL: to
+				}
+			});
+		}
+
+		res.send({
+			ok: true
+		});
 	} catch (err) {
 		res.send({
 			error: err.error || err

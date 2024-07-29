@@ -63,11 +63,11 @@ const router = createBrowserRouter([
 				lazy: () => import("./routes/Agenda")
 			},
 			{
-				path: "/activites",
+				path: "/activites/:menu?",
 				lazy: () => import("./routes/ListAllActivities")
 			},
 			{
-				path: "/formules-et-tarifs",
+				path: "/formules-et-tarifs/:menu?",
 				lazy: () => import("./routes/Packages")
 			},
 			{

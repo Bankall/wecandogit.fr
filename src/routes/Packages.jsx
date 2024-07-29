@@ -1,59 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
-import { useLocation } from "react-router-dom";
+import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { addToCart } from "../utils/utils.cart.jsx";
 
 function Packages() {
-	const location = useLocation();
+	const params = useParams();
+	const navigate = useNavigate();
 	const packages = useFetch("/get-all-packages");
-	const [currentMenu, setCurrentMenu] = useState(false);
 
 	useEffect(() => {
-		if (packages.data && !currentMenu) {
-			setCurrentMenu(packages.data.result[0].label);
+		if (packages.data && !params.menu) {
+			navigate(packages.data.result[0].label);
 		}
 	}, [packages]);
-
-	useEffect(() => {
-		const hash = location.hash.slice(1);
-		if (hash) {
-			setCurrentMenu(decodeURIComponent(hash));
-			document.querySelector(".packages").scrollIntoView({ behavior: "smooth" });
-		}
-	}, [location]);
-
-	const onMenuClick = event => {
-		const name = event.target.getAttribute("name");
-		if (!name) {
-			return;
-		}
-
-		setCurrentMenu(name);
-		window.location.hash = `#${name}`;
-	};
 
 	return (
 		<section className='packages'>
 			<div className='content'>
 				<h2>Nos Formules</h2>
 
-				<div className='dashboard flex-row no-wrap'>
+				<div className='flex-row no-wrap'>
 					<div className='menu'>
-						<ul onClick={onMenuClick}>
+						<ul>
 							{packages.data?.result &&
 								packages.data?.result.map((_package, index) => (
-									<li name={_package.label} className={currentMenu === _package.label ? "active" : ""} key={index}>
-										{_package.label}
+									<li key={index}>
+										<NavLink to={`/formules-et-tarifs/${encodeURIComponent(_package.label)}`}>{_package.label}</NavLink>
 									</li>
 								))}
 						</ul>
 					</div>
 					<div className='content widgets'>
 						<div className='box'>
-							<div className='title'>{currentMenu}</div>
+							<div className='title'>{params.menu}</div>
 							<div className='content cards'>
 								{packages.data?.result
-									.filter((item, index) => item.label === currentMenu)
+									.filter((item, index) => item.label === params.menu)
 									.map((_package, index) => (
 										<div className='card' key={index}>
 											<div className=''>{_package.description}</div>
