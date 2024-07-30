@@ -13,21 +13,28 @@ router.route("/ping").get((req, res) => {
 });
 
 router.route("/oauth/get-google-redirect-url").all(async (req, res) => {
-	const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
-	const options = {
-		redirect_uri: config.get("GOOGLE_OAUTH_REDIRECT_URI"),
-		client_id: process.env.AUTH_GOOGLE_ID,
-		access_type: "online",
-		response_type: "code",
-		prompt: "consent",
-		scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" ")
-	};
+	try {
+		const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+		const options = {
+			redirect_uri: config.get("GOOGLE_OAUTH_REDIRECT_URI"),
+			client_id: process.env.AUTH_GOOGLE_ID,
+			access_type: "online",
+			response_type: "code",
+			prompt: "consent",
+			scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" ")
+		};
 
-	const queryString = new URLSearchParams(options).toString();
-	const url = `${rootUrl}?${queryString.toString()}`;
+		const queryString = new URLSearchParams(options).toString();
+		const url = `${rootUrl}?${queryString.toString()}`;
 
-	req.session.redirect = req.body.redirect;
-	res.send(url);
+		req.session.redirect = req.body.redirect;
+		res.send(url);
+	} catch (err) {
+		console.log(err);
+		res.send({
+			error: err.error || err
+		});
+	}
 });
 
 router.route("/oauth/callback/").get(async (req, res) => {
@@ -97,6 +104,7 @@ router.route("/oauth/callback/").get(async (req, res) => {
 			res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
 		});
 	} catch (err) {
+		console.log(err);
 		res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
 	}
 });
@@ -148,7 +156,6 @@ router.route("/create-user").post(async (req, res, next) => {
 		});
 	} catch (err) {
 		console.log("Create-user", err);
-
 		res.send({
 			error: (err.error || "").match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
 		});
@@ -215,13 +222,17 @@ router.route("/login").post(async (req, res) => {
 });
 
 router.route("/logout").all((req, res) => {
-	req.session.destroy();
+	try {
+		req.session.destroy();
 
-	res.cookie("username", "");
-	res.cookie("email", "");
-	res.cookie("is_trainer", "");
-
-	res.redirect(config.get("FRONT_URI") + "/");
+		res.cookie("username", "");
+		res.cookie("email", "");
+		res.cookie("is_trainer", "");
+	} catch (err) {
+		console.log(err);
+	} finally {
+		res.redirect(config.get("FRONT_URI") + "/");
+	}
 });
 
 const Auth = _backend => {

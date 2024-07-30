@@ -117,9 +117,12 @@ const getSlotDetail = async (req, slot) => {
 			price: data.result.price,
 			id_trainer: data.result.id_trainer,
 			package_available: user_packages,
-			dogs: dogs.result.map(dog => {
-				return { label: dog.label, id: dog.id };
-			})
+			dogs:
+				dogs.result && dogs.result.length
+					? dogs.result.map(dog => {
+							return { label: dog.label, id: dog.id };
+					  })
+					: []
 		};
 	} catch (err) {
 		console.log(err);
