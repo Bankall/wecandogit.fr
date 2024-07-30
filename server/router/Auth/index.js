@@ -121,8 +121,9 @@ router.route("/create-user").post(async (req, res, next) => {
 			}
 		});
 
+		let newUser;
 		if (existingUser.result.length && !existingUser.result[0].password) {
-			const newUser = await backend.put({
+			newUser = await backend.put({
 				table: "user",
 				body: req.body,
 				where: {
@@ -130,7 +131,7 @@ router.route("/create-user").post(async (req, res, next) => {
 				}
 			});
 		} else {
-			const newUser = await backend.post({
+			newUser = await backend.post({
 				table: "user",
 				body: req.body
 			});
