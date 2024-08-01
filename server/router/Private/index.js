@@ -134,9 +134,9 @@ router
 			WHERE 	u.id = ? 
 			AND 	r.enabled = 1 
 			AND 	s.enabled = 1
-			AND 	s.date > current_timestamp()
-			ORDER BY s.date ASC`,
-				[req.session.user_id],
+			${!req.query.id_user ? "AND 	s.date > current_timestamp()" : ""}
+			ORDER BY s.date ${req.query.id_user ? "DESC" : "ASC"}`,
+				[req.query.id_user || req.session.user_id],
 				null,
 				true
 			);

@@ -54,8 +54,15 @@ const shouldBeFiltered = (filter, item) => {
 		return false;
 	}
 
-	const words = filter.split(/\s/).map(word => word.toLowerCase());
-	const fullString = `${item.date ? formatDate(item.date) : ""} ${item.group_label || ""} ${item.label}`.toLowerCase();
+	const normalize = string => {
+		return string
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.toLowerCase();
+	};
+
+	const words = filter.split(/\s/).map(word => normalize(word));
+	const fullString = normalize(`${item.date ? formatDate(item.date) : ""} ${item.group_label || ""} ${item.label} ${(item.dogs || []).map(dog => dog.label).join(" ")}`);
 
 	let everyWordsMatch = true;
 
@@ -209,6 +216,12 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 										{allowedActions.includes("handleUserPackage") && (
 											<Link to={`/account/users/user-package/${item.id}`}>
 												<button className='small'>Voir les formules</button>
+											</Link>
+										)}
+
+										{allowedActions.includes("handleUserReservation") && (
+											<Link to={`/account/users/reservations/${item.id}`}>
+												<button className='small'>Voir les réservations</button>
 											</Link>
 										)}
 

@@ -36,7 +36,6 @@ function ResetPassword() {
 
 								setSubmitionFeedback("Le mail a été envoyé, veuillez vérifier votre boite mail, vous pouvez fermer cette page.");
 							} catch (err) {
-								console.log(err);
 								setSubmitionError("Une erreur s'est produite, veuillez nous contacter à contact.wecandogit@gmail.com");
 							}
 						}}

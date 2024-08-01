@@ -17,7 +17,6 @@ const addToCart = async ({ type, id, element }) => {
 
 		return true;
 	} catch (err) {
-		console.log(err);
 		return false;
 	}
 };
@@ -25,7 +24,6 @@ const addToCart = async ({ type, id, element }) => {
 const instantBooking = async ({ type, id }) => {
 	try {
 	} catch (err) {
-		console.log(err);
 		return err.message || "Une erreur s'est produite";
 	}
 };

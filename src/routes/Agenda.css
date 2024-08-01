@@ -19,3 +19,7 @@
 .fc th {
 	vertical-align: middle;
 }
+
+.fc .fc-toolbar-chunk {
+	display: flex;
+}

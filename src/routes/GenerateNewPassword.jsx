@@ -43,7 +43,6 @@ function GenerateNewPassword() {
 								navigate("/login");
 							}, 4000);
 						} catch (err) {
-							console.log(err);
 							setSubmitionError("Une erreur s'est produite, veuillez nous contacter à contact.wecandogit@gmail.com");
 						}
 					}}

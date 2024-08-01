@@ -36,6 +36,8 @@ function Account() {
 			switch (params.action) {
 				case "user-package":
 					return <DashboardListComponent addLabel='Ajouter une formule' title='Formules' type='user_package' id_user={params.id} />;
+				case "reservations":
+					return <DashboardListComponent title='Reservations' type='reservation' id_user={params.id} allowedActions={[]} />;
 			}
 		}
 
@@ -51,7 +53,7 @@ function Account() {
 			case "activities":
 				return <DashboardListComponent addLabel='Ajouter une activité' title='Nos activités' type='activity' />;
 			case "users":
-				return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage"]} />;
+				return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage", "handleUserReservation"]} />;
 			case "slots":
 				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation"]} />;
 			case "past-slots":

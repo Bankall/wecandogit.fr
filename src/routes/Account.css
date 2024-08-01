@@ -86,29 +86,6 @@
 }
 
 @media screen and (max-width: 900px) {
-	.dashboard {
-		flex-direction: column;
-	}
-
-	.dashboard .menu ul {
-		display: flex;
-		flex-direction: row;
-		flex-wrap: wrap;
-		padding: 0;
-		gap: 10px;
-		border-right: none;
-	}
-
-	.dashboard .menu ul li {
-		margin: 0;
-		min-width: 0;
-		padding: 0 5px 5px;
-	}
-
-	.dashboard .menu ul li:last-child {
-		border-bottom: 1px solid var(--light-borders);
-	}
-
 	.dashboard .content {
 		width: 100%;
 	}

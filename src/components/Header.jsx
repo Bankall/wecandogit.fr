@@ -1,4 +1,4 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 
 import axios from "axios";
@@ -10,6 +10,7 @@ export default function Header() {
 	const isLoggedIn = useFetch("/is-logged-in");
 	const [menuToogle, setMenuToggle] = useState(false);
 	const [cartCount, setCartCount] = useState(0);
+	const location = useLocation();
 
 	useEffect(() => {
 		const fetch = () => {
@@ -24,6 +25,10 @@ export default function Header() {
 
 		return () => window.removeEventListener("cart-modified", fetch);
 	}, []);
+
+	useEffect(() => {
+		setMenuToggle(false);
+	}, [location]);
 
 	return (
 		<header>

@@ -354,7 +354,8 @@ h2 + .box.big-box {
 @media screen and (max-width: 900px) {
 	.box.big-box {
 		padding: 40px 20px;
-		margin: 20px;
+		margin: 20px auto;
+		max-width: calc(100% - 30px);
 	}
 }
 
@@ -521,6 +522,31 @@ input:focus {
 
 .menu ul li:last-child {
 	border-bottom: 0;
+}
+
+@media screen and (max-width: 900px) {
+	section .content > .flex-row {
+		flex-direction: column;
+	}
+
+	.menu ul {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		padding: 0;
+		gap: 10px;
+		border-right: none;
+	}
+
+	.menu ul li {
+		margin: 0;
+		min-width: 0;
+		padding: 0 5px 5px;
+	}
+
+	.menu ul li:last-child {
+		border-bottom: 1px solid var(--light-borders);
+	}
 }
 
 .widgets {
