@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Loading from "./Loading";
 
 const parseDate = date => {
-	date = new Date(date);
+	date = new Date(date.replace(/-/g, "/"));
 	return `${date.toLocaleDateString().slice(0, -5)} - ${date.getHours()}h`;
 };
 

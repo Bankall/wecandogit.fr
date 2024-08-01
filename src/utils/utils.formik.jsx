@@ -105,7 +105,7 @@ const ExtractInitialValues = async (data, params) => {
 				case "field-array-datetime-local":
 					return [""];
 				case "date":
-					return typeof value.default !== "undefined" ? new Date(value.default).toISOString().slice(0, -14) : "";
+					return typeof value.default !== "undefined" ? new Date(value.default.replace(/-/g, "/")).toISOString().slice(0, -14) : "";
 				case "datetime-local":
 					return typeof value.default !== "undefined" ? value.default : "";
 				default:

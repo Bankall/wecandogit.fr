@@ -1,7 +1,7 @@
 import { query, Router } from "express";
 import { Stripe } from "stripe";
 import config from "config";
-
+import { errorHandler } from "../../lib/utils.js";
 let backend;
 
 const router = Router();
@@ -29,9 +29,7 @@ router.route("/add").post(async (req, res) => {
 			ok: true
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -125,8 +123,7 @@ const getSlotDetail = async (req, slot) => {
 					: []
 		};
 	} catch (err) {
-		console.log(err);
-		return err;
+		errorHandler({ err, req, res });
 	}
 };
 
@@ -228,9 +225,7 @@ router.route("/full-cart").get(async (req, res) => {
 			notice
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -281,7 +276,7 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 
 		res.redirect(303, session.url);
 	} catch (err) {
-		res.send({ error: err.message || err });
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -349,7 +344,7 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 
 		return true;
 	} catch (err) {
-		console.error(err);
+		errorHandler({ err, req });
 		return false;
 	}
 };
@@ -378,7 +373,9 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 
 		const allReserved = await handleReservation(req, req.session.stripe_session_cart, session.id);
 		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
-	} catch (e) {}
+	} catch (e) {
+		errorHandler({ err, req, res });
+	}
 });
 
 router.route("/make-reservation/:idTrainer").get(async (req, res) => {
@@ -389,7 +386,7 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 		const allReserved = await handleReservation(req, cartItems);
 		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
 	} catch (err) {
-		console.error(err);
+		errorHandler({ err, req });
 		return false;
 	}
 });

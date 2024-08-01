@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateEmail, assert } from "../../lib/utils.js";
+import { validateEmail, assert, errorHandler } from "../../lib/utils.js";
 
 import config from "config";
 import axios from "axios";
@@ -30,10 +30,7 @@ router.route("/oauth/get-google-redirect-url").all(async (req, res) => {
 		req.session.redirect = req.body.redirect;
 		res.send(url);
 	} catch (err) {
-		console.log(err);
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -104,7 +101,7 @@ router.route("/oauth/callback/").get(async (req, res) => {
 			res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
 		});
 	} catch (err) {
-		console.log(err);
+		errorHandler({ err, req });
 		res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
 	}
 });
@@ -156,7 +153,7 @@ router.route("/create-user").post(async (req, res, next) => {
 			});
 		});
 	} catch (err) {
-		console.log("Create-user", err);
+		errorHandler({ err, req });
 		res.send({
 			error: (err.error || "").match("Duplicate entry") ? "Un compte existe déjà avec cette adresse email" : "Une erreur s'est produite"
 		});
@@ -216,9 +213,7 @@ router.route("/login").post(async (req, res) => {
 			});
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 

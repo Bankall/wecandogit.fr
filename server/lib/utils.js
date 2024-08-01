@@ -40,4 +40,22 @@ const assert = (...args) => {
 	return true;
 };
 
-export { validateEmail, shuffle, assert };
+const errorHandler = ({ req, res, err }) => {
+	console.log(
+		`=============================
+		Error: ${err}
+		At: ${req.originalUrl}
+		With query: ${JSON.stringify(req.query)}
+		With params: ${JSON.stringify(req.params)}
+		With body: ${JSON.stringify(req.body)}
+		=============================\n`
+	);
+
+	if (res) {
+		res.send({
+			error: err.message || err.error || "Une erreur est survenue"
+		});
+	}
+};
+
+export { validateEmail, shuffle, assert, errorHandler };

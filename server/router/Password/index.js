@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateEmail } from "../../lib/utils.js";
+import { validateEmail, errorHandler } from "../../lib/utils.js";
 import bcrypt from "bcrypt";
 import md5 from "md5";
 import config from "config";
@@ -44,9 +44,7 @@ router.route("/send-reset-mail/:email").get(async (req, res) => {
 			ok: true
 		});
 	} catch (err) {
-		res.send({
-			error: err.error
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -81,9 +79,7 @@ router.route("/reset").post(async (req, res) => {
 			ok: true
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 

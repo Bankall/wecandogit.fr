@@ -18,6 +18,8 @@ import { Password } from "./router/Password/index.js";
 import { Public } from "./router/Public/index.js";
 import { Cart } from "./router/Cart/index.js";
 
+import { errorHandler } from "./lib/utils.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -96,7 +98,6 @@ app.get(`${API_PATH}/fake-user/:id?`, async (req, res) => {
 app.get(`${API_PATH}/optout/:type/:email`, async (req, res) => {
 	try {
 		const body = {};
-
 		if (req.params.type === "newsletter") {
 			body.newsletter_optin = 0;
 		} else if (req.params.type === "reminder") {
@@ -115,10 +116,7 @@ app.get(`${API_PATH}/optout/:type/:email`, async (req, res) => {
 			res.send({ ok: true });
 		}
 	} catch (err) {
-		console.log(err);
-		res.send({
-			error: err.message || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 

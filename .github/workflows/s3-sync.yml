@@ -21,6 +21,9 @@ jobs:
             - name: Install dependencies
               run: npm install
 
+            - name: Export environment variables
+              run: echo "VITE_API_ENDPOINT=https://wecandogit.com/api/v1"
+
             - name: Build project
               run: npm run build # Replace with your actual build command
 
@@ -33,3 +36,6 @@ jobs:
 
             - name: Sync files to S3
               run: aws s3 sync dist/ s3://wecandogit.com --delete
+
+            - name: Invalidate CloudFront distribution
+              run: aws cloudfront create-invalidation --distribution-id E312XJ65T65NWC --paths "/*"

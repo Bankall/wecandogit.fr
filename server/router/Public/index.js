@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { shuffle } from "../../lib/utils.js";
+import { shuffle, errorHandler } from "../../lib/utils.js";
 
 let backend;
 
@@ -26,9 +26,7 @@ router.route("/update-user").put(async (req, res, next) => {
 			ok: true
 		});
 	} catch (err) {
-		res.send({
-			error: err.error
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -52,9 +50,7 @@ router.route("/me").get(async (req, res) => {
 			result: data.result[0]
 		});
 	} catch (err) {
-		res.send({
-			error: err.error
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -83,9 +79,7 @@ router.route("/get-next-collective-slots").get(async (req, res) => {
 			result: slots.result
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -97,9 +91,7 @@ router.route("/get-next-individual-slots").get(async (req, res) => {
 			result: slots.result
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -180,9 +172,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 
 		res.send(slots);
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -233,9 +223,7 @@ router.route("/get-all-packages").get(async (req, res) => {
 			result: shuffle(Object.values(result))
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -284,9 +272,7 @@ router.route("/get-all-activities").get(async (req, res) => {
 			result: shuffle(Object.values(activity_group))
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 

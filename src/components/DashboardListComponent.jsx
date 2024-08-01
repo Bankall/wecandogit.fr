@@ -5,7 +5,7 @@ import { Interweave } from "interweave";
 import axios from "axios";
 
 const formatDate = date => {
-	date = new Date(date);
+	date = new Date(date.replace(/-/g, "/"));
 	return date.toLocaleString().slice(0, 16);
 };
 
@@ -14,7 +14,7 @@ const isNotTooLate = date => {
 		return false;
 	}
 
-	date = new Date(date);
+	date = new Date(date.replace(/-/g, "/"));
 	return date.getTime() - Date.now() > 86400 * 1000;
 };
 

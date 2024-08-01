@@ -1,6 +1,6 @@
 import { Router } from "express";
 import MailSender from "../../lib/mail-sender/index.cjs";
-
+import { errorHandler } from "../../lib/utils.js";
 let backend;
 
 const router = Router();
@@ -37,7 +37,9 @@ const handleRefund = async ({ id_reservation, req, refundValue, updateReservatio
 				});
 			}
 		}
-	} catch (err) {}
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
 };
 
 router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, next) => {
@@ -83,9 +85,7 @@ router
 
 			next();
 		} catch (err) {
-			res.send({
-				error: err.message || err
-			});
+			errorHandler({ err, req, res });
 		}
 	})
 	.get(async (req, res) => {
@@ -110,9 +110,7 @@ router
 
 			res.send(data.result);
 		} catch (err) {
-			res.send({
-				error: err.message || err
-			});
+			errorHandler({ err, req, res });
 		}
 	});
 
@@ -143,9 +141,7 @@ router
 
 			res.send(reservation.result);
 		} catch (err) {
-			res.send({
-				error: err.message || err
-			});
+			errorHandler({ err, req, res });
 		}
 	})
 	.post(async (req, res, next) => {
@@ -171,10 +167,7 @@ router
 
 			res.send(reservation.result);
 		} catch (err) {
-			console.log(error);
-			res.send({
-				error: err.message || err
-			});
+			errorHandler({ err, req, res });
 		}
 	})
 	.put(async (req, res, next) => {
@@ -183,7 +176,7 @@ router
 				handleRefund({ id_reservation: req.params.id, req });
 			}
 		} catch (err) {
-			console.log(err);
+			errorHandler({ err, req });
 		}
 		next();
 	});
@@ -259,9 +252,7 @@ const getSlotsListing = async (req, res) => {
 				.filter(item => !req.body.past || item.reservations > 0)
 		);
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 };
 
@@ -295,7 +286,7 @@ router
 
 			next();
 		} catch (err) {
-			console.log(err);
+			errorHandler({ err, req });
 		}
 	});
 
@@ -304,9 +295,7 @@ router.route("/past_slot").get(async (req, res) => {
 		req.body.past = true;
 		return await getSlotsListing(req, res);
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -330,9 +319,7 @@ router.route("/create-slots").post(async (req, res) => {
 			ok: true
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -367,9 +354,7 @@ router.route("/user").get(async (req, res) => {
 				})
 		);
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -395,9 +380,7 @@ router.route("/user_package").get(async (req, res) => {
 
 		res.send(user_packages.result);
 	} catch (err) {
-		res.send({
-			error: err.message || error
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -425,9 +408,7 @@ router.route("/unpaid_user_package").get(async (req, res) => {
 
 		res.send(user_packages.result);
 	} catch (err) {
-		res.send({
-			error: err.message || error
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -455,9 +436,7 @@ router
 
 			res.send(req.params.id ? dog.result[0] : dog.result);
 		} catch (err) {
-			res.send({
-				error: err.error || err
-			});
+			errorHandler({ err, req, res });
 		}
 	})
 	.post(async (req, res, next) => {
@@ -518,9 +497,7 @@ router.route("/all-dogs").get(async (req, res) => {
 				})
 		);
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
@@ -562,9 +539,7 @@ router.route("/send-mail").post(async (req, res) => {
 			ok: true
 		});
 	} catch (err) {
-		res.send({
-			error: err.error || err
-		});
+		errorHandler({ err, req, res });
 	}
 });
 
