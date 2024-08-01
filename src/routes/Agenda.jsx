@@ -70,12 +70,13 @@ const renderEventContent = (eventInfo, cookies) => {
 };
 
 const convertToLocalDate = (date, increment) => {
+	console.log(date, increment);
 	const converted = new Date(date.replace(/T|Z/g, " "));
 
 	if (increment) {
 		converted.setTime(converted.getTime() + increment * 1000 * 60);
 	}
-
+	console.log(converted, converted.toISOString());
 	return converted.toISOString();
 };
 
