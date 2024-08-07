@@ -130,6 +130,10 @@ const router = createBrowserRouter([
 						}
 					}
 				]
+			},
+			{
+				path: "/debug",
+				lazy: () => import("./routes/Debug")
 			}
 		]
 	},

@@ -1,0 +1,11 @@
+section.debug {
+	padding: 10px;
+}
+
+section.debug .box {
+	padding: 10px 20px;
+}
+
+section.debug .box p {
+	margin-top: 5px;
+}

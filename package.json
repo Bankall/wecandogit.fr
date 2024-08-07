@@ -17,6 +17,7 @@
 		"@fullcalendar/list": "^6.1.14",
 		"@fullcalendar/react": "^6.1.14",
 		"axios": "^1.7.0",
+		"browser-detect": "^0.2.28",
 		"ckeditor5": "^42.0.2",
 		"formik": "^2.4.6",
 		"interweave": "^13.1.0",

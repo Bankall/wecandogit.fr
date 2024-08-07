@@ -80,6 +80,10 @@ select {
 	text-align: right;
 }
 
+.left {
+	text-align: left !important;
+}
+
 .margin-t-10 {
 	margin-top: 10px;
 }
