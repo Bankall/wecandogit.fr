@@ -174,10 +174,19 @@ router
 		try {
 			if (req.body.enabled === 0) {
 				handleRefund({ id_reservation: req.params.id, req });
+
+				await backend.notify({
+					who: req.session.user_id,
+					action: "unbooked",
+					what: "slot",
+					how: "",
+					id_what: req.params.id
+				});
 			}
 		} catch (err) {
 			errorHandler({ err, req });
 		}
+
 		next();
 	});
 

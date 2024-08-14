@@ -84,6 +84,10 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 	const params = useParams();
 
+	const setFilterWrapper = value => {
+		setFilter(value);
+	};
+
 	useEffect(() => {
 		let exited = false;
 		const fetch = async () => {
@@ -109,8 +113,6 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 		fetch();
 		window.addEventListener(`refresh-list-${type}`, fetch);
-
-		setFilter(false);
 
 		if (params.action === "filter") {
 			setFilter(`id:${params.id}`);

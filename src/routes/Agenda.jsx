@@ -104,22 +104,41 @@ const fetchEvents = async setEvents => {
 };
 
 const getUniqueEvents = events => {
-	if (!events.result || !events.result.length) {
+	if (!events || !events.length) {
 		return [];
 	}
-	const unique = events.result.map(event => event.label);
+
+	const unique = events.map(event => event.label);
+	return Array.from(new Set(unique));
 };
 
 export default function Agenda() {
 	const [events, setEvents] = useState([]);
 	const [once, setOnce] = useState(true);
-	const [filters, setFilters] = useState({});
+	const [toggleFilters, setToggleFilters] = useState(false);
+	const [filters, setFilters] = useState(() => {
+		const filters = localStorage.getItem("agenda-filters");
+		return filters ? JSON.parse(filters) : {};
+	});
 
 	const [cookies, setCookies] = useCookies();
-	const [initialDate, setInitialDate] = useState(new Date());
 	const params = useParams();
 
 	const Calendar = useRef();
+
+	const filterEvents = events => {
+		if (!Object.keys(filters).length) {
+			return events;
+		}
+
+		return events.filter(event => {
+			if (!filters[event.label]) {
+				return false;
+			}
+
+			return true;
+		});
+	};
 
 	const NoEventRender = () => {
 		const calendarApi = Calendar.current?.getApi();
@@ -162,10 +181,37 @@ export default function Agenda() {
 
 	return (
 		<section className='agenda'>
-			{getUniqueEvents(events).map((event, index) => (
-				<></>
-			))}
-			<div className='box'></div>
+			<div
+				className='margin-b-10'
+				onClick={() => {
+					setToggleFilters(!toggleFilters);
+				}}>
+				<i className='fa-solid fa-filter'></i>
+				{toggleFilters ? " Cacher les filtres" : " Afficher les filtres"}
+			</div>
+			<div className={`box flex-row filter-box margin-b-20${!toggleFilters ? " hidden" : ""}`}>
+				{getUniqueEvents(events).map((event, index) => (
+					<label key={index} className='flex-row'>
+						<input
+							type='checkbox'
+							name={event}
+							defaultChecked={filters[event]}
+							onChange={event => {
+								const filters = {};
+								const checkboxes = document.querySelector(".filter-box").querySelectorAll("input[type=checkbox]");
+
+								checkboxes.forEach(checkbox => {
+									filters[checkbox.getAttribute("name")] = checkbox.checked;
+								});
+
+								setFilters(filters);
+								localStorage.setItem("agenda-filters", JSON.stringify(filters));
+							}}
+						/>
+						{event}
+					</label>
+				))}
+			</div>
 
 			<FullCalendar
 				ref={Calendar}
@@ -176,7 +222,7 @@ export default function Agenda() {
 				plugins={[listPlugin, interactionPlugin]}
 				noEventsContent={NoEventRender}
 				initialView={"listWeek"}
-				events={events}
+				events={filterEvents(events)}
 				eventContent={eventInfo => renderEventContent(eventInfo, cookies, filters)}
 				scrollTime={false}
 				footerToolbar={{

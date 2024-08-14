@@ -327,6 +327,14 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 						payment_details: typeof item.payment_type === "number" ? item.payment_type : stripe_id
 					}
 				});
+
+				await backend.notify({
+					who: req.session.user_id,
+					action: "booked",
+					what: "slot",
+					how: item.payment_type,
+					id_what: item.id
+				});
 			}
 
 			if (item.type === "package") {
@@ -339,6 +347,14 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 						payment_type: item.payment_type,
 						payment_details: stripe_id
 					}
+				});
+
+				await backend.notify({
+					who: req.session.user_id,
+					action: "booked",
+					what: "package",
+					how: item.payment_type,
+					id_what: item.id
 				});
 			}
 		}

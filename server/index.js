@@ -166,4 +166,39 @@ backend.start(() => {
 			return {};
 		}
 	};
+
+	backend.notify = async ({ who, action, what, how, id_what }) => {
+		// try {
+		// 	const user = await backend.get({
+		// 		table: "user",
+		// 		id: who
+		// 	});
+
+		// 	const email = user.result[0].email;
+
+		// 	await MailSender.send({
+		// 		subject: `Notification de votre ${action}`,
+		// 		email,
+		// 		macros: {
+		// 			CONTENT_HTML: `Vous avez ${action} ${what} ${how}`,
+		// 			CONTENT_TXT: `Vous avez ${action} ${what} ${how}`
+		// 		}
+		// 	});
+
+		// 	return { ok: true };
+		// } catch (err) {
+		// 	return err;
+		// }
+
+		backend.post({
+			table: "notification",
+			body: {
+				id_user: who,
+				action,
+				what,
+				how,
+				id_what
+			}
+		});
+	};
 });
