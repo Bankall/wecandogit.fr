@@ -100,7 +100,7 @@ const getSlotDetail = async (req, slot) => {
 		const dogs = await backend.get({
 			table: "dog",
 			query: {
-				id_user: req.session.user_id
+				id_user: req.session.user_id || 0
 			}
 		});
 
@@ -144,6 +144,10 @@ const getCartItemDetail = async (req, item) => {
 
 const sortCartItemByTrainers = async req => {
 	try {
+		if (!req.session.cart || !req.session.cart.length) {
+			return {};
+		}
+
 		const byTrainers = {};
 		const trainers = await backend.get({
 			table: "user",
@@ -175,7 +179,7 @@ const sortCartItemByTrainers = async req => {
 			data.type = item.type;
 			data.id = item.id;
 			data.payment_type = item.payment_type;
-			data.id_dog = item.id_dog || dog.result[0].id;
+			data.id_dog = item.id_dog || (dog.result && dog.result.length ? dog.result[0].id : 0);
 
 			if (data.package_available && data.package_available.length && !data.payment_type) {
 				data.payment_type = data.package_available[0].id;
@@ -203,6 +207,7 @@ router.route("/full-cart").get(async (req, res) => {
 		if (!req.session.cart || !req.session.cart.length) {
 			return res.send({ result: [] });
 		}
+
 		const dog = await backend.get({
 			table: "dog",
 			query: {
@@ -233,8 +238,6 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 	try {
 		const allCartItems = await sortCartItemByTrainers(req);
 		const cartItems = allCartItems[req.params.idTrainer].slot.concat(allCartItems[req.params.idTrainer].package);
-
-		console.log(cartItems);
 
 		const lineItems = cartItems
 			.filter(item => item.payment_type === "direct")

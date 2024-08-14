@@ -103,9 +103,18 @@ const fetchEvents = async setEvents => {
 	}
 };
 
+const getUniqueEvents = events => {
+	if (!events.result || !events.result.length) {
+		return [];
+	}
+	const unique = events.result.map(event => event.label);
+};
+
 export default function Agenda() {
 	const [events, setEvents] = useState([]);
 	const [once, setOnce] = useState(true);
+	const [filters, setFilters] = useState({});
+
 	const [cookies, setCookies] = useCookies();
 	const [initialDate, setInitialDate] = useState(new Date());
 	const params = useParams();
@@ -153,6 +162,11 @@ export default function Agenda() {
 
 	return (
 		<section className='agenda'>
+			{getUniqueEvents(events).map((event, index) => (
+				<></>
+			))}
+			<div className='box'></div>
+
 			<FullCalendar
 				ref={Calendar}
 				locale={frLocale}
@@ -163,7 +177,7 @@ export default function Agenda() {
 				noEventsContent={NoEventRender}
 				initialView={"listWeek"}
 				events={events}
-				eventContent={eventInfo => renderEventContent(eventInfo, cookies)}
+				eventContent={eventInfo => renderEventContent(eventInfo, cookies, filters)}
 				scrollTime={false}
 				footerToolbar={{
 					start: "title",

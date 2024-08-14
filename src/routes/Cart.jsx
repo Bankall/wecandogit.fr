@@ -2,38 +2,38 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const ListItem = ({ item }) => {
-	const updateCartItem = async (action, item, value) => {
-		try {
-			const params = {
-				url: `/cart/${item.type}/${item.id}`
-			};
+const updateCartItem = async (action, item, value) => {
+	try {
+		const params = {
+			url: `/cart/${item.type}/${item.id}`
+		};
 
-			if (action === "delete") {
-				params.method = "DELETE";
-			} else {
-				params.method = "PUT";
-				params.data = {};
+		if (action === "delete") {
+			params.method = "DELETE";
+		} else {
+			params.method = "PUT";
+			params.data = {};
 
-				if (action === "update-payment") {
-					params.data.payment_type = value;
-				}
-
-				if (action === "update-dog") {
-					params.data.id_dog = value;
-				}
+			if (action === "update-payment") {
+				params.data.payment_type = value;
 			}
 
-			const response = await axios(params);
-
-			if (response.data.ok) {
-				window.dispatchEvent(new Event("cart-modified"));
+			if (action === "update-dog") {
+				params.data.id_dog = value;
 			}
-		} catch (err) {
-			console.log("Une erreur s'est produite", err);
 		}
-	};
 
+		const response = await axios(params);
+
+		if (response.data.ok) {
+			window.dispatchEvent(new Event("cart-modified"));
+		}
+	} catch (err) {
+		console.log("Une erreur s'est produite", err);
+	}
+};
+
+const ListItem = ({ item }) => {
 	return (
 		<div className='row flex-col flex-stretch'>
 			<span className='flex-row'>
@@ -116,8 +116,8 @@ function Cart() {
 				<div className='content'>
 					<h2>Panier</h2>
 					<div className='widgets flex-col center'>
-						{cartItems.data?.notice?.is_logged_in === false && (
-							<div className='box notice'>
+						{cartItems.data?.notice?.is_logged_in === false ? (
+							<div className='box notice' style={{ maxWidth: "800px" }}>
 								Veuillez vous connecter pour valider votre panier
 								<div className='margin-t-20 center'>
 									<Link to='/login/cart'>
@@ -125,10 +125,8 @@ function Cart() {
 									</Link>
 								</div>
 							</div>
-						)}
-
-						{cartItems.data?.notice?.is_logged_in !== false && cartItems.data?.notice?.has_dog === false && (
-							<div className='box notice'>
+						) : cartItems.data?.notice?.has_dog === false ? (
+							<div className='box notice' style={{ maxWidth: "800px" }}>
 								Vous devez premièrement créer le profil de votre animal
 								<div className='margin-t-20 center'>
 									<Link to='/account/profile'>
@@ -136,8 +134,7 @@ function Cart() {
 									</Link>
 								</div>
 							</div>
-						)}
-
+						) : null}
 						{cartItems.data?.result?.length ? (
 							cartItems.data?.result?.map(trainer => (
 								<div className={`box ${Object.values(cartItems.data.notice).length ? "disabled" : ""}`} style={{ maxWidth: "800px" }} key={trainer.id}>
