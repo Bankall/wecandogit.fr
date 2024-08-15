@@ -217,12 +217,14 @@ router
 			if (req.body.enabled === 0) {
 				handleRefund({ id_reservation: req.params.id, req });
 
+				const reservation = await backend.get({ table: "reservation", id: req.params.id });
+
 				await backend.notify({
 					who: req.session.user_id,
 					action: "unbooked",
 					what: "slot",
 					how: "",
-					id_what: req.params.id
+					id_what: reservation.result.id_slot
 				});
 			}
 		} catch (err) {
