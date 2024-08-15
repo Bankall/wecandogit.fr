@@ -111,6 +111,8 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 			}
 		};
 
+		setFilter(false);
+
 		fetch();
 		window.addEventListener(`refresh-list-${type}`, fetch);
 
