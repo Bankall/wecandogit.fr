@@ -36,6 +36,18 @@ const handleRefund = async ({ id_reservation, req, refundValue, updateReservatio
 					}
 				});
 			}
+		} else {
+			errorHandler({
+				err: {
+					message: "Something looks wrong with the refund",
+					stack: "handleRefund",
+					id_reservation,
+					refundValue,
+					updateReservation
+				},
+				req,
+				res
+			});
 		}
 	} catch (err) {
 		errorHandler({ err, req, res });
