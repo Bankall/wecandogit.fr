@@ -47,8 +47,7 @@ router.route("/oauth/callback/").get(async (req, res) => {
 		};
 
 		const queryString = new URLSearchParams(options);
-		console.log(queryString.toString());
-		const tokenRequest = await axios.post(url, queryString.toString(), {
+		const tokenRequest = await axios.post(url, encodeURIComponent(queryString.toString()), {
 			headers: {
 				"Content-Type": "application/x-www-form-urlencoded"
 			}
