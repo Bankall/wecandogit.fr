@@ -47,13 +47,14 @@ router.route("/oauth/callback/").get(async (req, res) => {
 		};
 
 		const queryString = new URLSearchParams(options);
-		const { id_token, access_token } = (
-			await axios.post(url, queryString.toString(), {
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded"
-				}
-			})
-		).data;
+		console.log(queryString.toString());
+		const tokenRequest = await axios.post(url, queryString.toString(), {
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded"
+			}
+		});
+
+		const { id_token, access_token } = tokenRequest.data;
 
 		const googleUser = (
 			await axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`, {
