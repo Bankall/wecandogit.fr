@@ -125,9 +125,9 @@ backend.start(() => {
 		console.log(`App listening on port ${PORT}!`);
 	});
 
-	app.get("*", (req, res) => {
-		res.sendFile(path.join(__dirname, "../dist", "index.html"));
-	});
+	// app.get("*", (req, res) => {
+	// 	res.sendFile(path.join(__dirname, "../dist", "index.html"));
+	// });
 
 	backend.getUserPackageForID = async ({ id_reservation, id_slot, available, req }) => {
 		try {
