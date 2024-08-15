@@ -613,7 +613,7 @@ router.route("/notification").get(async (req, res) => {
 				concat(u.firstname, ' ', u.lastname) who, 
 				n.action,
 				case
-					when n.what = 'slot' then (select concat(a.label, ' ', DATE_FORMAT(s.date, '%d/%m')) from reservation r join slot s on s.id = r.id_slot join activity a on a.id = s.id_activity where r.id = n.id_what)
+					when n.what = 'slot' then (select concat(a.label, ' ', DATE_FORMAT(s.date, '%d/%m')) from reservation r join slot s on s.id = r.id_slot join activity a on a.id = s.id_activity where s.id = n.id_what group by s.id)
 					when n.what = 'package' then (select label from package where id = n.id_what) 
 				end what,
 				n.what type,
