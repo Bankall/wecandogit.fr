@@ -192,27 +192,29 @@ export default function Agenda() {
 				{toggleFilters ? " Cacher les filtres" : " Afficher les filtres"}
 			</div>
 			<div className={`box flex-row filter-box margin-b-20${!toggleFilters ? " hidden" : ""}`}>
-				{getUniqueEvents(events).map((event, index) => (
-					<label key={index} className='flex-row'>
-						<input
-							type='checkbox'
-							name={event}
-							defaultChecked={filters[event]}
-							onChange={event => {
-								const filters = {};
-								const checkboxes = document.querySelector(".filter-box").querySelectorAll("input[type=checkbox]");
+				{getUniqueEvents(events)
+					.sort()
+					.map((event, index) => (
+						<label key={index} className='flex-row'>
+							<input
+								type='checkbox'
+								name={event}
+								defaultChecked={filters[event]}
+								onChange={event => {
+									const filters = {};
+									const checkboxes = document.querySelector(".filter-box").querySelectorAll("input[type=checkbox]");
 
-								checkboxes.forEach(checkbox => {
-									filters[checkbox.getAttribute("name")] = checkbox.checked;
-								});
+									checkboxes.forEach(checkbox => {
+										filters[checkbox.getAttribute("name")] = checkbox.checked;
+									});
 
-								setFilters(filters);
-								localStorage.setItem("agenda-filters", JSON.stringify(filters));
-							}}
-						/>
-						{event}
-					</label>
-				))}
+									setFilters(filters);
+									localStorage.setItem("agenda-filters", JSON.stringify(filters));
+								}}
+							/>
+							{event}
+						</label>
+					))}
 			</div>
 
 			<FullCalendar

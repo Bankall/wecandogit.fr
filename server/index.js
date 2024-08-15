@@ -113,7 +113,7 @@ app.get(`${API_PATH}/optout/:type/:email`, async (req, res) => {
 		});
 
 		if (response.result) {
-			res.send("Enregistré !");
+			res.send("Enregistré");
 		}
 	} catch (err) {
 		errorHandler({ err, req, res });
@@ -142,7 +142,7 @@ backend.start(() => {
 				FROM user_package up
 				JOIN package p ON p.id = up.id_package
 				LEFT JOIN package_activity pa ON pa.id_package = p.id
-				JOIN slot s ON (s.id_trainer = p.id_trainer OR p.id_trainer = 36)
+				JOIN slot s ON s.id_activity in (pa.id_activity) AND (s.id_trainer = p.id_trainer OR p.id_trainer = 36)
 
 				${id_reservation ? "JOIN reservation r on r.id_slot = s.id and up.id_user = (select id_user from dog where id = r.id_dog)" : ""}
  
