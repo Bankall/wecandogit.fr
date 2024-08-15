@@ -12,9 +12,9 @@
 
 .main-container {
 	font-family: "Open Sans";
-	width: fit-content;
 	margin-left: auto;
 	margin-right: auto;
+	width: 100%;
 	max-width: 660px;
 }
 
@@ -26,4 +26,10 @@
 
 .ck-editor__editable_inline {
 	min-height: 400px;
+}
+
+@media screen and (max-width: 900px) {
+	.text-editor {
+		margin-left: 0;
+	}
 }

@@ -60,6 +60,10 @@ function Account() {
 				return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={[]} />;
 			case "user-packages":
 				return <DashboardListComponent title='Formules en attente de paiement' type='unpaid_user_package' allowedActions={["marked-package-as-paid"]} />;
+			case "notifications":
+				return <DashboardListComponent title='Notifications' type='notification' allowedActions={[]} />;
+			case "all-user-packages":
+				return <DashboardListComponent title='Toutes les formules' type='user_package' endpoint='all_user_package' allowedActions={["modify"]} />;
 			case "mail-composer":
 				return <MailEditor />;
 		}
@@ -106,10 +110,16 @@ function Account() {
 										<NavLink to='/account/user-packages'>Formules en attente de paiement</NavLink>
 									</li>
 									<li>
+										<NavLink to='/account/all-user-packages'>Toutes les formules</NavLink>
+									</li>
+									<li>
 										<NavLink to='/account/users'>Membres</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/mail-composer'>Messages</NavLink>
+									</li>
+									<li>
+										<NavLink to='/account/notifications'>Notifications</NavLink>
 									</li>
 								</>
 							) : null}

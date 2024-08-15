@@ -75,6 +75,7 @@
 	border-radius: 6px;
 	font-size: 11px;
 	color: #fff;
+	flex-shrink: 0;
 }
 
 .dashboard .paid {
@@ -92,5 +93,9 @@
 
 	.dashboard .widgets .box .list-detail {
 		min-width: 100%;
+	}
+
+	.dashboard .widgets .flex-row.no-wrap {
+		flex-wrap: wrap;
 	}
 }

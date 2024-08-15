@@ -113,7 +113,7 @@ app.get(`${API_PATH}/optout/:type/:email`, async (req, res) => {
 		});
 
 		if (response.result) {
-			res.send({ ok: true });
+			res.send("Enregistré !");
 		}
 	} catch (err) {
 		errorHandler({ err, req, res });

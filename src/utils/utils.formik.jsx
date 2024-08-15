@@ -63,7 +63,7 @@ const ExtractInitialValues = async (data, params) => {
 
 	for await (const value of data) {
 		if (value.data_url) {
-			const response = await axios(value.data_url);
+			const response = await axios(value.data_url + "?full");
 			const defaults = (typeof value.default !== "undefined" ? value.default.toString() : "").split(",");
 
 			if (value.uitype !== "select") {

@@ -77,7 +77,7 @@ const shouldBeFiltered = (filter, item) => {
 	}
 };
 
-export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user }) {
+export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user, endpoint }) {
 	const [response, setResponse] = useState(false);
 	const [filter, setFilter] = useState(false);
 	const [extraTitle, setExtraTitle] = useState(false);
@@ -93,12 +93,13 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 		const fetch = async () => {
 			try {
 				const params = {};
+
 				if (id_user) {
 					params.id_user = id_user;
 				}
 
 				const response = await axios({
-					url: `/${type}`,
+					url: `/${endpoint || type}`,
 					method: "GET",
 					params
 				});
@@ -112,6 +113,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 		};
 
 		setFilter(false);
+		setExtraTitle(false);
 
 		fetch();
 		window.addEventListener(`refresh-list-${type}`, fetch);
@@ -185,7 +187,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 							return (
 								<div className='row' key={index} id={item.id}>
-									<div className='flex-row'>
+									<div className='flex-row no-wrap'>
 										<span className='list-detail'>
 											{item.date ? `${formatDate(item.date)} - ` : ""}
 											{item.group_label ? (
@@ -201,9 +203,11 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 													)}
 												</>
 											) : (
-												<Interweave content={item.label} />
+												<Interweave className='flex-grow' content={item.label} />
 											)}
 										</span>
+
+										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{item.paid ? `Réglé${item.payment_type === "package" ? " avec une formule" : item.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
 
 										{allowedActions.includes("book-reservation") && (
 											<Link to={`/account/${type}/book/${item.id}`}>

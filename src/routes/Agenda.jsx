@@ -55,7 +55,8 @@ const renderEventContent = (eventInfo, cookies) => {
 
 					<Button
 						className={`small${full || data.reserved ? " disabled" : ""}`}
-						onClick={() => {
+						disableOnClick={true}
+						onClick={setContent => {
 							addToCart({
 								type: "slot",
 								id: data.id_slot
@@ -127,7 +128,8 @@ export default function Agenda() {
 	const Calendar = useRef();
 
 	const filterEvents = events => {
-		if (!Object.keys(filters).length) {
+		const hasAtLeastOneFilter = Object.values(filters).some(filter => filter);
+		if (!Object.keys(filters).length || !hasAtLeastOneFilter) {
 			return events;
 		}
 

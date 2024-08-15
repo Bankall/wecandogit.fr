@@ -13,6 +13,8 @@ class Mail {
 			text = text.replace(`{{${key}}}`, value);
 		}
 
+		text = text.replace(/{{.*?}}/g, "");
+
 		return text;
 	}
 

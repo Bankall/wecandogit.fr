@@ -42,7 +42,7 @@ const assert = (...args) => {
 
 const errorHandler = ({ req, res, err }) => {
 	console.log(
-		`=============================
+		`=============================\n
 		At: ${req.originalUrl}
 		With query: ${JSON.stringify(req.query)}
 		With params: ${JSON.stringify(req.params)}

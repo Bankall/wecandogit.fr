@@ -54,12 +54,15 @@ router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, n
 	}
 
 	req.where = Object.assign({ id_trainer: req.body.id_trainer }, req.where);
-	req.query = Object.assign({ id_trainer: req.body.id_trainer }, req.query);
+
+	if (typeof req.query.full === "undefined") {
+		req.query = Object.assign({ id_trainer: req.body.id_trainer }, req.query);
+	}
 
 	next();
 });
 
-router.route("/user_package").all((req, res, next) => {
+router.route("/user_package").all(async (req, res, next) => {
 	if (req.query.id && !req.session.is_trainer) {
 		return res.send({
 			error: "Vous n'avez pas accès à cette ressource"
@@ -67,6 +70,45 @@ router.route("/user_package").all((req, res, next) => {
 	}
 
 	next();
+});
+
+router.route("/all_user_package").all(async (req, res, next) => {
+	try {
+		const user_packages = await backend.handleQuery(
+			`SELECT
+				up.id,
+				u.id id_user,
+				concat(u.firstname, " ", u.lastname) user,
+				p.label,
+				up.usage,
+				p.number_of_session,
+				up.start date
+				
+			FROM user_package up
+			JOIN user u on u.id = up.id_user
+			JOIN package p on p.id = up.id_package
+
+			ORDER BY up.id DESC`,
+			[],
+			null,
+			true
+		);
+
+		const formatUsage = user_package => {
+			const full = user_package.usage >= user_package.number_of_session;
+			return full ? "<b>Complet</b>" : `${user_package.usage}/${user_package.number_of_session}`;
+		};
+
+		res.send(
+			user_packages.result.map(user_package => {
+				user_package.label = `<b>${user_package.user}</b> - <b>${user_package.label}</b> - ${formatUsage(user_package)}`;
+
+				return user_package;
+			})
+		);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
 });
 
 router
@@ -514,6 +556,7 @@ router.route("/send-mail").post(async (req, res) => {
 	try {
 		const content = req.body.content;
 		const tos = [];
+
 		let EMAIL_TYPE;
 
 		if (req.body.to === "all") {
@@ -525,6 +568,16 @@ router.route("/send-mail").post(async (req, res) => {
 					newsletter_optin: 1
 				}
 			});
+
+			users.result.forEach(item => {
+				tos.push(item.email);
+			});
+		}
+
+		if (req.body.to === "active") {
+			EMAIL_TYPE = "newsletter";
+
+			const users = await backend.handleQuery("SELECT email FROM user WHERE firstname IS NOT NULL and newsletter_optin = 1", [], null, true);
 
 			users.result.forEach(item => {
 				tos.push(item.email);
@@ -547,6 +600,93 @@ router.route("/send-mail").post(async (req, res) => {
 		res.send({
 			ok: true
 		});
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+router.route("/notification").get(async (req, res) => {
+	try {
+		const notifications = await backend.handleQuery(
+			`SELECT
+				n.id_what id,
+				concat(u.firstname, ' ', u.lastname) who, 
+				n.action,
+				case
+					when n.what = 'slot' then (select concat(a.label, ' ', DATE_FORMAT(s.date, '%d/%m')) from reservation r join slot s on s.id = r.id_slot join activity a on a.id = s.id_activity where r.id = n.id_what)
+					when n.what = 'package' then (select label from package where id = n.id_what) 
+				end what,
+				n.what type,
+				n.when date,
+				case
+					when n.how REGEXP '^[0-9]+$' then (select p.label from user_package up join package p on p.id = up.id_package where up.id = n.how)
+					else n.how
+				end how
+			FROM notification n
+			JOIN user u on u.id = n.id_user
+			ORDER BY n.id DESC`,
+			[],
+			null,
+			true
+		);
+
+		const formatAction = notification => {
+			if (notification.type === "slot") {
+				return notification.action === "booked" ? "a réservé" : "a annulé";
+			}
+
+			if (notification.type === "package") {
+				return notification.how === "direct" ? "a acheté" : "a commandé";
+			}
+		};
+
+		const formatPayment = notification => {
+			if (notification.action === "unbooked") {
+				return "";
+			}
+
+			if (notification.type === "package") {
+				return "";
+			}
+
+			if (!["direct", "later"].includes(notification.how)) {
+				return `avec la formule <b>${notification.how}</b>`;
+			}
+
+			return ``;
+		};
+
+		res.send(
+			notifications.result.map(notification => {
+				notification.label = `<b>${notification.who}</b> ${formatAction(notification)} ${notification.type === "slot" ? "le créneau" : "la formule"} <b>${notification.what}</b> ${formatPayment(notification)}`;
+
+				if (notification.action === "booked") {
+					notification.paid = notification.how !== "later";
+
+					if (notification.paid) {
+						notification.payment_type = notification.how !== "direct" ? "package" : notification.how;
+					}
+				}
+
+				return notification;
+			})
+		);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+router.route("/user-count").get(async (req, res) => {
+	try {
+		const users = await backend.handleQuery(
+			`SELECT
+				count(*) full,
+				sum(case when firstname is not null then 1 else 0 end) active
+
+			FROM user WHERE newsletter_optin = 1`
+		);
+
+		res.send(users.result);
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}
