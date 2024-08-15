@@ -102,7 +102,7 @@ router.route("/oauth/callback/").get(async (req, res) => {
 		});
 	} catch (err) {
 		errorHandler({ err, req });
-		res.redirect(config.get("FRONT_URI") + (redirect || "/account"));
+		res.redirect(config.get("FRONT_URI") + "/account");
 	}
 });
 
