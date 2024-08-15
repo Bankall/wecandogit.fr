@@ -141,8 +141,8 @@ backend.start(() => {
 					
 				FROM user_package up
 				JOIN package p ON p.id = up.id_package
-				JOIN package_activity pa ON pa.id_package = p.id
-				JOIN slot s ON s.id_activity = pa.id_activity AND (s.id_trainer = p.id_trainer OR p.id_trainer = 36)
+				LEFT JOIN package_activity pa ON pa.id_package = p.id
+				JOIN slot s ON (s.id_trainer = p.id_trainer OR p.id_trainer = 36)
 
 				${id_reservation ? "JOIN reservation r on r.id_slot = s.id and up.id_user = (select id_user from dog where id = r.id_dog)" : ""}
  
