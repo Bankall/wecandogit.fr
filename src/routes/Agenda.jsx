@@ -33,7 +33,7 @@ const renderEventContent = (eventInfo, cookies) => {
 				</i>
 
 				<span className='flex-row small-gap'>
-					{/* {data.instant_reservation ||
+					{data.instant_reservation ||
 						(false && (
 							<Button
 								className='small disabled'
@@ -45,7 +45,7 @@ const renderEventContent = (eventInfo, cookies) => {
 								}}>
 								Réserver
 							</Button>
-						))} */}
+						))}
 
 					{data.is_mine ? (
 						<Link to={`/account/slots/filter/${data.id_slot}`}>
