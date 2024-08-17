@@ -1,13 +1,27 @@
 import { useRouteError, useNavigate, Link } from "react-router-dom";
+import { useEffect } from "react";
+
+import axios from "axios";
 
 export default function ErrorPage() {
 	const error = useRouteError();
 	const navigate = useNavigate();
+	const post = async () => {
+		console.log("<===============================");
+		console.log(error);
+		console.log("===============================>");
+
+		await axios.post("/log-error", {
+			error: error.toString()
+		});
+	};
+
+	useEffect(() => {
+		post();
+	}, [error]);
 
 	return (
 		<section className='flex-row'>
-			{console.log(error)}
-
 			<div className='box big-box'>
 				<div className='title'>
 					<i className='fa-regular fa-face-frown'></i> Oops!

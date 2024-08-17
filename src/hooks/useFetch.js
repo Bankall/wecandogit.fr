@@ -5,7 +5,6 @@ export function useFetch(options, callback) {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [data, setData] = useState(null);
-
 	const url = typeof options === "string" ? options : options.url;
 	useEffect(() => {
 		const controller = new AbortController();

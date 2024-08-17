@@ -8,6 +8,15 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
+router.route("/log-error").post(async (req, res) => {
+	errorHandler({
+		err: req.body.error,
+		req: {
+			originalUrl: "FrontErrorLogger"
+		}
+	});
+});
+
 router.route("/is-logged-in").get((req, res) => {
 	res.send({
 		ok: !!(req.session && req.session.user_id)

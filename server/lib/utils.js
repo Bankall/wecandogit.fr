@@ -44,9 +44,7 @@ const errorHandler = ({ req, res, err }) => {
 	console.log(
 		`=============================\n
 		At: ${req.originalUrl}
-		With query: ${JSON.stringify(req.query)}
-		With params: ${JSON.stringify(req.params)}
-		With body: ${JSON.stringify(req.body)}
+		${req.query ? `With query: ${JSON.stringify(req.query)}\n` : ""}${req.params ? `With params: ${JSON.stringify(req.params)}\n` : ""}${req.body ? `With body: ${JSON.stringify(req.body)}\n` : ""}
 		\n\n`,
 		err,
 		"\n\n============================="
