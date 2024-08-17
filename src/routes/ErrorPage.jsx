@@ -12,7 +12,7 @@ export default function ErrorPage() {
 		console.log("===============================>");
 
 		await axios.post("/log-error", {
-			error: error.toString()
+			error: error.error ? error.error.toString() : error.toString()
 		});
 	};
 
