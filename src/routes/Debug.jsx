@@ -26,6 +26,8 @@ function Debug() {
 				<br />
 				<div className='box left'>
 					<p>UA:</p>
+					<pre>Raw: {navigator.userAgent}</pre>
+					<br />
 					<pre>{JSON.stringify(result, null, 4)}</pre>
 				</div>
 			</div>

@@ -400,7 +400,15 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 	try {
 		const allCartItems = await sortCartItemByTrainers(req);
-		const cartItems = allCartItems[req.params.idTrainer].slot.concat(allCartItems[req.params.idTrainer].package);
+		if (!allCartItems[req.params.idTrainer]) {
+			throw {
+				error: "Can't handle and empty cart",
+				idTrainer: req.params.idTrainer,
+				allCartItems
+			};
+		}
+
+		const cartItems = (allCartItems[req.params.idTrainer].slot || []).concat(allCartItems[req.params.idTrainer].package);
 
 		const allReserved = await handleReservation(req, cartItems);
 		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
