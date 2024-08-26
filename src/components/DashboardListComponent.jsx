@@ -4,6 +4,12 @@ import { Interweave } from "interweave";
 
 import axios from "axios";
 
+const LogError = async error => {
+	await axios.post("/log-error", {
+		error: error.error ? error.error.toString() : error.toString()
+	});
+};
+
 const formatDate = date => {
 	date = new Date(date.replace(/-/g, "/"));
 	return date.toLocaleString().slice(0, 16);
@@ -23,7 +29,7 @@ const markAsPaid = async (id, typeOverride, type) => {
 		await axios.put(`/${typeOverride || type}/${id}`, { paid: 1 });
 		window.dispatchEvent(new Event(`refresh-list-${type || typeOverride}`));
 	} catch (err) {
-		console.log(err);
+		await LogError(err);
 	}
 };
 const handleDelete = async (id, typeOverride, type) => {
@@ -39,7 +45,7 @@ const handleDelete = async (id, typeOverride, type) => {
 		await axios.put(`/${typeOverride || type}/${id}`, { enabled: 0 });
 		window.dispatchEvent(new Event(`refresh-list-${type || typeOverride}`));
 	} catch (err) {
-		console.error(err);
+		await LogError(err);
 	}
 };
 

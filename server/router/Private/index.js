@@ -37,6 +37,10 @@ const handleRefund = async ({ id_reservation, req, refundValue, updateReservatio
 				});
 			}
 		} else {
+			if (typeof refundValue === "undefined" || !user_package) {
+				return;
+			}
+
 			errorHandler({
 				err: {
 					message: "Something looks wrong with the refund",
@@ -45,12 +49,11 @@ const handleRefund = async ({ id_reservation, req, refundValue, updateReservatio
 					refundValue,
 					updateReservation
 				},
-				req,
-				res
+				req
 			});
 		}
 	} catch (err) {
-		errorHandler({ err, req, res });
+		errorHandler({ err, req });
 	}
 };
 
