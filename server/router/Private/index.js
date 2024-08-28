@@ -569,16 +569,9 @@ router.route("/all-dogs").get(async (req, res) => {
 	}
 });
 
-router.route("/send-mail").post(async (req, res) => {
+const getEmailListing = async req => {
 	try {
-		const content = req.body.content;
-		const tos = [];
-
-		let EMAIL_TYPE;
-
 		if (req.body.to === "all") {
-			EMAIL_TYPE = "newsletter";
-
 			const users = await backend.get({
 				table: "user",
 				query: {
@@ -586,20 +579,42 @@ router.route("/send-mail").post(async (req, res) => {
 				}
 			});
 
-			users.result.forEach(item => {
-				tos.push(item.email);
-			});
+			return { tos: users.result.map(user => user.email), EMAIL_TYPE: "newsletter" };
 		}
 
 		if (req.body.to === "active") {
-			EMAIL_TYPE = "newsletter";
-
 			const users = await backend.handleQuery("SELECT email FROM user WHERE firstname IS NOT NULL and newsletter_optin = 1", [], null, true);
 
-			users.result.forEach(item => {
-				tos.push(item.email);
-			});
+			return { tos: users.result.map(user => user.email), EMAIL_TYPE: "newsletter" };
 		}
+
+		const users = await backend.handleQuery(
+			`SELECT 
+				email 
+			FROM user u
+
+			JOIN dog d on d.id_user = u.id
+			JOIN reservation r on r.id_dog = d.id
+
+			WHERE r.id_slot = ?
+			AND r.enabled = 1
+
+			GROUP BY u.id`,
+			[req.body.to],
+			null,
+			true
+		);
+
+		return { tos: users.result.map(user => user.email), EMAIL_TYPE: "direct" };
+	} catch (err) {
+		errorHandler({ err, req });
+	}
+};
+
+router.route("/send-mail").post(async (req, res) => {
+	try {
+		const content = req.body.content;
+		const { tos, EMAIL_TYPE } = await getEmailListing(req);
 
 		for await (const to of tos) {
 			await MailSender.send({
