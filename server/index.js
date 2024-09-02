@@ -149,7 +149,7 @@ backend.start(() => {
 				WHERE 	1 = 1
 
 				${id_slot ? "AND 	s.id = ?" : id_reservation ? "AND	r.id = ?" : ""}
-				${available ? "AND up.usage < p.number_of_session AND up.start < CURRENT_TIMESTAMP" : ""}
+				${available ? "AND up.usage < p.number_of_session" : ""}
 
 				${!id_reservation ? "AND 	up.id_user = ?" : ""}
 				

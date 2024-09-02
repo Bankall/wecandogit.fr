@@ -8,48 +8,27 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
-const handleRefund = async ({ id_reservation, req, refundValue, updateReservation }) => {
+const handleRefund = async ({ id_reservation, req }) => {
 	try {
-		const user_package = await backend.getUserPackageForID({ id_reservation, req });
+		const reservation = await backend.get({
+			table: "reservation",
+			id: id_reservation
+		});
 
-		if (user_package && user_package.length && (refundValue < 0 || user_package[0].usage > 0)) {
+		if (reservation.result.paid === 1 && reservation.result.payment_type === "package") {
+			const user_package = await backend.get({
+				table: "user_package",
+				id: reservation.result.payment_details
+			});
+
 			await backend.put({
 				table: "user_package",
 				where: {
-					id: user_package[0].id
+					id: reservation.result.payment_details
 				},
 				body: {
-					usage: user_package[0].usage - (refundValue || 1)
+					usage: user_package.result.usage - 1
 				}
-			});
-
-			if (updateReservation && refundValue) {
-				await backend.put({
-					table: "reservation",
-					where: {
-						id: id_reservation
-					},
-					body: {
-						paid: 1,
-						payment_type: "package",
-						payment_details: user_package[0].id
-					}
-				});
-			}
-		} else {
-			if (typeof refundValue === "undefined" || !user_package) {
-				return;
-			}
-
-			errorHandler({
-				err: {
-					message: "Something looks wrong with the refund",
-					stack: "handleRefund",
-					id_reservation,
-					refundValue,
-					updateReservation
-				},
-				req
 			});
 		}
 	} catch (err) {
@@ -220,7 +199,38 @@ router
 				body: req.body
 			});
 
-			handleRefund({ id_reservation: reservation.result.id, req, refundValue: -1, updateReservation: true });
+			const user_package = await backend.getUserPackageForID({ id_reservation: reservation.result.id, req, available: true });
+			if (user_package.length) {
+				await backend.put({
+					table: "user_package",
+					where: {
+						id: user_package[0].id
+					},
+					body: {
+						usage: user_package[0].usage + 1
+					}
+				});
+
+				await backend.put({
+					table: "reservation",
+					where: {
+						id: reservation.result.id
+					},
+					body: {
+						paid: 1,
+						payment_details: user_package[0].id,
+						payment_type: "package"
+					}
+				});
+			}
+
+			await backend.notify({
+				who: req.session.user_id,
+				action: "booked",
+				what: "slot",
+				how: "",
+				id_what: reservation.result.id_slot
+			});
 
 			res.send(reservation.result);
 		} catch (err) {
