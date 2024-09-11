@@ -17,7 +17,7 @@ import { Private } from "./router/Private/index.js";
 import { Password } from "./router/Password/index.js";
 import { Public } from "./router/Public/index.js";
 import { Cart } from "./router/Cart/index.js";
-
+import { Cron } from "./router/Cron/index.js";
 import { errorHandler } from "./lib/utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -75,6 +75,7 @@ app.use(`${API_PATH}/password`, Password(backend));
 app.use(`${API_PATH}/`, Private(backend));
 app.use(`${API_PATH}/`, Public(backend));
 app.use(`${API_PATH}/cart`, Cart(backend));
+app.use(`${API_PATH}/cron`, Cron(backend));
 
 app.get(`${API_PATH}/fake-user/:id?`, async (req, res) => {
 	if (![1, 36].includes(req.session.user_id)) {

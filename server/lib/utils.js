@@ -41,6 +41,10 @@ const assert = (...args) => {
 };
 
 const errorHandler = ({ req, res, err }) => {
+	if (!req) {
+		req = { originalUrl: "No request" };
+	}
+
 	console.log(
 		`=============================\n
 		At: ${req.originalUrl}
