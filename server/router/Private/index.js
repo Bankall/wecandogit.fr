@@ -345,7 +345,7 @@ const getSlotsListing = async (req, res) => {
 						spots: slot.spots,
 						reservations: 0,
 						dogs: [],
-						details: waitingListById[slot.id] || {}
+						waiting_list: waitingListById[slot.id] || {}
 					};
 				}
 

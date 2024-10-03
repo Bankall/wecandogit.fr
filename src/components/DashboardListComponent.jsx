@@ -290,19 +290,35 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 									{item.details && item.details.length ? (
 										<div>
-											<span>List d'attente</span>
+											<span>Détail</span>
 											<ul className='margin-t-10'>
 												{item.details.map((detail, index) => (
 													<li className='flex-row' key={index}>
 														<span className='flex-grow'>&nbsp;- {detail.label}</span>
-														<span className='price'>{detail.status}</span>
+														<span className='price'>
+															<b>{detail.price}€</b>
+														</span>
 													</li>
 												))}
 											</ul>
 										</div>
 									) : null}
 
-									{item.waiting_list && item.waiting_list.length ? <div>Waiting list</div> : null}
+									{item.waiting_list && item.waiting_list.length ? (
+										<div>
+											<span>List d'attente</span>
+											<ul className='margin-t-10'>
+												{item.waiting_list.map((detail, index) => (
+													<li className='flex-row' key={index}>
+														<span className='flex-grow'>&nbsp;- {detail.label}</span>
+														<span className='price'>
+															<b>{detail.status}</b>
+														</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									) : null}
 								</div>
 							);
 					  })
