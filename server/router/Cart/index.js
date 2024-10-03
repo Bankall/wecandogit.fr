@@ -1,7 +1,8 @@
-import { query, Router } from "express";
+import { Router } from "express";
 import { Stripe } from "stripe";
-import config from "config";
 import { errorHandler } from "../../lib/utils.js";
+import config from "config";
+
 let backend;
 
 const router = Router();
@@ -20,13 +21,51 @@ router.route("/add").post(async (req, res) => {
 			req.session.cart = [];
 		}
 
-		req.session.cart.push({
+		let cantAddMore = false;
+		const cartItem = {
 			type: req.body.type,
 			id: req.body.id
-		});
+		};
 
+		if (req.session.user_id) {
+			const dogs = await backend.get({
+				table: "dog",
+				query: {
+					id_user: req.session.user_id
+				}
+			});
+
+			if (dogs.result.length) {
+				const dogIds = dogs.result.map(dog => dog.id).join(",");
+				const alreadyInCart = req.session.cart.filter(item => item.type === cartItem.type && item.id === cartItem.id).length;
+				const bookings = await backend.get({ table: "reservation", query: { id_slot: cartItem.id, id_dog: dogIds, enabled: 1 } });
+				const alreadyBookedIds = bookings.result.length ? bookings.result.map(booking => booking.id_dog) : [];
+
+				if (req.session.cart.length) {
+					req.session.cart.forEach(item => {
+						if (item.type === cartItem.type && item.id === cartItem.id && item.id_dog) {
+							alreadyBookedIds.push(item.id_dog);
+						}
+					});
+				}
+
+				const nextAvailableDog = dogs.result.filter(dog => !alreadyBookedIds.includes(dog.id));
+				if (!nextAvailableDog.length) {
+					throw { message: "Vous avez déjà réservé ce créneau" };
+				}
+
+				cartItem.id_dog = nextAvailableDog[0].id;
+
+				if (dogs.result.length === alreadyInCart + 1 + alreadyBookedIds.length) {
+					cantAddMore = true;
+				}
+			}
+		}
+
+		req.session.cart.push(cartItem);
 		res.send({
-			ok: true
+			ok: true,
+			cantAddMore
 		});
 	} catch (err) {
 		errorHandler({ err, req, res });
@@ -34,10 +73,10 @@ router.route("/add").post(async (req, res) => {
 });
 
 router
-	.route("/:type/:id")
+	.route("/:type/:id/:id_dog")
 	.put((req, res) => {
 		req.session.cart = req.session.cart.map(item => {
-			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10)) {
+			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
 				if (req.body.payment_type) {
 					item.payment_type = req.body.payment_type;
 				}
@@ -54,7 +93,7 @@ router
 	})
 	.delete((req, res) => {
 		req.session.cart = req.session.cart.filter(item => {
-			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10)) {
+			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
 				return false;
 			}
 
@@ -198,6 +237,7 @@ const sortCartItemByTrainers = async req => {
 
 		return byTrainers;
 	} catch (err) {
+		errorHandler({ err, req });
 		return err;
 	}
 };
@@ -286,6 +326,8 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 const handleReservation = async (req, itemToReserve, stripe_id) => {
 	try {
 		for await (const item of itemToReserve) {
+			let package_usage = 0;
+
 			if (item.type === "slot") {
 				if (!["direct", "later"].includes(item.payment_type)) {
 					const current_usage = await backend.get({
@@ -299,13 +341,15 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					});
 
 					if (current_usage.result.usage < _package.result.number_of_session) {
+						package_usage = current_usage.result.usage + 1;
+
 						await backend.put({
 							table: "user_package",
 							where: {
 								id: item.payment_type
 							},
 							body: {
-								usage: current_usage.result.usage + 1
+								usage: package_usage
 							}
 						});
 					} else {
@@ -333,7 +377,8 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					action: "booked",
 					what: "slot",
 					how: item.payment_type,
-					id_what: item.id
+					id_what: item.id,
+					package_usage
 				});
 			}
 
@@ -386,6 +431,19 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 		const stripe = Stripe(stripe_sk);
 		const session = await stripe.checkout.sessions.retrieve(req.session.stripe_session_id);
 
+		await backend.post({
+			table: "payment_history",
+			body: {
+				session_id: session.id,
+				payment_intent: session.payment_intent,
+				amount: session.amount_total,
+				id_user: req.session.user_id,
+				id_trainer: req.params.idTrainer,
+				status: session.status,
+				details: JSON.stringify(req.session.stripe_session_cart)
+			}
+		});
+
 		if (session.status !== "complete" || session.payment_status !== "paid") {
 			return res.redirect("/cart#payment-error");
 		}
@@ -402,7 +460,7 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 		const allCartItems = await sortCartItemByTrainers(req);
 		if (!allCartItems[req.params.idTrainer]) {
 			throw {
-				error: "Can't handle and empty cart",
+				error: "Can't handle an empty cart",
 				idTrainer: req.params.idTrainer,
 				allCartItems
 			};

@@ -21,22 +21,25 @@ const handleRefund = async ({ id_reservation, req }) => {
 				id: reservation.result.payment_details
 			});
 
+			const package_usage = user_package.result.usage - 1;
 			await backend.put({
 				table: "user_package",
 				where: {
 					id: reservation.result.payment_details
 				},
 				body: {
-					usage: user_package.result.usage - 1
+					usage: package_usage
 				}
 			});
+
+			return package_usage;
 		}
 	} catch (err) {
 		errorHandler({ err, req });
 	}
 };
 
-router.route(["/activity/:id?", "/slot/:id?", "/package/:id?"]).all((req, res, next) => {
+router.route(["/activity/:id?", "/slot/:id?", "/package/:id?", "/payment_history"]).all((req, res, next) => {
 	if (!req.session.is_trainer) {
 		return res.send({
 			error: "Vous n'avez pas accès à cette ressource"
@@ -156,20 +159,22 @@ router
 		try {
 			const reservation = await backend.handleQuery(
 				`SELECT 
-				s.date,
-				CONCAT(a.label, ' - ', d.label) label,
-				r.id
+					s.date,
+					CONCAT(a.label, ' - ', d.label, ' - ', (select firstname from user where id = s.id_trainer)) label,
+					r.id,
+					r.paid,
+					r.payment_type
 
-			FROM reservation r 
-			JOIN slot s on s.id = r.id_slot
-			JOIN activity a on a.id = s.id_activity
-			JOIN dog d on d.id = r.id_dog
-			JOIN user u on u.id = d.id_user
-			WHERE 	u.id = ? 
-			AND 	r.enabled = 1 
-			AND 	s.enabled = 1
-			${!req.query.id_user ? "AND 	s.date > current_timestamp()" : ""}
-			ORDER BY s.date ${req.query.id_user ? "DESC" : "ASC"}`,
+				FROM reservation r 
+				JOIN slot s on s.id = r.id_slot
+				JOIN activity a on a.id = s.id_activity
+				JOIN dog d on d.id = r.id_dog
+				JOIN user u on u.id = d.id_user
+				WHERE 	u.id = ? 
+				${!req.query.id_user ? "AND 	s.date > current_timestamp()" : ""}
+				AND 	r.enabled = 1 
+				AND 	s.enabled = 1
+				ORDER BY s.date ${req.query.id_user ? "DESC" : "ASC"}`,
 				[req.query.id_user || req.session.user_id],
 				null,
 				true
@@ -200,14 +205,18 @@ router
 			});
 
 			const user_package = await backend.getUserPackageForID({ id_reservation: reservation.result.id, req, available: true });
+			let package_usage = null;
+
 			if (user_package.length) {
+				package_usage = user_package[0].usage + 1;
+
 				await backend.put({
 					table: "user_package",
 					where: {
 						id: user_package[0].id
 					},
 					body: {
-						usage: user_package[0].usage + 1
+						usage: package_usage
 					}
 				});
 
@@ -228,8 +237,10 @@ router
 				who: req.session.user_id,
 				action: "booked",
 				what: "slot",
-				how: "",
-				id_what: reservation.result.id_slot
+				how: user_package.length ? user_package[0].id : "",
+				package_usage,
+				dog: req.body.id_dog,
+				id_what: req.body.id_slot
 			});
 
 			res.send(reservation.result);
@@ -240,15 +251,16 @@ router
 	.put(async (req, res, next) => {
 		try {
 			if (req.body.enabled === 0) {
-				handleRefund({ id_reservation: req.params.id, req });
-
+				const package_usage = await handleRefund({ id_reservation: req.params.id, req });
 				const reservation = await backend.get({ table: "reservation", id: req.params.id });
 
 				await backend.notify({
 					who: req.session.user_id,
 					action: "unbooked",
 					what: "slot",
+					dog: reservation.result.id_dog,
 					how: "",
+					package_usage,
 					id_what: reservation.result.id_slot
 				});
 			}
@@ -289,35 +301,70 @@ const getSlotsListing = async (req, res) => {
 			true
 		);
 
-		const results = {};
-		slots.result.forEach(slot => {
-			if (!results[slot.id]) {
-				results[slot.id] = {
-					id: slot.id,
-					label: `0 / ${slot.spots}`,
-					date: slot.date,
-					group_label: slot.label,
-					spots: slot.spots,
-					reservations: 0,
-					dogs: []
-				};
-			}
+		const waitingList = await backend.handleQuery(
+			`SELECT
+				s.id id_slot,
+				concat(u.firstname, " ", u.lastname) user,
+				case when wl.proposed = 1 then "En attente de réponse" else "Sur la liste" end status
+				
+			FROM waiting_list wl
+			JOIN user u on u.id = wl.id_user
+			JOIN slot s on s.id = wl.id_slot
 
-			if (slot.id_dog) {
-				results[slot.id].dogs.push({
-					id: slot.id_reservation,
-					label: slot.label_dog,
-					paid: slot.paid,
-					payment_type: slot.payment_type
+			WHERE 	wl.declined = 0
+			AND 	s.date > CURRENT_TIMESTAMP
+			AND 	s.enabled = 1`,
+			[req.session.user_id],
+			null,
+			true
+		);
+
+		const waitingListById = {};
+		if (waitingList.result.length) {
+			waitingList.result.forEach(item => {
+				if (!waitingListById[item.id_slot]) {
+					waitingListById[item.id_slot] = [];
+				}
+
+				waitingListById[item.id_slot].push({
+					label: item.user,
+					status: item.status
 				});
+			});
+		}
 
-				results[slot.id].reservations += 1;
-				const full = results[slot.id].reservations >= results[slot.id].spots;
+		const results = {};
+		if (slots.result.length) {
+			slots.result.forEach(slot => {
+				if (!results[slot.id]) {
+					results[slot.id] = {
+						id: slot.id,
+						label: `0 / ${slot.spots}`,
+						date: slot.date,
+						group_label: slot.label,
+						spots: slot.spots,
+						reservations: 0,
+						dogs: [],
+						details: waitingListById[slot.id] || {}
+					};
+				}
 
-				results[slot.id].label = `${full ? "Complet" : `${results[slot.id].reservations} / ${slot.spots}`}`;
-			}
-		});
+				if (slot.id_dog) {
+					results[slot.id].dogs.push({
+						id: slot.id_dog,
+						id_reservation: slot.id_reservation,
+						label: slot.label_dog,
+						paid: slot.paid,
+						payment_type: slot.payment_type
+					});
 
+					results[slot.id].reservations += 1;
+					const full = results[slot.id].reservations >= results[slot.id].spots;
+
+					results[slot.id].label = `${full ? "Complet" : `${results[slot.id].reservations} / ${slot.spots}`}`;
+				}
+			});
+		}
 		res.send(
 			Object.values(results)
 				.sort((a, b) => {
@@ -452,7 +499,7 @@ router.route("/user_package").get(async (req, res) => {
 					id: user_package.id_package
 				});
 
-				user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session}`;
+				user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session} - ${user_package.start}`;
 			}
 		}
 
@@ -660,10 +707,14 @@ router.route("/notification").get(async (req, res) => {
 				end what,
 				n.what type,
 				n.when date,
+				(select label from dog where id = n.dog) dog,
 				case
 					when n.how REGEXP '^[0-9]+$' then (select p.label from user_package up join package p on p.id = up.id_package where up.id = n.how)
 					else n.how
-				end how
+				end how,
+                case when n.package_usage is not null then concat(n.package_usage, "/", (select p.number_of_session from package p join user_package up on up.id_package = p.id where up.id = n.how))
+					else null
+				end package_usage
 			FROM notification n
 			JOIN user u on u.id = n.id_user
 			ORDER BY n.id DESC`,
@@ -674,7 +725,7 @@ router.route("/notification").get(async (req, res) => {
 
 		const formatAction = notification => {
 			if (notification.type === "slot") {
-				return notification.action === "booked" ? "a réservé" : "a annulé";
+				return notification.action === "booked" ? "a réservé" : notification.action === "unbooked" ? "a annulé" : "s'est inscrit sur la liste d'attente pour";
 			}
 
 			if (notification.type === "package") {
@@ -683,7 +734,7 @@ router.route("/notification").get(async (req, res) => {
 		};
 
 		const formatPayment = notification => {
-			if (notification.action === "unbooked") {
+			if (["unbooked", "waiting-list"].includes(notification.action)) {
 				return "";
 			}
 
@@ -700,7 +751,7 @@ router.route("/notification").get(async (req, res) => {
 
 		res.send(
 			notifications.result.map(notification => {
-				notification.label = `<b>${notification.who}</b> ${formatAction(notification)} ${notification.type === "slot" ? "le créneau" : "la formule"} <b>${notification.what}</b> ${formatPayment(notification)}`;
+				notification.label = `<b>${notification.who}</b> ${formatAction(notification)} ${notification.type === "slot" ? "le créneau" : "la formule"} <b>${notification.what}</b> ${notification.dog ? `pour <b>${notification.dog}</b>` : ""} ${formatPayment(notification)}`;
 
 				if (notification.action === "booked") {
 					notification.paid = notification.how !== "later";
@@ -708,6 +759,10 @@ router.route("/notification").get(async (req, res) => {
 					if (notification.paid) {
 						notification.payment_type = notification.how !== "direct" ? "package" : notification.how;
 					}
+				}
+
+				if (notification.package_usage) {
+					notification.label += ` (utilisation: ${notification.package_usage})`;
 				}
 
 				return notification;
@@ -729,6 +784,36 @@ router.route("/user-count").get(async (req, res) => {
 		);
 
 		res.send(users.result);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+router.route("/payment_history").get(async (req, res) => {
+	try {
+		const payments = await backend.handleQuery(
+			`SELECT
+				u.firstname,
+				u.lastname,
+				p.amount,
+				p.date,
+				p.status,
+				p.details
+			FROM payment_history p
+			JOIN user u on u.id = p.id_user
+			ORDER BY p.date DESC`,
+			[],
+			null,
+			true
+		);
+
+		res.send(
+			payments.result.map(payment => {
+				payment.label = `${payment.firstname} ${payment.lastname} - ${payment.amount / 100}€ - ${payment.status}`;
+				payment.details = JSON.parse(payment.details);
+				return payment;
+			})
+		);
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

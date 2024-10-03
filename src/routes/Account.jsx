@@ -64,6 +64,8 @@ function Account() {
 				return <DashboardListComponent title='Notifications' type='notification' allowedActions={[]} />;
 			case "all-user-packages":
 				return <DashboardListComponent title='Toutes les formules' type='user_package' endpoint='all_user_package' allowedActions={["modify"]} />;
+			case "payment-history":
+				return <DashboardListComponent title='Historique de paiements' type='payment_history' allowedActions={[]} />;
 			case "mail-composer":
 				return <MailEditor />;
 		}
@@ -77,23 +79,21 @@ function Account() {
 				<div className='dashboard flex-row no-wrap'>
 					<div className='menu'>
 						<ul>
-							{me.data?.result.is_trainer === 0 ? (
-								<>
-									<li>
-										<NavLink to='/account/reservations'>Mes Reservations</NavLink>
-									</li>
-									<li>
-										<NavLink to='/account/user_packages'>Mes Formules</NavLink>
-									</li>
-								</>
-							) : null}
-
 							<li>
 								<NavLink to='/account/profile'>Mes Informations</NavLink>
+							</li>
+							<li>
+								<NavLink to='/account/reservations'>Mes Reservations</NavLink>
+							</li>
+							<li>
+								<NavLink to='/account/user_packages'>Mes Formules</NavLink>
 							</li>
 
 							{me.data?.result.is_trainer === 1 ? (
 								<>
+									<li>
+										<a className='bold'>Administation</a>
+									</li>
 									<li>
 										<NavLink to='/account/activities'>Nos Activités</NavLink>
 									</li>
@@ -114,6 +114,9 @@ function Account() {
 									</li>
 									<li>
 										<NavLink to='/account/users'>Membres</NavLink>
+									</li>
+									<li>
+										<NavLink to='/account/payment-history'>Historique de paiements</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/mail-composer'>Messages</NavLink>

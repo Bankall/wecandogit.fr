@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 const updateCartItem = async (action, item, value) => {
 	try {
 		const params = {
-			url: `/cart/${item.type}/${item.id}`
+			url: `/cart/${item.type}/${item.id}/${item.id_dog}`
 		};
 
 		if (action === "delete") {

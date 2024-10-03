@@ -2,22 +2,14 @@ import axios from "axios";
 
 const addToCart = async ({ type, id, element }) => {
 	try {
-		if (element) {
-			element.classList.add("loading");
-		}
-
-		await axios.post(`/cart/add/`, { type, id });
+		const response = await axios.post(`/cart/add/`, { type, id });
 		window.dispatchEvent(new Event("cart-modified"));
 
-		if (element) {
-			setTimeout(() => {
-				element?.classList?.remove("loading");
-			}, 1000);
-		}
-
-		return true;
+		return response.data;
 	} catch (err) {
-		return false;
+		return {
+			cantAddMore: true
+		};
 	}
 };
 
@@ -28,4 +20,17 @@ const instantBooking = async ({ type, id }) => {
 	}
 };
 
-export { addToCart, instantBooking };
+const addToWaitingList = async ({ id_slot }) => {
+	try {
+		const response = await axios.post(`/waiting-list/add/${id_slot}`);
+		window.dispatchEvent(new Event("cart-modified"));
+
+		return response.data;
+	} catch (err) {
+		return {
+			cantAddMore: true
+		};
+	}
+};
+
+export { addToCart, instantBooking, addToWaitingList };

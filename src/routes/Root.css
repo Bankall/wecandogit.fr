@@ -3,6 +3,7 @@
 	--accent-color-1: rgb(135, 41, 133);
 	--accent-color-2: rgb(33, 70, 144);
 	--accent-color-3: rgb(112, 33, 111);
+	--accent-color-4: rgb(26, 56, 116);
 	--box-shadows: rgba(45, 46, 92, 0.15);
 	--light-borders: rgba(211, 215, 223, 0.5);
 	--swiper-navigation-size: 22px !important;
@@ -163,7 +164,8 @@ button,
 	outline: none;
 }
 
-button.loading {
+button.loading,
+button.small.loading {
 	font-size: 0px !important;
 }
 
@@ -175,6 +177,10 @@ button.loading {
 button.loading::before {
 	content: "Chargement";
 	font-size: 13px !important;
+}
+
+button.small.loading::before {
+	font-size: 11px !important;
 }
 
 button.big {
@@ -190,8 +196,19 @@ button.small,
 	border: 1px solid var(--accent-color-2);
 }
 
+button.small.inverted-colors {
+	background-color: var(--accent-color-1);
+	border: 1px solid var(--accent-color-1);
+}
+
 button:hover,
 button:focus {
+	background-color: var(--accent-color-4);
+	border: 1px solid var(--accent-color-2);
+}
+
+button.inverted-colors:hover,
+button.inverted-colors:focus {
 	background-color: var(--accent-color-3);
 	border: 1px solid var(--accent-color-1);
 }
@@ -526,6 +543,7 @@ input:focus {
 
 .menu ul li a.active {
 	font-weight: 550;
+	text-decoration: underline;
 }
 
 .menu ul li:last-child {

@@ -106,6 +106,14 @@ router.route("/get-next-individual-slots").get(async (req, res) => {
 
 router.route("/get-all-slots").get(async (req, res) => {
 	try {
+		const dogs = await backend.get({
+			table: "dog",
+			query: {
+				id_user: req.session.user_id || 0
+			}
+		});
+
+		const myDogs = dogs.result.length;
 		const slots = await backend.handleQuery(
 			`
 				SELECT 
@@ -115,7 +123,9 @@ router.route("/get-all-slots").get(async (req, res) => {
 					s.date,
 					a.duration,
 					s.id id_slot,
-					a.spots
+					a.spots,
+					case
+                    when (select id from waiting_list where id_slot = s.id and id_user = ? and declined = 0) is not null then 1 end waiting
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
 				INNER JOIN user u on u.id = s.id_trainer
@@ -124,7 +134,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 				AND 	s.enabled = 1
 				
 				ORDER BY date asc`,
-			null,
+			[req.session.user_id || 0],
 			"get-slot",
 			true
 		);
@@ -135,6 +145,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 				r.id,
 				u.id id_user,
 				s.id id_slot,
+				d.label dog,
                 CASE 
                 WHEN (d.breed IS NOT NULL AND d.sexe IS NOT NULL) THEN
 					concat(d.label, ' (', d.breed, ' ', d.sexe, ')')
@@ -166,17 +177,45 @@ router.route("/get-all-slots").get(async (req, res) => {
 
 				reservationBySlot[reservation.id_slot].reservations.push(reservation.label);
 				if (reservation.id_user === req.session.user_id) {
-					reservationBySlot[reservation.id_slot].reserved = true;
+					if (!reservationBySlot[reservation.id_slot].reserved) {
+						reservationBySlot[reservation.id_slot].reserved = [];
+					}
+
+					reservationBySlot[reservation.id_slot].reserved.push(reservation.label);
+					reservationBySlot[reservation.id_slot].number_of_dogs = reservation.number_of_dogs;
 				}
 			});
 		}
 
+		const slotsByIdTrainerAndTime = {};
+		slots.result.forEach(slot => {
+			if (typeof slotsByIdTrainerAndTime[slot.id_trainer + slot.date] === "undefined") {
+				slotsByIdTrainerAndTime[slot.id_trainer + slot.date] = 0;
+			}
+
+			if (reservationBySlot[slot.id_slot] && reservationBySlot[slot.id_slot].reservations.length && slot.spots === 1) {
+				slotsByIdTrainerAndTime[slot.id_trainer + slot.date]++;
+			}
+		});
+
 		slots.result = slots.result.map(slot => {
 			slot.reservations = (reservationBySlot[slot.id_slot] || {}).reservations;
-			slot.reserved = (reservationBySlot[slot.id_slot] || {}).reserved;
+			slot.cantBeReserved = reservationBySlot[slot.id_slot] ? reservationBySlot[slot.id_slot].reserved.length >= myDogs : false;
 			slot.is_mine = slot.id_trainer === req.session.user_id;
 
 			return slot;
+		});
+
+		slots.result = slots.result.filter(slot => {
+			if (slot.reservations && slot.reservations.length) {
+				return true;
+			}
+
+			if (slotsByIdTrainerAndTime[slot.id_trainer + slot.date] && slot.spots === 1) {
+				return false;
+			}
+
+			return true;
 		});
 
 		res.send(slots);

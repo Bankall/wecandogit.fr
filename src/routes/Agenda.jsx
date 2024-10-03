@@ -6,12 +6,13 @@ import axios from "axios";
 
 import "./Agenda.css";
 import { useEffect, useRef, useState } from "react";
-import { instantBooking, addToCart } from "../utils/utils.cart";
+import { instantBooking, addToCart, addToWaitingList } from "../utils/utils.cart";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/Button";
 import { useCookies } from "react-cookie";
+import { useFetch } from "../hooks/useFetch";
 
-const renderEventContent = (eventInfo, cookies) => {
+const renderEventContent = (eventInfo, isLoggedIn) => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
 	const full = (data.reservations || []).length >= data.spots;
 
@@ -53,17 +54,34 @@ const renderEventContent = (eventInfo, cookies) => {
 						</Link>
 					) : null}
 
-					<Button
-						className={`small${full || data.reserved ? " disabled" : ""}`}
-						disableOnClick={true}
-						onClick={setContent => {
-							addToCart({
-								type: "slot",
-								id: data.id_slot
-							});
-						}}>
-						Ajouter au panier
-					</Button>
+					{!data.cantBeReserved && !full ? (
+						<Button
+							className={`small inverted-colors`}
+							disableOnClick={response => {
+								if (response.cantAddMore) {
+									return true;
+								}
+							}}
+							onClick={async setContent => {
+								return await addToCart({
+									type: "slot",
+									id: data.id_slot
+								});
+							}}>
+							Ajouter au panier
+						</Button>
+					) : full && !data.waiting && isLoggedIn.data && isLoggedIn.data.ok ? (
+						<Button
+							className={`small`}
+							disableOnClick={true}
+							onClick={async setContent => {
+								return await addToWaitingList({
+									id_slot: data.id_slot
+								});
+							}}>
+							S'inscrire sur liste d'attente
+						</Button>
+					) : null}
 				</span>
 			</span>
 		</>
@@ -109,7 +127,7 @@ const getUniqueEvents = events => {
 		return [];
 	}
 
-	const unique = events.map(event => event.label);
+	const unique = events.map(event => event.label).filter(event => event !== "NE PAS UTILISER");
 	return Array.from(new Set(unique));
 };
 
@@ -117,30 +135,26 @@ export default function Agenda() {
 	const [events, setEvents] = useState([]);
 	const [once, setOnce] = useState(true);
 	const [toggleFilters, setToggleFilters] = useState(false);
+	const isLoggedIn = useFetch("/is-logged-in");
 	const [filters, setFilters] = useState(() => {
 		const filters = localStorage.getItem("agenda-filters");
-		return filters ? JSON.parse(filters) : {};
+		return filters && JSON.parse(filters) && JSON.parse(filters).events
+			? JSON.parse(filters)
+			: {
+					trainers: {
+						35: true,
+						34: true,
+						1: false
+					},
+					full: false,
+					events: {}
+			  };
 	});
 
 	const [cookies, setCookies] = useCookies();
 	const params = useParams();
 
 	const Calendar = useRef();
-
-	const filterEvents = events => {
-		const hasAtLeastOneFilter = Object.values(filters).some(filter => filter);
-		if (!Object.keys(filters).length || !hasAtLeastOneFilter) {
-			return events;
-		}
-
-		return events.filter(event => {
-			if (!filters[event.label]) {
-				return false;
-			}
-
-			return true;
-		});
-	};
 
 	const NoEventRender = () => {
 		const calendarApi = Calendar.current?.getApi();
@@ -153,6 +167,44 @@ export default function Agenda() {
 		}
 
 		return "Aucun évènement à afficher";
+	};
+
+	const filterEvents = events => {
+		const hasAtLeastOneEventFilter = Object.values(filters.events).some(filter => filter);
+		const hasAtLeastOneTrainerFilter = Object.values(filters.trainers).some(filter => filter);
+
+		events = events.filter(event => !filters.full || (event.reservations || []).length < event.spots);
+
+		if (hasAtLeastOneTrainerFilter) {
+			events = events.filter(event => filters.trainers[event.id_trainer]);
+		}
+
+		if (!Object.keys(filters.events).length || !hasAtLeastOneEventFilter) {
+			return events;
+		}
+
+		return events.filter(event => filters.events[event.label]);
+	};
+
+	const saveFilters = () => {
+		const eventCheckboxes = document.querySelector(".filter-box .by-event").querySelectorAll("input[type=checkbox]");
+		const trainerCheckboxes = document.querySelector(".filter-box .by-trainer").querySelectorAll("input[type=checkbox]");
+		const filters = {
+			events: {},
+			trainers: {},
+			full: document.querySelector(".filter-box input[name=full-filter]").checked
+		};
+
+		eventCheckboxes.forEach(checkbox => {
+			filters.events[checkbox.getAttribute("name")] = checkbox.checked;
+		});
+
+		trainerCheckboxes.forEach(checkbox => {
+			filters.trainers[checkbox.getAttribute("name")] = checkbox.checked;
+		});
+
+		setFilters(filters);
+		localStorage.setItem("agenda-filters", JSON.stringify(filters));
 	};
 
 	useEffect(() => {
@@ -191,30 +243,46 @@ export default function Agenda() {
 				<i className='fa-solid fa-filter'></i>
 				{toggleFilters ? " Cacher les filtres" : " Afficher les filtres"}
 			</div>
-			<div className={`box flex-row filter-box margin-b-20${!toggleFilters ? " hidden" : ""}`}>
-				{getUniqueEvents(events)
-					.sort()
-					.map((event, index) => (
-						<label key={index} className='flex-row'>
-							<input
-								type='checkbox'
-								name={event}
-								defaultChecked={filters[event]}
-								onChange={event => {
-									const filters = {};
-									const checkboxes = document.querySelector(".filter-box").querySelectorAll("input[type=checkbox]");
-
-									checkboxes.forEach(checkbox => {
-										filters[checkbox.getAttribute("name")] = checkbox.checked;
-									});
-
-									setFilters(filters);
-									localStorage.setItem("agenda-filters", JSON.stringify(filters));
-								}}
-							/>
-							{event}
+			<div className={`box filter-box margin-b-20${!toggleFilters ? " hidden" : ""}`}>
+				<div className='margin-b-20'>
+					<label className='flex-row'>
+						<input type='checkbox' name='full-filter' defaultChecked={false} onChange={saveFilters} />
+						Masquer les créneaux complets
+					</label>
+				</div>
+				<div className='margin-b-20'>
+					<h4 style={{ textAlign: "left" }}>Filtrer par éducatrice:</h4>
+					<div className='flex-row flex-row margin-t-10 by-trainer'>
+						<label className='flex-row'>
+							<input type='checkbox' name={35} defaultChecked={filters.trainers["35"]} onChange={saveFilters} />
+							Chloe
 						</label>
-					))}
+						<label className='flex-row'>
+							<input type='checkbox' name={34} defaultChecked={filters.trainers["34"]} onChange={saveFilters} />
+							Elodie
+						</label>
+
+						{cookies.email === "christian.sulecki@gmail.com" && (
+							<label className='flex-row'>
+								<input type='checkbox' name={1} defaultChecked={filters.trainers["1"]} onChange={saveFilters} />
+								Christian
+							</label>
+						)}
+					</div>
+				</div>
+				<div>
+					<h4 style={{ textAlign: "left" }}>Filtrer par activité:</h4>
+					<div className='flex-row margin-t-10 by-event'>
+						{getUniqueEvents(events)
+							.sort()
+							.map((event, index) => (
+								<label key={index} className='flex-row'>
+									<input type='checkbox' name={event} defaultChecked={filters.events[event]} onChange={saveFilters} />
+									{event}
+								</label>
+							))}
+					</div>
+				</div>
 			</div>
 
 			<FullCalendar
@@ -227,7 +295,7 @@ export default function Agenda() {
 				noEventsContent={NoEventRender}
 				initialView={"listWeek"}
 				events={filterEvents(events)}
-				eventContent={eventInfo => renderEventContent(eventInfo, cookies, filters)}
+				eventContent={eventInfo => renderEventContent(eventInfo, isLoggedIn)}
 				scrollTime={false}
 				footerToolbar={{
 					start: "title",

@@ -266,13 +266,19 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 												{item.dogs.map((dog, index) => (
 													<li className='flex-row' key={index}>
 														{dog.id && (
-															<i
-																className='fa-solid fa-trash-can'
-																aria-hidden='true'
-																style={{ color: "var(--invalid-color)", cursor: "pointer" }}
-																onClick={() => {
-																	handleDelete(dog.id, "reservation", "slot");
-																}}></i>
+															<>
+																<i
+																	className='fa-solid fa-trash-can'
+																	aria-hidden='true'
+																	style={{ color: "var(--invalid-color)", cursor: "pointer" }}
+																	onClick={() => {
+																		handleDelete(dog.id_reservation, "reservation", "slot");
+																	}}></i>
+
+																<Link to={`/account/dog/edit/${dog.id}`}>
+																	<i className='fa-solid fa-pen' aria-hidden='true' style={{ cursor: "pointer" }}></i>
+																</Link>
+															</>
 														)}
 														<span className='flex-grow'>&nbsp;- {dog.label}</span>
 														{typeof dog.paid !== "undefined" && <span className={dog.paid ? "paid" : "unpaid"}>{dog.paid ? `Réglé${dog.payment_type === "package" ? " avec une formule" : dog.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
@@ -281,6 +287,22 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 											</ul>
 										</div>
 									) : null}
+
+									{item.details && item.details.length ? (
+										<div>
+											<span>List d'attente</span>
+											<ul className='margin-t-10'>
+												{item.details.map((detail, index) => (
+													<li className='flex-row' key={index}>
+														<span className='flex-grow'>&nbsp;- {detail.label}</span>
+														<span className='price'>{detail.status}</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									) : null}
+
+									{item.waiting_list && item.waiting_list.length ? <div>Waiting list</div> : null}
 								</div>
 							);
 					  })

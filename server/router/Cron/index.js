@@ -37,7 +37,8 @@ router.route("/send-reminder-mail").get(async (req, res) => {
 			left join 	reminder_mail rm on rm.id_reservation = r.id
 
 			where 	rm.sent is null
-
+			
+			and 	u.id != 2
 			and 	s.date > current_timestamp
 			and 	s.date < date_add(current_timestamp, interval 1 day)
 			and 	r.enabled = 1
@@ -77,7 +78,6 @@ router.route("/send-reminder-mail").get(async (req, res) => {
 		});
 
 		await Promise.all(promises);
-
 		res.send("Reminders sent");
 	} catch (err) {
 		errorHandler({ err, res, req });

@@ -18,6 +18,7 @@ import { Password } from "./router/Password/index.js";
 import { Public } from "./router/Public/index.js";
 import { Cart } from "./router/Cart/index.js";
 import { Cron } from "./router/Cron/index.js";
+import { WaitingList } from "./router/WaitingList/index.js";
 import { errorHandler } from "./lib/utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -76,6 +77,7 @@ app.use(`${API_PATH}/`, Private(backend));
 app.use(`${API_PATH}/`, Public(backend));
 app.use(`${API_PATH}/cart`, Cart(backend));
 app.use(`${API_PATH}/cron`, Cron(backend));
+app.use(`${API_PATH}/waiting-list`, WaitingList(backend));
 
 app.get(`${API_PATH}/fake-user/:id?`, async (req, res) => {
 	if (![1, 36].includes(req.session.user_id)) {
@@ -126,10 +128,6 @@ backend.start(() => {
 		console.log(`App listening on port ${PORT}!`);
 	});
 
-	// app.get("*", (req, res) => {
-	// 	res.sendFile(path.join(__dirname, "../dist", "index.html"));
-	// });
-
 	backend.getUserPackageForID = async ({ id_reservation, id_slot, available, req }) => {
 		try {
 			const user_package = await backend.handleQuery(
@@ -168,29 +166,7 @@ backend.start(() => {
 		}
 	};
 
-	backend.notify = async ({ who, action, what, how, id_what }) => {
-		// try {
-		// 	const user = await backend.get({
-		// 		table: "user",
-		// 		id: who
-		// 	});
-
-		// 	const email = user.result[0].email;
-
-		// 	await MailSender.send({
-		// 		subject: `Notification de votre ${action}`,
-		// 		email,
-		// 		macros: {
-		// 			CONTENT_HTML: `Vous avez ${action} ${what} ${how}`,
-		// 			CONTENT_TXT: `Vous avez ${action} ${what} ${how}`
-		// 		}
-		// 	});
-
-		// 	return { ok: true };
-		// } catch (err) {
-		// 	return err;
-		// }
-
+	backend.notify = async ({ who, action, what, how, id_what, package_usage, dog }) => {
 		backend.post({
 			table: "notification",
 			body: {
@@ -198,7 +174,9 @@ backend.start(() => {
 				action,
 				what,
 				how,
-				id_what
+				id_what,
+				dog,
+				package_usage
 			}
 		});
 	};
