@@ -801,8 +801,9 @@ router.route("/payment_history").get(async (req, res) => {
 				p.details
 			FROM payment_history p
 			JOIN user u on u.id = p.id_user
+			WHERE p.id_trainer = ?
 			ORDER BY p.date DESC`,
-			[],
+			[req.session.user_id],
 			null,
 			true
 		);
