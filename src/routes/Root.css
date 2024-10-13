@@ -110,6 +110,11 @@ select {
 	margin-bottom: 10px !important;
 }
 
+.margin-tb-20 {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
 .bold {
 	font-weight: 700;
 }

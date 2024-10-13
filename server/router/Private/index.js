@@ -237,7 +237,7 @@ router
 				who: req.session.user_id,
 				action: "booked",
 				what: "slot",
-				how: user_package.length ? user_package[0].id : "",
+				how: user_package.length ? user_package[0].id : "later",
 				package_usage,
 				dog: req.body.id_dog,
 				id_what: req.body.id_slot

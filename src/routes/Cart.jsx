@@ -2,8 +2,10 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const updateCartItem = async (action, item, value) => {
+const updateCartItem = async (setError, action, item, value) => {
 	try {
+		setError("");
+
 		const params = {
 			url: `/cart/${item.type}/${item.id}/${item.id_dog}`
 		};
@@ -25,15 +27,20 @@ const updateCartItem = async (action, item, value) => {
 
 		const response = await axios(params);
 
+		if (response.data.error) {
+			throw response.data.error;
+		}
+
 		if (response.data.ok) {
 			window.dispatchEvent(new Event("cart-modified"));
 		}
 	} catch (err) {
+		setError(`Une erreur s'est produite ${err}`);
 		console.log("Une erreur s'est produite", err);
 	}
 };
 
-const ListItem = ({ item }) => {
+const ListItem = ({ item, setError }) => {
 	return (
 		<div className='row flex-col flex-stretch'>
 			<span className='flex-row'>
@@ -42,7 +49,7 @@ const ListItem = ({ item }) => {
 					<span className='price'>{item.price}€</span>
 					<span
 						onClick={() => {
-							updateCartItem("delete", item);
+							updateCartItem(setError, "delete", item);
 						}}>
 						<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
 					</span>
@@ -55,7 +62,7 @@ const ListItem = ({ item }) => {
 							name='dog-selector'
 							value={item.id_dog || items.dogs[0].id}
 							onChange={event => {
-								updateCartItem("update-dog", item, event.currentTarget.value);
+								updateCartItem(setError, "update-dog", item, event.currentTarget.value);
 							}}>
 							{item.dogs.map((dog, index) => (
 								<option key={index} value={dog.id}>
@@ -70,7 +77,7 @@ const ListItem = ({ item }) => {
 						name='payment-options'
 						value={item.payment_type || "direct"}
 						onChange={event => {
-							updateCartItem("update-payment", item, event.currentTarget.value);
+							updateCartItem(setError, "update-payment", item, event.currentTarget.value);
 						}}>
 						<option value='direct'>Payer en ligne</option>
 						<option value='later'>Payer en personne</option>
@@ -99,6 +106,8 @@ const fetchCartItems = async setCartItems => {
 function Cart() {
 	const [cartItems, setCartItems] = useState({});
 	const BACKEND_BASE_URL = import.meta.env.VITE_API_ENDPOINT;
+
+	const [error, setError] = useState("");
 
 	useEffect(() => {
 		const fetch = () => {
@@ -141,11 +150,11 @@ function Cart() {
 									<div className='title'>{trainer.firstname}</div>
 
 									{trainer.package.map((item, index) => (
-										<ListItem item={item} key={index} />
+										<ListItem item={item} key={index} setError={setError} />
 									))}
 
 									{trainer.slot.map((item, index) => (
-										<ListItem item={item} key={index} />
+										<ListItem item={item} key={index} setError={setError} />
 									))}
 
 									<div className='flex-row row space-between margin-t-20'>
@@ -164,6 +173,8 @@ function Cart() {
 											</a>
 										)}
 									</div>
+
+									<div className='error-feedback margin-tb-20'>{error}</div>
 								</div>
 							))
 						) : (

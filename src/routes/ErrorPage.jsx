@@ -7,13 +7,14 @@ export default function ErrorPage() {
 	const error = useRouteError();
 	const navigate = useNavigate();
 	const post = async () => {
-		console.log("<===============================");
-		console.log(error);
-		console.log("===============================>");
-
+		const errorMessage = error.error ? error.error.toString() : error.toString();
 		await axios.post("/log-error", {
-			error: error.error ? error.error.toString() : error.toString()
+			error: errorMessage
 		});
+
+		if (errorMessage && errorMessage.match(/Failed to fetch dynamically/)) {
+			window.location.reload(true);
+		}
 	};
 
 	useEffect(() => {

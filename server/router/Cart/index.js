@@ -75,32 +75,40 @@ router.route("/add").post(async (req, res) => {
 router
 	.route("/:type/:id/:id_dog")
 	.put((req, res) => {
-		req.session.cart = req.session.cart.map(item => {
-			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
-				if (req.body.payment_type) {
-					item.payment_type = req.body.payment_type;
+		try {
+			req.session.cart = req.session.cart.map(item => {
+				if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
+					if (req.body.payment_type) {
+						item.payment_type = req.body.payment_type;
+					}
+
+					if (req.body.id_dog) {
+						item.id_dog = parseInt(req.body.id_dog, 10);
+					}
 				}
 
-				if (req.body.id_dog) {
-					item.id_dog = parseInt(req.body.id_dog, 10);
-				}
-			}
+				return item;
+			});
 
-			return item;
-		});
-
-		res.send({ ok: true });
+			res.send({ ok: true });
+		} catch (err) {
+			errorHandler({ err, req, res });
+		}
 	})
 	.delete((req, res) => {
-		req.session.cart = req.session.cart.filter(item => {
-			if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
-				return false;
-			}
+		try {
+			req.session.cart = req.session.cart.filter(item => {
+				if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
+					return false;
+				}
 
-			return true;
-		});
+				return true;
+			});
 
-		res.send({ ok: true });
+			res.send({ ok: true });
+		} catch (err) {
+			errorHandler({ err, req, res });
+		}
 	});
 
 const getPackageDetail = async _package => {
