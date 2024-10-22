@@ -275,6 +275,7 @@ const getSlotsListing = async (req, res) => {
 	try {
 		const slots = await backend.handleQuery(
 			`SELECT 
+			${req.body.all ? "u.firstname trainer," : ""}
 			s.id,
 			s.date,
 			a.label,
@@ -289,10 +290,11 @@ const getSlotsListing = async (req, res) => {
 		JOIN activity a on a.id = s.id_activity
 		LEFT JOIN reservation r on r.id_slot = s.id and r.enabled = 1
 		LEFT JOIN dog d on d.id = r.id_dog
-
-		WHERE	s.id_trainer = ?
+		${req.body.all ? "JOIN user u on u.id = s.id_trainer" : ""}
+	
+		WHERE	s.enabled = 1
 		AND 	s.date ${req.body.past ? "<" : ">"} current_timestamp()
-		AND 	s.enabled = 1
+		${!req.body.all ? "AND 	s.id_trainer = ?" : ""}
 
 		GROUP BY s.id, r.id
 		ORDER BY s.date ASC`,
@@ -341,7 +343,7 @@ const getSlotsListing = async (req, res) => {
 						id: slot.id,
 						label: `0 / ${slot.spots}`,
 						date: slot.date,
-						group_label: slot.label,
+						group_label: slot.label + (slot.trainer ? ` (${slot.trainer})` : ""),
 						spots: slot.spots,
 						reservations: 0,
 						dogs: [],
@@ -418,6 +420,15 @@ router
 router.route("/past_slot").get(async (req, res) => {
 	try {
 		req.body.past = true;
+		return await getSlotsListing(req, res);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+router.route("/all_slot").get(async (req, res) => {
+	try {
+		req.body.all = true;
 		return await getSlotsListing(req, res);
 	} catch (err) {
 		errorHandler({ err, req, res });

@@ -76,15 +76,27 @@ router
 	.route("/:type/:id/:id_dog")
 	.put((req, res) => {
 		try {
-			req.session.cart = req.session.cart.map(item => {
-				if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
-					if (req.body.payment_type) {
-						item.payment_type = req.body.payment_type;
-					}
+			if (!req.session.cart) {
+				throw "Panier vide";
+			}
 
-					if (req.body.id_dog) {
-						item.id_dog = parseInt(req.body.id_dog, 10);
+			console.log("Updating user's cart", req.session.email);
+			console.log("For", req.params.type, req.params.id, req.params.id_dog);
+			console.log("Changes", req.body.payment_type, req.body.id_dog);
+			console.log("============================");
+			req.session.cart = req.session.cart.map(item => {
+				try {
+					if (item.type === req.params.type && parseInt(item.id, 10) === parseInt(req.params.id, 10) && parseInt(item.id_dog, 10) === parseInt(req.params.id_dog, 10)) {
+						if (req.body.payment_type) {
+							item.payment_type = req.body.payment_type;
+						}
+
+						if (req.body.id_dog) {
+							item.id_dog = parseInt(req.body.id_dog, 10);
+						}
 					}
+				} catch (err) {
+					errorHandler({ err, req });
 				}
 
 				return item;

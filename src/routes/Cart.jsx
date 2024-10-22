@@ -6,6 +6,8 @@ const updateCartItem = async (setError, action, item, value) => {
 	try {
 		setError("");
 
+		console.log("updateCartItem", action, item, value);
+
 		const params = {
 			url: `/cart/${item.type}/${item.id}/${item.id_dog}`
 		};

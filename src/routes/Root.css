@@ -123,6 +123,10 @@ select {
 	text-decoration: underline;
 }
 
+.nbsp {
+	white-space: nowrap;
+}
+
 main {
 	flex-grow: 1;
 	font-size: 14px;
@@ -525,6 +529,7 @@ input:focus {
 
 .menu {
 	align-self: stretch;
+	flex-basis: min-content;
 }
 
 .menu ul {

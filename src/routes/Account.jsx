@@ -58,6 +58,8 @@ function Account() {
 				return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation"]} />;
 			case "past-slots":
 				return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={[]} />;
+			case "all-slots":
+				return <DashboardListComponent title='Tout les créneaux' type='all_slot' allowedActions={[]} />;
 			case "user-packages":
 				return <DashboardListComponent title='Formules en attente de paiement' type='unpaid_user_package' allowedActions={["marked-package-as-paid"]} />;
 			case "notifications":
@@ -102,6 +104,9 @@ function Account() {
 									</li>
 									<li>
 										<NavLink to='/account/past-slots'>Mes Créneaux passés</NavLink>
+									</li>
+									<li>
+										<NavLink to='/account/all-slots'>Tout les créneaux</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/packages'>Mes Formules</NavLink>

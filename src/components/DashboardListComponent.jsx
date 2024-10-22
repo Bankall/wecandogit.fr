@@ -213,6 +213,14 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 											)}
 										</span>
 
+										{item.email && item.id && (
+											<span>
+												<Link to={`${axios.defaults.baseURL}/fake-user/${item.id}`}>
+													<button className='small'>Fake me</button>
+												</Link>
+											</span>
+										)}
+
 										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{item.paid ? `Réglé${item.payment_type === "package" ? " avec une formule" : item.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
 
 										{allowedActions.includes("book-reservation") && (

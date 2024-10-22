@@ -8,11 +8,14 @@ export default function ErrorPage() {
 	const navigate = useNavigate();
 	const post = async () => {
 		const errorMessage = error.error ? error.error.toString() : error.toString();
-		await axios.post("/log-error", {
-			error: errorMessage
-		});
+		try {
+			await axios.post("/log-error", {
+				error: errorMessage,
+				originalUrl: window.location.pathname
+			});
+		} catch (err) {}
 
-		if (errorMessage && errorMessage.match(/Failed to fetch dynamically/)) {
+		if (errorMessage && errorMessage.match(/Failed to fetch/)) {
 			window.location.reload(true);
 		}
 	};

@@ -15,13 +15,14 @@ import { useFetch } from "../hooks/useFetch";
 const renderEventContent = (eventInfo, isLoggedIn) => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
 	const full = (data.reservations || []).length >= data.spots;
+	const availableSpots = data.spots - (data.reservations || []).length;
 
 	return (
 		<>
 			<span className='flex-row'>
 				<i id={data.id_slot}>
 					<span>
-						<b>{data.label}</b> - ({data.firstname}) - <b>{full ? "Complet" : `${(data.reservations || []).length}/${data.spots}`}</b>
+						<b>{data.label}</b> - ({data.firstname}) - <b className='nbsp'>{full ? "Complet" : availableSpots === 1 ? "1 place disponible" : `${availableSpots} places disponibles`}</b>
 					</span>
 
 					{data.reservations && data.reservations.length && (
@@ -217,6 +218,7 @@ export default function Agenda() {
 
 		const fetch = () => {
 			fetchEvents(setEvents);
+			setTimeout(fetch, 5000);
 		};
 
 		fetch();

@@ -8,12 +8,24 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
+router.route("/get-current-version").get((req, res) => {
+	try {
+		require("child_process").exec("git rev-parse HEAD", function (err, stdout) {
+			res.send({
+				version: stdout
+			});
+		});
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
 router.route("/log-error").post(async (req, res) => {
+	req.originalUrl = req.body.originalUrl || "FrontErrorLogger";
+
 	errorHandler({
 		err: req.body.error,
-		req: {
-			originalUrl: "FrontErrorLogger"
-		}
+		req
 	});
 });
 
@@ -125,7 +137,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 					s.id id_slot,
 					a.spots,
 					case
-                    when (select id from waiting_list where id_slot = s.id and id_user = ? and declined = 0) is not null then 1 end waiting
+                    when (select id from waiting_list where id_slot = s.id and id_user = ? and declined = 0 limit 1) is not null then 1 end waiting
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
 				INNER JOIN user u on u.id = s.id_trainer
@@ -220,7 +232,8 @@ router.route("/get-all-slots").get(async (req, res) => {
 
 		res.send(slots);
 	} catch (err) {
-		errorHandler({ err, req, res });
+		console.log(err);
+		//		errorHandler({ err, req, res });
 	}
 });
 
