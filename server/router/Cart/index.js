@@ -22,9 +22,11 @@ router.route("/add").post(async (req, res) => {
 		}
 
 		let cantAddMore = false;
+
 		const cartItem = {
 			type: req.body.type,
-			id: req.body.id
+			id: req.body.id,
+			id_cart_item: parseInt(Math.random() * 1000000, 10)
 		};
 
 		if (req.session.user_id) {
@@ -73,7 +75,7 @@ router.route("/add").post(async (req, res) => {
 });
 
 router
-	.route("/:type/:id/:id_dog")
+	.route("/:id_cart_item/:type/:id/:id_dog")
 	.put((req, res) => {
 		try {
 			if (!req.session.cart) {
@@ -82,7 +84,7 @@ router
 
 			req.session.cart = req.session.cart.map(item => {
 				try {
-					if (item.type === req.params.type && parseInt(item.id, 10) === parseInt(req.params.id, 10) && (parseInt(item.id_dog, 10) === parseInt(req.params.id_dog, 10) || !item.id_dog)) {
+					if (item.id_cart_item === parseInt(req.params.id_cart_item, 10)) {
 						if (req.body.payment_type) {
 							item.payment_type = req.body.payment_type;
 						}
@@ -106,7 +108,7 @@ router
 	.delete((req, res) => {
 		try {
 			req.session.cart = req.session.cart.filter(item => {
-				if (item.type === req.params.type && item.id === parseInt(req.params.id, 10) && item.id_dog === parseInt(req.params.id_dog, 10)) {
+				if (item.id_cart_item === parseInt(req.params.id_cart_item, 10)) {
 					return false;
 				}
 
@@ -235,6 +237,7 @@ const sortCartItemByTrainers = async req => {
 			data.id = item.id;
 			data.payment_type = item.payment_type;
 			data.id_dog = item.id_dog || (dog.result && dog.result.length ? dog.result[0].id : 0);
+			data.id_cart_item = item.id_cart_item;
 
 			if (data.package_available && data.package_available.length && !data.payment_type) {
 				data.payment_type = data.package_available[0].id;
