@@ -1,4 +1,43 @@
 .hero {
+	padding: 200px 40px 0;
+	aspect-ratio: 2 / 1;
+	align-items: normal;
+	background: url("/assets/medias/header-background-large.png") no-repeat 100% 0 / 80% auto #dcdde1;
+}
+
+.hero .left {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	text-transform: uppercase;
+}
+
+.hero .left h1 {
+	font-size: 40px;
+}
+
+.hero .left h2 {
+	font-size: 35px;
+	color: var(--accent-color-1);
+}
+
+.hero .right {
+	flex-shrink: 0;
+}
+
+.hero .right img {
+	height: 100%;
+	width: auto;
+}
+
+@media screen and (max-width: 900px) {
+	.hero {
+		aspect-ratio: initial;
+	}
+}
+
+/* .hero {
 	color: #fff;
 	background: url("/assets/medias/header-background.webp") no-repeat center / cover;
 	position: relative;
@@ -131,4 +170,4 @@ section.hero h2 {
 	.cards {
 		grid-template-columns: repeat(5, 400px);
 	}
-}
+} */

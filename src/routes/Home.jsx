@@ -12,7 +12,7 @@ export default function Home() {
 	return (
 		<>
 			<Hero />
-			<section className='home'>
+			{/* <section className='home'>
 				<div className='widgets'>
 					<div className='box'>
 						<div className='title'>Prochaines activitées collectives</div>
@@ -38,7 +38,7 @@ export default function Home() {
 
 			<Park />
 			<Photos />
-			<Reviews />
+			<Reviews /> */}
 		</>
 	);
 }
