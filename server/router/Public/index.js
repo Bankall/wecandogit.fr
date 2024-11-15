@@ -199,6 +199,13 @@ router.route("/get-all-slots").get(async (req, res) => {
 			});
 		}
 
+		const getEndDate = (date, duration) => {
+			const endDate = new Date(date);
+			endDate.setMinutes(endDate.getMinutes() + duration);
+
+			return endDate.toISOString();
+		};
+
 		const slotsByIdTrainerAndTime = {};
 		slots.result.forEach(slot => {
 			if (typeof slotsByIdTrainerAndTime[slot.id_trainer + slot.date] === "undefined") {
@@ -207,6 +214,14 @@ router.route("/get-all-slots").get(async (req, res) => {
 
 			if (reservationBySlot[slot.id_slot] && reservationBySlot[slot.id_slot].reservations.length && slot.spots === 1) {
 				slotsByIdTrainerAndTime[slot.id_trainer + slot.date]++;
+			}
+
+			if (typeof slotsByIdTrainerAndTime[slot.id_trainer + getEndDate(slot.date, slot.duration)] === "undefined") {
+				slotsByIdTrainerAndTime[slot.id_trainer + getEndDate(slot.date, slot.duration)] = 0;
+			}
+
+			if (reservationBySlot[slot.id_slot] && reservationBySlot[slot.id_slot].reservations.length && slot.spots === 1) {
+				slotsByIdTrainerAndTime[slot.id_trainer + getEndDate(slot.date, slot.duration)]++;
 			}
 		});
 
@@ -227,13 +242,17 @@ router.route("/get-all-slots").get(async (req, res) => {
 				return false;
 			}
 
+			if (slotsByIdTrainerAndTime[slot.id_trainer + getEndDate(slot.date, slot.duration)] && slot.spots === 1) {
+				return false;
+			}
+
 			return true;
 		});
 
 		res.send(slots);
 	} catch (err) {
 		console.log(err);
-		//		errorHandler({ err, req, res });
+		errorHandler({ err, req, res });
 	}
 });
 
