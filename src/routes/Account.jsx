@@ -97,7 +97,7 @@ function Account() {
 										<a className='bold'>Administation</a>
 									</li>
 									<li>
-										<NavLink to='/account/activities'>Nos Activités</NavLink>
+										<NavLink to='/account/notifications'>Notifications</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/slots'>Mes Créneaux</NavLink>
@@ -109,6 +109,9 @@ function Account() {
 										<NavLink to='/account/all-slots'>Tout les créneaux</NavLink>
 									</li>
 									<li>
+										<NavLink to='/account/users'>Membres</NavLink>
+									</li>
+									<li>
 										<NavLink to='/account/packages'>Mes Formules</NavLink>
 									</li>
 									<li>
@@ -118,16 +121,13 @@ function Account() {
 										<NavLink to='/account/all-user-packages'>Toutes les formules</NavLink>
 									</li>
 									<li>
-										<NavLink to='/account/users'>Membres</NavLink>
+										<NavLink to='/account/activities'>Nos Activités</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/payment-history'>Historique de paiements</NavLink>
 									</li>
 									<li>
 										<NavLink to='/account/mail-composer'>Messages</NavLink>
-									</li>
-									<li>
-										<NavLink to='/account/notifications'>Notifications</NavLink>
 									</li>
 								</>
 							) : null}
