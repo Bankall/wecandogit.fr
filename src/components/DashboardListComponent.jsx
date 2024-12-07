@@ -215,9 +215,9 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 										{item.email && item.id && (
 											<span>
-												<Link to={`${axios.defaults.baseURL}/fake-user/${item.id}`}>
+												<a href={`${axios.defaults.baseURL}/fake-user/${item.id}`}>
 													<button className='small'>Fake me</button>
-												</Link>
+												</a>
 											</span>
 										)}
 
@@ -275,13 +275,15 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 													<li className='flex-row' key={index}>
 														{dog.id && (
 															<>
-																<i
-																	className='fa-solid fa-trash-can'
-																	aria-hidden='true'
-																	style={{ color: "var(--invalid-color)", cursor: "pointer" }}
-																	onClick={() => {
-																		handleDelete(dog.id_reservation, "reservation", "slot");
-																	}}></i>
+																{dog.id_reservation && (
+																	<i
+																		className='fa-solid fa-trash-can'
+																		aria-hidden='true'
+																		style={{ color: "var(--invalid-color)", cursor: "pointer" }}
+																		onClick={() => {
+																			handleDelete(dog.id_reservation, "reservation", "slot");
+																		}}></i>
+																)}
 
 																<Link to={`/account/dog/edit/${dog.id}`}>
 																	<i className='fa-solid fa-pen' aria-hidden='true' style={{ cursor: "pointer" }}></i>

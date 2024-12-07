@@ -476,7 +476,8 @@ router.route("/user").get(async (req, res) => {
 			}
 
 			dogByUser[dog.id_user].push({
-				label: `${dog.label} (${dog.breed} ${dog.sexe})`
+				label: `${dog.label} (${dog.breed} ${dog.sexe})`,
+				id: dog.id
 			});
 		});
 
