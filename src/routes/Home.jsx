@@ -40,7 +40,7 @@ export default function Home() {
 								<img src='/assets/medias/education.png' alt='education' />
 							</div>
 							<div className='center'>EDUCATION</div>
-							<Link>
+							<Link to='/activites/Education%20%2F%20Rééducation'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>
@@ -52,7 +52,7 @@ export default function Home() {
 								<img src='/assets/medias/sport.png' alt='education' />
 							</div>
 							<div className='center'>SPORT</div>
-							<Link>
+							<Link to='/activites/Sports%20canins'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>
@@ -64,7 +64,7 @@ export default function Home() {
 								<img src='/assets/medias/nosework.png' alt='education' />
 							</div>
 							<div className='center'>DETECTION</div>
-							<Link>
+							<Link to='/activites/Sports%20canins'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>
@@ -76,7 +76,7 @@ export default function Home() {
 								<img src='/assets/medias/park.png' alt='education' />
 							</div>
 							<div className='center'>NOTRE PARC</div>
-							<Link>
+							<Link to='/agenda'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>
