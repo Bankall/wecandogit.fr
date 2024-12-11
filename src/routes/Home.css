@@ -99,7 +99,7 @@
 	transform: scaleX(-1);
 }
 
-.signature {
+.quote .signature {
 	position: absolute;
 	width: 220px;
 	right: 65px;
