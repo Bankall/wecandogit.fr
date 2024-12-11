@@ -9,6 +9,22 @@ export default function Footer() {
 	return (
 		<footer>
 			<section className='sitemap'>
+				{activities.data?.result &&
+					activities.data?.result.map((group, index) => (
+						<ul key={index} className='activity'>
+							<li className='no-list-style'>{group.label}</li>
+
+							{group.activities.map(activity => {
+								return (
+									<li key={activity.id}>
+										<Link to={`/activites/#${activity.group_label.trim()}`}>{activity.label}</Link>
+									</li>
+								);
+							})}
+						</ul>
+					))}
+			</section>
+			<section className='sitemap'>
 				<ul>
 					<li>
 						<Link to='/a-propos'>Qui sommes nous</Link>
@@ -27,20 +43,6 @@ export default function Footer() {
 					</li>
 				</ul>
 
-				{activities.data?.result &&
-					activities.data?.result.map((group, index) => (
-						<ul key={index}>
-							<li className='no-list-style'>{group.label}</li>
-
-							{group.activities.map(activity => {
-								return (
-									<li key={activity.id}>
-										<Link to={`/activites/#${activity.group_label.trim()}`}>{activity.label}</Link>
-									</li>
-								);
-							})}
-						</ul>
-					))}
 				<ul>
 					<li>
 						<Link to='/agenda'>Notre agenda</Link>

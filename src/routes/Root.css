@@ -1,14 +1,16 @@
 :root {
 	--main-txt-color: rgb(60, 66, 76);
 	--accent-color-1: rgb(174, 119, 148);
-	--accent-color-2: rgb(151, 103, 129);
+	--accent-color-2: rgb(164, 196, 203);
 	--accent-color-3: rgb(151, 103, 129);
-	--accent-color-4: rgb(151, 103, 129);
+	--accent-color-4: rgb(148, 176, 183);
 	--box-shadows: rgba(45, 46, 92, 0.15);
 	--light-borders: rgba(211, 215, 223, 0.5);
 	--swiper-navigation-size: 22px !important;
 	--valid-color: rgba(12, 143, 12, 0.705);
 	--invalid-color: firebrick;
+	--font: "Roboto", Helvetica, sans-serif;
+	--title-font: "Oswald", Helvetica, sans-serif;
 }
 
 body {
@@ -17,8 +19,17 @@ body {
 
 body,
 pre {
-	font-family: "Open Sans", Helvetica, sans-serif;
+	font-family: var(--font);
 	color: var(--main-txt-color);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--title-font);
 }
 
 pre {
@@ -88,8 +99,16 @@ select {
 	margin-top: 10px;
 }
 
+.margin-t--10 {
+	margin-top: -10px;
+}
+
 .margin-t-20 {
 	margin-top: 20px !important;
+}
+
+.margin-t--20 {
+	margin-top: -20px !important;
 }
 
 .margin-t-50 {
@@ -135,8 +154,23 @@ main section {
 	padding: 60px 40px;
 }
 
+@media screen and (max-width: 900px) {
+	main section {
+		padding: 60px 20px;
+	}
+}
+
+main section.no-side-padding {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+main section.no-padding {
+	padding: 0;
+}
+
 section > .content {
-	max-width: 1280px;
+	max-width: 1380px;
 	margin: 1rem auto 0;
 }
 
@@ -211,8 +245,14 @@ button.small.inverted-colors {
 
 button:hover,
 button:focus {
+	background-color: var(--accent-color-3);
+	border: 1px solid var(--accent-color-3);
+}
+
+button.small:hover,
+.fake-button.small:hover {
 	background-color: var(--accent-color-4);
-	border: 1px solid var(--accent-color-2);
+	border: 1px solid var(--accent-color-4);
 }
 
 button.inverted-colors:hover,
@@ -320,6 +360,10 @@ button.inverted-colors:focus {
 
 .flex-row.space-between {
 	justify-content: space-between;
+}
+
+.flex-row.space-around {
+	justify-content: space-around;
 }
 
 @media screen and (max-width: 900px) {
