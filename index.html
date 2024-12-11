@@ -47,7 +47,7 @@
 
 			let once = false;
 			setInterval(() => {
-				const scrolled = window.pageYOffset > 50 || window.innerWidth < 768 || window.location.pathname !== '/';
+				const scrolled = window.pageYOffset > 50 || window.innerWidth < 900 || window.location.pathname !== '/';
 				document.body.classList.toggle('is-scrolled', scrolled);
 			}, 10);
 		</script>
