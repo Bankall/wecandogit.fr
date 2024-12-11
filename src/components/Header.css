@@ -1,20 +1,55 @@
+:root {
+	--transition-speed: 0.3s;
+	--transition-speed-faster: 0.15s;
+}
+
+@keyframes reset-transition-delay {
+	to {
+		transition-delay: 0s;
+	}
+}
+
 header {
 	position: fixed;
 	width: 100%;
-	height: 60px;
 	top: 0;
-	padding: 10px 20px;
-	box-sizing: border-box;
-	box-shadow: var(--box-shadows) 0px 5px 25px 0px;
-	background: #fff;
 	display: flex;
+	box-sizing: border-box;
 	justify-content: space-between;
+	align-items: flex-start;
 	z-index: 2;
+	box-shadow: none;
+	padding: 25px 50px;
+	background: rgba(255, 255, 255, 0);
+	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed-faster) ease-in, background var(--transition-speed-faster) ease-in;
 }
 
-.logo,
+.is-scrolled header,
+.menu-opened header {
+	box-shadow: var(--box-shadows) 0 5px 25px 0;
+	padding: 10px 20px;
+	background: rgba(255, 255, 255, 0.8);
+	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed) ease-in var(--transition-speed), background var(--transition-speed) ease-in var(--transition-speed);
+}
+
+.menu-opened header {
+	background: rgba(255, 255, 255, 0.95);
+	transition: all 0.3s ease-in;
+	transition-property: padding, box-shadow, background;
+}
+
+.logo {
+	font-size: 0;
+}
+
 .logo img {
-	height: 100%;
+	height: 150px;
+	transition: height var(--transition-speed) ease-in;
+}
+
+.is-scrolled .logo img,
+.menu-opened .logo img {
+	height: 40px;
 }
 
 header ul {
@@ -93,7 +128,7 @@ header .disabled {
 	height: 2px;
 	background: #282f36;
 	opacity: 1;
-	transition: opacity 0.3s ease-in;
+	transition: opacity var(--transition-speed) ease-in;
 }
 
 .burger-menu::before,
@@ -103,7 +138,7 @@ header .disabled {
 	position: relative;
 	height: 2px;
 	background-color: #282f36;
-	transition: transform 0.3s ease-in, top 0.3s ease-in;
+	transition: transform var(--transition-speed) ease-in, top var(--transition-speed) ease-in;
 	transform-origin: 50% 1px;
 	top: 0;
 }
@@ -123,6 +158,10 @@ header .disabled {
 }
 
 @media screen and (max-width: 900px) {
+	.logo img {
+		height: 100px;
+	}
+
 	.burger-menu {
 		display: flex;
 	}
@@ -133,8 +172,8 @@ header .disabled {
 		left: 100%;
 		height: calc(100% - 60px);
 		top: 60px;
-		background: #fff;
-		transition: left 0.3s ease-in;
+		background: rgba(255, 255, 255, 0.95);
+		transition: left var(--transition-speed) ease-in;
 	}
 
 	nav ul {
@@ -151,7 +190,7 @@ header .disabled {
 		display: flex;
 		align-items: center;
 		flex-direction: row;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid #cdcdcd;
 	}
 
 	nav ul li a {

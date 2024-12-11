@@ -4,7 +4,7 @@ footer {
 	margin-top: 20px;
 	background: #2a303b;
 	color: #fff;
-	font-size: 12px;
+	font-size: 11px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -13,9 +13,8 @@ footer {
 .sitemap {
 	display: flex;
 	flex-flow: row wrap;
-	justify-content: space-evenly;
+	justify-content: center;
 	align-items: baseline;
-	width: 1280px;
 	max-width: 100%;
 	padding: 20px 10px;
 }
@@ -40,8 +39,19 @@ footer {
 	color: #fff;
 }
 
+.sitemap ul.activity,
+.sitemap ul.activity li a {
+	color: #acacac;
+}
+
 .copyright {
 	display: flex;
 	justify-content: center;
 	margin-top: 10px;
+}
+
+@media screen and (max-width: 900px) {
+	footer {
+		align-items: normal;
+	}
 }

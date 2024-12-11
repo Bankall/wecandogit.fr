@@ -11,14 +11,17 @@
 		<meta name="description" content="Parc de loisirs, d'éducation et de sport canin, pour chiens de tout âges et de toutes races à Reims et alentours. L'association de 2 éducatrices comportementalistes." />
 		<meta name="keywords" content="Education, Eduquer, Educateur, Parc loisirs, Comportementaliste, Chien, Canin, Education canine, Dressage, Dresseur, Reims, Betheny" />
 
+		<title>Educateur comportementaliste canin à Reims - We Can Dog It</title>
+
 		<link rel="icon" href="/logo.png" />
 		<link rel="apple-touch-icon" href="/logo.png" />
 		<link rel="manifest" href="/manifest.json" />
-		<title>Educateur comportementaliste canin à Reims - We Can Dog It</title>
 
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" />
+
+		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet" />
+		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Oswald:wght@200..700&family=Roboto:wght@100;300;400;700&display=swap" rel="stylesheet" />
 
 		<script src="https://kit.fontawesome.com/5fee777e14.js" crossorigin="anonymous"></script>
 		<script>
@@ -41,8 +44,24 @@
 				script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.1.2/lazysizes.min.js';
 				document.body.appendChild(script);
 			}
+
+			let once = false;
+			setInterval(() => {
+				const scrolled = window.pageYOffset > 50 || window.innerWidth < 768 || window.location.pathname !== '/';
+				document.body.classList.toggle('is-scrolled', scrolled);
+			}, 10);
 		</script>
 
 		<script type="module" src="/src/main.jsx"></script>
+
+		<!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZW51ZQKXBZ"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+
+			gtag('config', 'G-ZW51ZQKXBZ');
+		</script>
 	</body>
 </html>
