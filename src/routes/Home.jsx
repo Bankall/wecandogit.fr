@@ -76,7 +76,7 @@ export default function Home() {
 								<img src='/assets/medias/park.png' alt='education' />
 							</div>
 							<div className='center'>NOTRE PARC</div>
-							<Link to='/agenda'>
+							<Link to='/activites/Parc%20en%20collectif'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>
