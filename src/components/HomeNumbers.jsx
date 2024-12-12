@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import { CountUp } from "countup.js";
 
 const __YEARS = [3, 4]; // 3 years, 1 second
-const __CLIENTS = [8451, 2]; // 8451 clients, 2 seconds
+const __CLIENTS = [2151, 2]; // 8451 clients, 2 seconds
 const __TREATS = [Date.now() / 1000 / 60 / 60, 5]; // 481554 treats, 5 seconds
 
 const countUpOptions = {
