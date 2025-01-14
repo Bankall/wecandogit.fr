@@ -318,8 +318,8 @@ router.route("/get-all-activities").get(async (req, res) => {
 					is_collective,
 					spots,
 					price,
-					description,
 					long_description,
+					description,
 					duration
 
 				FROM activity a
