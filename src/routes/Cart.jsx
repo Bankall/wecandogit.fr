@@ -55,7 +55,7 @@ const ListItem = ({ item, setError }) => {
 					</span>
 				</span>
 			</span>
-			<span className='flex-row margin-10'>
+			<span className={`flex-row margin-10 ${item.type !== "slot" ? "height-0 hidden" : ""}`}>
 				<span className='flex-grow'>
 					{item.dogs && item.dogs.length > 1 && (
 						<select
@@ -80,7 +80,7 @@ const ListItem = ({ item, setError }) => {
 							updateCartItem(setError, "update-payment", item, event.currentTarget.value);
 						}}>
 						<option value='direct'>Payer en ligne</option>
-						<option value='later'>Payer en personne</option>
+						{item.type === "slot" && <option value='later'>Payer en personne</option>}
 						{item.type === "slot" &&
 							item.package_available?.length &&
 							item.package_available.map((_package, index) => (

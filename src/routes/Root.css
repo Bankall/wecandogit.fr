@@ -56,6 +56,14 @@ select {
 	visibility: hidden;
 }
 
+.height-0 {
+	height: 0;
+}
+
+.height-0.margin-10 {
+	margin-top: 0 !important;
+}
+
 .disabled {
 	opacity: 0.5;
 	cursor: not-allowed;

@@ -1,4 +1,4 @@
-import { useRouteError, useNavigate, Link } from "react-router-dom";
+import { useRouteError, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 
 import axios from "axios";
@@ -6,6 +6,11 @@ import axios from "axios";
 export default function ErrorPage() {
 	const error = useRouteError();
 	const navigate = useNavigate();
+	const [searchParams, setSearchParams] = useSearchParams();
+
+	if (searchParams.get("reload") === null) {
+		window.location.replace("?reload");
+	}
 	const post = async () => {
 		const errorMessage = error.error ? error.error.toString() : error.toString();
 		try {
