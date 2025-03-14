@@ -55,7 +55,7 @@ router.route("/send-reminder-mail").get(async (req, res) => {
 		}
 
 		const promises = Reminders.result.map(async reminder => {
-			const content = `<p>Bonjour ${reminder.user},</p><p>Ceci est un rappel pour votre réservation de ${reminder.activity} le ${reminder.date} avec ${reminder.dog}.</p><p>A bientôt !</p>`;
+			const content = `<p>Bonjour ${reminder.user},</p><p>Ceci est un rappel pour votre réservation de ${reminder.activity} le ${reminder.date} avec ${reminder.dog}.</p><p>A bientôt !</p><br/><br/><p style='color: #ED4337;'>Attention, pour tout créneau au parc de loisirs, merci de laisser vos chiens patienter dans votre voiture jusqu'à ce que l'on vienne vous chercher pour votre activité, et de ne pas les promener sur le parking ni à proximité du jardin de nos voisins.</p>`;
 
 			await MailSender.send({
 				subject: "Votre séance approche",
