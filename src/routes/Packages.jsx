@@ -3,6 +3,8 @@ import { useFetch } from "../hooks/useFetch";
 import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { addToCart } from "../utils/utils.cart.jsx";
 
+const encode = str => encodeURIComponent(str).replace(/%20/g, "+").replace(/\//g, "%2F");
+const decode = str => decodeURIComponent((str || "").replace(/\+/g, " "));
 function Packages() {
 	const params = useParams();
 	const navigate = useNavigate();
@@ -10,7 +12,7 @@ function Packages() {
 
 	useEffect(() => {
 		if (packages.data && !params.menu) {
-			navigate(packages.data.result[0].label);
+			navigate(encode(packages.data.result[0].label));
 		}
 	}, [packages]);
 
@@ -25,17 +27,17 @@ function Packages() {
 							{packages.data?.result &&
 								packages.data?.result.map((_package, index) => (
 									<li key={index}>
-										<NavLink to={`/formules-et-tarifs/${encodeURIComponent(_package.label)}`}>{_package.label}</NavLink>
+										<NavLink to={`/formules-et-tarifs/${encode(_package.label)}`}>{_package.label}</NavLink>
 									</li>
 								))}
 						</ul>
 					</div>
 					<div className='content widgets'>
 						<div className='box'>
-							<div className='title'>{params.menu}</div>
+							<div className='title'>{decode(params.menu)}</div>
 							<div className='content cards'>
 								{packages.data?.result
-									.filter((item, index) => item.label === params.menu)
+									.filter((item, index) => item.label === decode(params.menu))
 									.map((_package, index) => (
 										<div className='card' key={index}>
 											<div className=''>{_package.description}</div>

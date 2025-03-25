@@ -4,6 +4,9 @@ import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { Interweave } from "interweave";
 import { UrlMatcher } from "interweave-autolink";
 
+const encode = str => encodeURIComponent(str).replace(/%20/g, "+").replace(/\//g, "%2F");
+const decode = str => decodeURIComponent((str || "").replace(/\+/g, " "));
+
 function ListAllActivities() {
 	const params = useParams();
 	const navigate = useNavigate();
@@ -11,7 +14,7 @@ function ListAllActivities() {
 
 	useEffect(() => {
 		if (activities.data && !params.menu) {
-			navigate(encodeURIComponent(activities.data.result[0].label));
+			navigate(encode(activities.data.result[0].label));
 		}
 	}, [activities]);
 
@@ -26,18 +29,18 @@ function ListAllActivities() {
 							{activities.data?.result &&
 								activities.data?.result.map((activity_group, index) => (
 									<li key={index}>
-										<NavLink to={`/activites/${encodeURIComponent(activity_group.label)}`}>{activity_group.label}</NavLink>
+										<NavLink to={`/activites/${encode(activity_group.label)}`}>{activity_group.label}</NavLink>
 									</li>
 								))}
 						</ul>
 					</div>
 					<div className='content widgets'>
 						<div className='box'>
-							<div className='title'>{params.menu}</div>
+							<div className='title'>{decode(params.menu)}</div>
 							<div className='content cards'>
 								{params.menu &&
 									activities.data?.result
-										.filter((item, index) => params.menu === item.label)[0]
+										.filter((item, index) => decode(params.menu) === item.label)[0]
 										.activities.map((activity, index) => (
 											<div className='card' key={index}>
 												<div className='top-line'>{activity.label}</div>
