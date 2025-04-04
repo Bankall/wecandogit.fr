@@ -1,9 +1,8 @@
 import { useFetch } from "../hooks/useFetch";
 import { Interweave } from "interweave";
 export default function Reviews() {
-	const reviews = useFetch({
-		url: "https://places.googleapis.com/v1/places/ChIJ8yRNHrKz7iUReSJcT90Ok7w?key=AIzaSyDtFaGeGR5rB75OjS-F5M1ZQn8xmrxkrGo&fields=reviews",
-		withCredentials: false
+	const reviews = useFetch("/get-reviews", {
+		withCredentials: true
 	});
 
 	return (

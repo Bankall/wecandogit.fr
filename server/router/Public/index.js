@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { shuffle, errorHandler } from "../../lib/utils.js";
+import axios from "axios";
 
 let backend;
 
@@ -384,6 +385,26 @@ J'accompagne depuis les familles et les associations de protection animale, en l
 	res.send({
 		trainers: shuffle(trainers)
 	});
+});
+
+const cachedReviews = {};
+router.route("/get-reviews").get(async (req, res) => {
+	try {
+		if (cachedReviews.reviews) {
+			return res.send(cachedReviews);
+		}
+
+		const { data } = await axios.get("https://places.googleapis.com/v1/places/ChIJ8yRNHrKz7iUReSJcT90Ok7w?key=AIzaSyDtFaGeGR5rB75OjS-F5M1ZQn8xmrxkrGo&fields=reviews", {
+			headers: {
+				Referer: "https://www.wecandogit.com/"
+			}
+		});
+
+		cachedReviews.reviews = data.reviews;
+		res.send(cachedReviews);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
 });
 
 const Public = _backend => {
