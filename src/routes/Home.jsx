@@ -88,8 +88,8 @@ export default function Home() {
 			<Photos />
 			<Reviews />
 			<section className='contact font-0 flex-row no-wrap'>
-				<img src='/assets/medias/Genko_noel.png' alt='Contact Us button' style={{ maxHeight: "200px", position: "relative", zIndex: 1 }} />
-				<a href='https://docs.google.com/forms/d/e/1FAIpQLSeleVaqfG4q7Eb78hn87ur3-EdVo1CsOQat3OUCy99tfWLbvA/viewform' className='no-shrink' target='_blank'>
+				<img src='/assets/medias/Genko.png' alt='Contact Us button' style={{ maxHeight: "200px", position: "relative", zIndex: 1 }} />
+				<a href='mailto:contact.wecandogit@gmail.com' className='no-shrink' target='_blank'>
 					<button>CONTACTE-NOUS</button>
 				</a>
 			</section>
