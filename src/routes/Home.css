@@ -1,33 +1,67 @@
 .hero {
-	margin-top: -60px;
-	padding: 200px 40px 0;
-	aspect-ratio: 2 / 1;
+	position: sticky;
+	top: 0;
+	margin-top: 140px;
+	padding: 0 40px;
+	height: 500px;
+	justify-content: center;
 	align-items: normal;
-	background: url("/assets/medias/header-background-large.png") no-repeat 100% 0 / 80% auto #dcdde1;
+	background: #87c6d8;
 }
 
 .hero .left {
+	max-width: 1000px;
 	flex-grow: 1;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	text-transform: uppercase;
+	padding: 65px 0;
 }
 
 .hero .left h1 {
-	font-size: 3.6vw;
-	line-height: 3.6vw;
+	font-size: 90px;
+	line-height: 81px;
+	color: #fff;
 }
 
 .hero .left h2 {
-	font-size: 2.6vw;
-	font-weight: 400;
-	margin-top: 20px;
-	color: var(--accent-color-1);
+	font-size: 35px;
+	font-weight: 300;
+	font-family: var(--font), sans-serif;
+	margin-top: 10px;
+	text-transform: none;
+	color: #fff;
+}
+
+.hero .arrow-down {
+	position: absolute;
+	left: 50%;
+	bottom: 10px;
+	width: 50px;
+	height: 50px;
+	margin-left: -25px;
+	background: url("/assets/medias/down-arrow.png") no-repeat 0 / 100%;
+	animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+	0% {
+		transform: translateY(-15px);
+	}
+
+	50% {
+		transform: translateY(5px);
+	}
+
+	100% {
+		transform: translateY(-15px);
+	}
 }
 
 .hero .right {
 	flex-shrink: 0;
+	padding: 20px 0 0;
 }
 
 .hero .right img {
@@ -42,7 +76,7 @@
 }
 
 .numbers img {
-	height: 150px;
+	height: 130px;
 }
 
 .numbers div {
@@ -57,53 +91,48 @@
 }
 
 .quote {
-	background: var(--accent-color-1);
+	background: #2a303c;
 }
 
-.quote img {
-	width: 46.3vw;
-}
-
-.quote img.mobile {
-	display: none;
-}
-
-.quote span {
-	position: relative;
-	display: block;
-	line-height: 3.8vw;
-	font-size: 3.2vw;
+.quote .content > span > span {
+	font-size: 35px;
 	font-weight: 200;
 	color: #fff;
-	padding: 0 3.1vw;
 }
 
-.quote span::before,
-.quote span::after {
+.quote .content > span {
+	height: 110px;
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	font-size: 35px;
+	font-weight: 200;
+	color: #fff;
+}
+
+.quote .content > span::before,
+.quote .content > span::after {
 	content: "";
-	position: absolute;
-	display: block;
-	width: 5.2vw;
-	height: 5.2vw;
+	width: 70px;
+	height: 70px;
 	background: url("/assets/medias/quote.png") no-repeat 0 / 100%;
 }
 
-.quote span::before {
-	top: -1.3vw;
-	left: -2.6vw;
+.quote .content > span::before {
+	align-self: flex-start;
 }
 
-.quote span::after {
-	bottom: -1.3vw;
-	right: 2.6vw;
+.quote .content > span::after {
+	align-self: flex-end;
 	transform: scaleX(-1);
 }
 
 .quote .signature {
 	position: absolute;
-	width: 220px;
-	right: 65px;
-	margin-top: 60px;
+	width: 180px;
+	right: 95px;
+	margin-top: 8px;
 }
 
 .activities h3 {
@@ -220,7 +249,7 @@
 }
 
 @media screen and (max-width: 900px) {
-	.hero {
+	/* .hero {
 		padding: 100px 20px 40px;
 		position: relative;
 		background: var(--accent-color-2);
@@ -248,12 +277,12 @@
 
 	.hero .right {
 		display: none;
-	}
+	} */
 
-	.numbers {
+	.numbers .content {
 		flex-direction: column;
 		row-gap: 20px;
-		padding: 60px;
+		padding: 0 60px;
 	}
 
 	.numbers img {
@@ -261,15 +290,10 @@
 	}
 
 	.numbers .title {
-		font-size: 30px;
+		font-size: 40px;
 	}
 
-	.numbers div {
-		font-size: 17px;
-		margin-top: 0;
-	}
-
-	.numbers > div {
+	.numbers .content > div {
 		display: flex;
 		flex-direction: row;
 		row-gap: 20px;
@@ -277,7 +301,7 @@
 		width: 100%;
 	}
 
-	.numbers > div > div + div {
+	.numbers .content > div > div + div {
 		flex-grow: 1;
 	}
 

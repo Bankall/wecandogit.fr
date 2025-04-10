@@ -12,17 +12,15 @@ export default function Home() {
 		<>
 			<Hero />
 			<HomeNumbers />
-			<section className='quote no-padding font-0 flex-row no-wrap'>
-				<div className='no-shrink'>
-					<img src='/assets/medias/DSCF1305.min.png' alt='photo' className='desktop' />
-					<img src='/assets/medias/DSCF1305-mobile.jpg' alt='photo' className='mobile' />
-				</div>
-				<div className='flex-grow'>
+			<section className='quote font-0 flex-row no-wrap'>
+				<div className='content'>
 					<span>
-						Le secret de l'éducation réside dans le respect de l'élève
-						<br />
+						<span>
+							Le secret de l'éducation réside dans le respect de l'élève
+							<br />
+							<img src='/assets/medias/signature.svg' className='signature' alt='quote' />
+						</span>
 					</span>
-					<img src='/assets/medias/signature.svg' className='signature' alt='quote' />
 				</div>
 			</section>
 			<section className='activities'>

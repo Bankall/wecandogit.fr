@@ -45,40 +45,42 @@ export default function HomeNumbers() {
 
 	return (
 		<section className='numbers flex-row space-evenly no-wrap'>
-			<div>
+			<div className='content flex-row flex-grow space-evenly'>
 				<div>
-					<img src='/assets/medias/dachshund.png' alt='Picture of a dachshund with a gift on his back' />
-				</div>
-				<div>
-					<div className='title'>
-						<span ref={yearsRef}></span>
-						<span> ANS</span>
+					<div>
+						<img src='/assets/medias/dachshund.png' alt='Picture of a dachshund with a gift on his back' />
 					</div>
-					<div className='margin-t--10'>d'existence</div>
+					<div>
+						<div className='title'>
+							<span ref={yearsRef}></span>
+							<span> ANS</span>
+						</div>
+						<div className='margin-t--10'>d'existence</div>
+					</div>
 				</div>
-			</div>
 
-			<div>
 				<div>
-					<img src='/assets/medias/corgi.png' alt='Picture corgi' />
-				</div>
-				<div>
-					<div className='title'>
-						<span ref={clientsRef}></span>
+					<div>
+						<img src='/assets/medias/corgi.png' alt='Picture corgi' />
 					</div>
-					<div className='margin-t--10'>clients satisfaits</div>
+					<div>
+						<div className='title'>
+							<span ref={clientsRef}></span>
+						</div>
+						<div className='margin-t--10'>clients satisfaits</div>
+					</div>
 				</div>
-			</div>
 
-			<div>
 				<div>
-					<img src='/assets/medias/treats.png' alt='Picture of a jar of dog treats' />
-				</div>
-				<div>
-					<div className='title'>
-						<span ref={treatsRef}></span>
+					<div>
+						<img src='/assets/medias/treats.png' alt='Picture of a jar of dog treats' />
 					</div>
-					<div className='margin-t--10'>friandises distribuées</div>
+					<div>
+						<div className='title'>
+							<span ref={treatsRef}></span>
+						</div>
+						<div className='margin-t--10'>friandises distribuées</div>
+					</div>
 				</div>
 			</div>
 		</section>
