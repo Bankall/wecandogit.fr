@@ -12,17 +12,15 @@ export default function Home() {
 		<>
 			<Hero />
 			<HomeNumbers />
-			<section className='quote no-padding font-0 flex-row no-wrap'>
-				<div className='no-shrink'>
-					<img src='/assets/medias/DSCF1305.min.png' alt='photo' className='desktop' />
-					<img src='/assets/medias/DSCF1305-mobile.jpg' alt='photo' className='mobile' />
-				</div>
-				<div className='flex-grow'>
+			<section className='quote font-0 flex-row no-wrap'>
+				<div className='content'>
 					<span>
-						Le secret de l'éducation réside dans le respect de l'élève
-						<br />
+						<span>
+							Le secret de l'éducation réside dans le respect de l'élève
+							<br />
+							<img src='/assets/medias/signature.svg' className='signature' alt='quote' />
+						</span>
 					</span>
-					<img src='/assets/medias/signature.svg' className='signature' alt='quote' />
 				</div>
 			</section>
 			<section className='activities'>
@@ -88,8 +86,8 @@ export default function Home() {
 			<Photos />
 			<Reviews />
 			<section className='contact font-0 flex-row no-wrap'>
-				<img src='/assets/medias/Genko_noel.png' alt='Contact Us button' style={{ maxHeight: "200px", position: "relative", zIndex: 1 }} />
-				<a href='https://docs.google.com/forms/d/e/1FAIpQLSeleVaqfG4q7Eb78hn87ur3-EdVo1CsOQat3OUCy99tfWLbvA/viewform' className='no-shrink' target='_blank'>
+				<img src='/assets/medias/Genko.png' alt='Contact Us button' style={{ maxHeight: "200px", position: "relative", zIndex: 1 }} />
+				<a href='mailto:contact.wecandogit@gmail.com' className='no-shrink' target='_blank'>
 					<button>CONTACTE-NOUS</button>
 				</a>
 			</section>

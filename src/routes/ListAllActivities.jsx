@@ -4,8 +4,11 @@ import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { Interweave } from "interweave";
 import { UrlMatcher } from "interweave-autolink";
 
-const encode = str => encodeURIComponent(str).replace(/%20/g, "+").replace(/\//g, "%2F");
-const decode = str => decodeURIComponent((str || "").replace(/\+/g, " "));
+const encode = str =>
+	encodeURIComponent(str || "")
+		.replace(/%20/g, "+")
+		.replace(/\//g, "%2F");
+const decode = str => decodeURIComponent(str || "").replace(/\+/g, " ");
 
 function ListAllActivities() {
 	const params = useParams();

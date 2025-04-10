@@ -16,7 +16,7 @@ header {
 	display: flex;
 	box-sizing: border-box;
 	justify-content: space-between;
-	align-items: flex-start;
+	align-items: flex-end;
 	z-index: 2;
 	box-shadow: none;
 	padding: 25px 50px;
@@ -24,12 +24,16 @@ header {
 	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed-faster) ease-in, background var(--transition-speed-faster) ease-in;
 }
 
+header .flex-row {
+	padding-bottom: 5px;
+}
+
 .is-scrolled header,
 .menu-opened header {
 	box-shadow: var(--box-shadows) 0 5px 25px 0;
 	padding: 10px 20px;
 	background: rgba(255, 255, 255, 0.8);
-	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed) ease-in var(--transition-speed), background var(--transition-speed) ease-in var(--transition-speed);
+	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed) ease-in var(--transition-speed), background var(--transition-speed) ease-in;
 }
 
 .menu-opened header {

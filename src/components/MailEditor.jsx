@@ -41,11 +41,12 @@ export default function MailEditor() {
 					name='to'
 					className='flex-grow'
 					style={{ width: "auto" }}
+					defaultValue={"active"}
 					onChange={event => {
 						fillAutomaticObject(event.target.value);
 					}}>
-					<option value='all'>Tout le monde {userCount.data && userCount.data.full ? `${userCount.data.full} personnes` : ""}</option>
 					<option value='active'>Tout les utilisateurs actifs {userCount.data && userCount.data.active ? `${userCount.data.active} personnes` : ""}</option>
+					<option value='all'>Tout les utilisateurs {userCount.data && userCount.data.full ? `${userCount.data.full} personnes` : ""}</option>
 					{slots.data && slots.data.length
 						? slots.data.map((slot, index) => (
 								<option key={index} value={slot.id}>

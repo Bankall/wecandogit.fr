@@ -9,8 +9,8 @@
 	--swiper-navigation-size: 22px !important;
 	--valid-color: rgba(12, 143, 12, 0.705);
 	--invalid-color: firebrick;
-	--font: "Roboto", Helvetica, sans-serif;
-	--title-font: "Oswald", Helvetica, sans-serif;
+	--font: "Open Sans", Helvetica, sans-serif;
+	--title-font: "Bebas Neue", Helvetica, sans-serif;
 }
 
 body {
@@ -159,6 +159,8 @@ main {
 }
 
 main section {
+	position: relative;
+	background: #f7f9fd;
 	padding: 60px 40px;
 }
 
