@@ -122,6 +122,10 @@ const router = createBrowserRouter([
 						lazy: () => import("./routes/Account/DogEdit")
 					},
 					{
+						path: "user/edit/:id",
+						lazy: () => import("./routes/Account/UserEdit")
+					},
+					{
 						path: ":menu?/:action?/:id?",
 						lazy: () => import("./routes/Account"),
 						loader: async () => {

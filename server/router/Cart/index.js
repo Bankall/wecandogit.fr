@@ -261,6 +261,10 @@ const sortCartItemByTrainers = async req => {
 	}
 };
 
+const isValidAddress = user => {
+	return user && user.address && user.postal_code && user.city && user.address.trim() !== "" && user.postal_code.trim() !== "" && user.city.trim() !== "";
+};
+
 router.route("/full-cart").get(async (req, res) => {
 	try {
 		if (!req.session.cart || !req.session.cart.length) {
@@ -281,6 +285,17 @@ router.route("/full-cart").get(async (req, res) => {
 
 		if (!dog.result.length) {
 			notice.has_dog = false;
+		}
+
+		if (req.session.user_id) {
+			const user = await backend.get({
+				table: "user",
+				id: req.session.user_id
+			});
+
+			if (!isValidAddress(user.result)) {
+				notice.has_address = false;
+			}
 		}
 
 		const byTrainers = await sortCartItemByTrainers(req);

@@ -143,6 +143,15 @@ function Cart() {
 									</Link>
 								</div>
 							</div>
+						) : cartItems.data?.notice?.has_address === false ? (
+							<div className='box notice' style={{ maxWidth: "800px" }}>
+								Vous devez renseigner votre adresse pour valider la facture
+								<div className='margin-t-20 center'>
+									<Link to='/account/profile'>
+										<button>Renseigner son adresse</button>
+									</Link>
+								</div>
+							</div>
 						) : null}
 						{cartItems.data?.result?.length ? (
 							cartItems.data?.result?.map(trainer => (

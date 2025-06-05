@@ -230,6 +230,28 @@ const UserPackageAdd = [
 	}
 ];
 
+const Address = [
+	{
+		name: "address",
+		type: "string",
+		label: "Adresse",
+		uitype: "text"
+	},
+	{
+		name: "postal_code",
+		type: "string",
+		label: "Code postal",
+		uitype: "text",
+		inputmode: "numeric"
+	},
+	{
+		name: "city",
+		type: "string",
+		label: "Ville",
+		uitype: "text"
+	}
+];
+
 const UserProfile = [
 	{
 		name: "email",
@@ -255,6 +277,7 @@ const UserProfile = [
 		label: "Numéro de téléphone",
 		uitype: "tel"
 	},
+	...Address,
 	{
 		name: "instagram",
 		type: "string",
@@ -273,6 +296,18 @@ const UserProfile = [
 		acl: {
 			is_trainer: true
 		}
+	},
+	{
+		name: "newsletter_optin",
+		type: "string",
+		label: "Recevoir le planning de la semaine/le mois par email",
+		uitype: "checkbox"
+	},
+	{
+		name: "reminder_optin",
+		type: "string",
+		label: "Recevoir les rappels de réservation par email",
+		uitype: "checkbox"
 	}
 ];
 
@@ -311,6 +346,7 @@ RegisterForm.push(
 		label: "Numéro de téléphone",
 		uitype: "tel"
 	},
+	...Address,
 	{
 		name: "instagram",
 		type: "string",

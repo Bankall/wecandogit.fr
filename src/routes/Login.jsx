@@ -53,7 +53,7 @@ export default function Login() {
 									if (response.data.error) throw response.data.error;
 									if (response.data.ok) {
 										setTimeout(() => {
-											navigate(response.data.location || "/account");
+											navigate(response.data.location || redirect || "/account");
 										}, 200);
 									}
 								} catch (err) {

@@ -331,7 +331,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 															)}
 														/>
 													) : (
-														<Field type={value.uitype} name={value.name} autoComplete={value.disableAutocomplete ? "one-time-code" : value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : value.placeholder} />
+														<Field type={value.uitype} name={value.name} inputMode={value.inputmode} autoComplete={value.disableAutocomplete ? "one-time-code" : value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : value.placeholder} />
 													)}
 												</div>
 											</div>
