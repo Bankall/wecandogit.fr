@@ -5,12 +5,13 @@ import { UserProfile } from "../data/dashboard-form-data";
 
 import DashboardListComponent from "./DashboardListComponent";
 import Loading from "./Loading";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 export default function AccountInfo() {
 	const [formData, setFormData] = useState(false);
 	const { id } = useParams();
 	const navigate = useNavigate();
+	const { hash } = useLocation();
 
 	useEffect(() => {
 		const fetch = async () => {
@@ -63,7 +64,7 @@ export default function AccountInfo() {
 
 								if (response.data.error) throw response.data.error;
 								if (response.data.ok) {
-									if (id) {
+									if (id || hash === "#missing-address") {
 										navigate(-1);
 									}
 

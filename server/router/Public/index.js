@@ -45,7 +45,7 @@ router.route("/update-user/:id?").put(async (req, res, next) => {
 
 		await backend.put({
 			table: "user",
-			id,
+			id: id || req.session.user_id,
 			body: req.body
 		});
 

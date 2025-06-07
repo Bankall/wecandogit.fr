@@ -147,7 +147,7 @@ function Cart() {
 							<div className='box notice' style={{ maxWidth: "800px" }}>
 								Vous devez renseigner votre adresse pour valider la facture
 								<div className='margin-t-20 center'>
-									<Link to='/account/profile'>
+									<Link to='/account/profile#missing-address'>
 										<button>Renseigner son adresse</button>
 									</Link>
 								</div>
