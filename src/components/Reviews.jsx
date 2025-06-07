@@ -15,19 +15,25 @@ export default function Reviews() {
 						? reviews.data?.reviews.map((review, index) => {
 								return (
 									<div className='card' key={`review-${index}`}>
-										<div className='top-line'>
-											<div className='stars-wrapper'>
-												<div className='stars-active' style={{ width: `${(review.rating / 5) * 100}%` }}>
-													{review.rating} étoiles
+										<div className='bottom-line flex-row no-wrap'>
+											<img src={`${import.meta.env.VITE_API_ENDPOINT}/proxy/?url=${review.authorAttribution.photoUri}`} style={{ height: 80 }} />
+											<div className='flex-row align-left flex-col'>
+												<span>{review.authorAttribution.displayName}</span>
+												<div className='top-line'>
+													<div className='stars-wrapper'>
+														<div className='stars-active' style={{ width: `${(review.rating / 5) * 100}%` }}>
+															{review.rating} étoiles
+														</div>
+														<div className='stars-inactive' style={{ width: `${100 - (review.rating / 5) * 100}%` }}></div>
+													</div>
+													<div className='timestamp'>{review.relativePublishTimeDescription}</div>
 												</div>
-												<div className='stars-inactive' style={{ width: `${100 - (review.rating / 5) * 100}%` }}></div>
 											</div>
-											<div className='timestamp'>{review.relativePublishTimeDescription}</div>
 										</div>
+
 										<div className='content'>
 											<Interweave content={review.text.text} />
 										</div>
-										<div className='bottom-line'>{review.authorAttribution.displayName}</div>
 									</div>
 								);
 						  })

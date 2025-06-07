@@ -25,12 +25,17 @@ export default function Home() {
 			</section>
 			<section className='activities'>
 				<div className='content'>
-					<h3>
-						Pour partager un bon moment avec son chien, parfaire son éducation ou améliorer un problème de comportement grâce au <b>renforcement positif</b>
-					</h3>
-					<h4>
-						Quelque soit votre objectif, <b>We Can Dog It</b> propose sûrement l'activité qui vous correspond
-					</h4>
+					<div className='flex-row width-50 gap-50'>
+						<img src='/assets/medias/DSCF1305.min.png' alt='Activities' className='border-radius-20' />
+						<div>
+							<h3>
+								Pour partager un bon moment avec son chien, parfaire son éducation ou améliorer un problème de comportement grâce au <b>renforcement positif</b>
+							</h3>
+							<h4>
+								Quelque soit votre objectif, <b>We Can Dog It</b> propose sûrement l'activité qui vous correspond
+							</h4>
+						</div>
+					</div>
 
 					<div className='flex-row space-around'>
 						<div className='item'>

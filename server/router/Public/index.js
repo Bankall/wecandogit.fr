@@ -407,6 +407,31 @@ router.route("/get-reviews").get(async (req, res) => {
 	}
 });
 
+router.route("/proxy/").get(async (req, res) => {
+	try {
+		const { url } = req.query;
+		if (!url) {
+			throw { error: "Missing URL parameter" };
+		}
+
+		if (!url.startsWith("https://lh3.googleusercontent.com")) {
+			throw { error: "Invalid URL" };
+		}
+
+		const response = await axios.get(url, {
+			headers: {
+				Referer: "https://www.wecandogit.com/"
+			},
+			responseType: "arraybuffer"
+		});
+
+		res.setHeader("Content-Type", "image/png");
+		res.end(response.data, "binary");
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
 const Public = _backend => {
 	backend = _backend;
 	return router;
