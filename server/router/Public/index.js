@@ -36,16 +36,46 @@ router.route("/is-logged-in").get((req, res) => {
 	});
 });
 
-router.route("/update-user").put(async (req, res, next) => {
+router.route("/update-user/:id?").put(async (req, res, next) => {
 	try {
+		const { id } = req.params;
+		if (id && !req.session.is_trainer) {
+			throw { error: "You are not allowed to update another user" };
+		}
+
 		await backend.put({
 			table: "user",
-			id: req.session.user_id,
+			id,
 			body: req.body
 		});
 
 		res.send({
 			ok: true
+		});
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+router.route("/user/:id").get(async (req, res, next) => {
+	try {
+		if (!req.session.is_trainer) {
+			throw { error: "You are not allowed to get another user" };
+		}
+
+		const { id } = req.params;
+		const data = await backend.get({
+			table: "user",
+			query: {
+				id
+			}
+		});
+
+		delete data.result[0].password;
+
+		res.send({
+			ok: true,
+			result: data.result[0]
 		});
 	} catch (err) {
 		errorHandler({ err, req, res });

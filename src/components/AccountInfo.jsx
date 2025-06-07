@@ -5,14 +5,17 @@ import { UserProfile } from "../data/dashboard-form-data";
 
 import DashboardListComponent from "./DashboardListComponent";
 import Loading from "./Loading";
+import { useParams, useNavigate } from "react-router-dom";
 
 export default function AccountInfo() {
 	const [formData, setFormData] = useState(false);
+	const { id } = useParams();
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		const fetch = async () => {
 			try {
-				const response = await axios.get("/me");
+				const response = await axios.get(id ? `/user/${id}` : "/me");
 
 				if (response.data.ok) {
 					setFormData(
@@ -56,10 +59,14 @@ export default function AccountInfo() {
 							setSubmitionFeedback("");
 
 							try {
-								const response = await axios.put("update-user", values);
+								const response = await axios.put(`update-user${id ? `/${id}` : ""}`, values);
 
 								if (response.data.error) throw response.data.error;
 								if (response.data.ok) {
+									if (id) {
+										navigate(-1);
+									}
+
 									setSubmitionFeedback("Joli joli, tout ça.");
 
 									setTimeout(() => {
