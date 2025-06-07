@@ -19,7 +19,7 @@
 
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" />
+		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Oswald:wght@200..700&display=swap" rel="stylesheet" />
 
 		<script src="https://kit.fontawesome.com/5fee777e14.js" crossorigin="anonymous"></script>
 		<script>
@@ -45,7 +45,7 @@
 
 			let once = false;
 			setInterval(() => {
-				const scrolled = window.pageYOffset > 50 || window.innerWidth < 900 || window.location.pathname !== '/';
+				const scrolled = window.pageYOffset > 1 || window.innerWidth < 900 || window.location.pathname !== '/';
 				document.body.classList.toggle('is-scrolled', scrolled);
 			}, 10);
 		</script>

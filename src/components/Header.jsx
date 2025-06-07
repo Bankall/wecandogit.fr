@@ -128,7 +128,10 @@ export default function Header() {
 						</div>
 						<div className={`has-text${isLoggedIn.loading ? " hidden" : isLoggedIn.data?.ok ? " disabled" : ""}`}>
 							<Link to='/login'>
-								<button>Se connecter</button>
+								<button>
+									<img src='/assets/medias/pawprint.png' alt='pawprint' style={{ width: 20 }} />
+									<span>Se connecter</span>
+								</button>
 							</Link>
 						</div>
 						<div className={`burger-menu${menuToogle ? " active" : ""}`} onClick={() => setMenuToggle(!menuToogle)}>

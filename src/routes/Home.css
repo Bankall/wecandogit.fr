@@ -9,6 +9,12 @@
 	background: #87c6d8;
 }
 
+.hero.hero-light {
+	margin-top: 0;
+	height: auto;
+	padding: 40px 20px;
+}
+
 .hero .left {
 	max-width: 1000px;
 	flex-grow: 1;
@@ -19,19 +25,32 @@
 	padding: 65px 0;
 }
 
-.hero .left h1 {
-	font-size: 90px;
-	line-height: 81px;
+.hero h1 {
+	font-size: 60px;
+	line-height: 62px;
 	color: #fff;
 }
 
-.hero .left h2 {
+.hero h2 {
 	font-size: 35px;
 	font-weight: 300;
 	font-family: var(--font), sans-serif;
 	margin-top: 10px;
 	text-transform: none;
 	color: #fff;
+}
+
+.hero-light .flex-row {
+	gap: 0px;
+}
+
+.hero-light h1 {
+	font-size: 40px;
+}
+
+.hero-light h2 {
+	font-size: 20px;
+	margin: 0;
 }
 
 .hero .arrow-down {
@@ -92,6 +111,7 @@
 
 .quote {
 	background: #2a303c;
+	padding: 30px 40px 50px;
 }
 
 .quote .content > span > span {
@@ -135,21 +155,26 @@
 	margin-top: 8px;
 }
 
+.activities {
+	background: #fff;
+}
+
 .activities h3 {
-	margin-top: 50px;
-	line-height: 53px;
-	font-size: 43px;
-	font-weight: 400;
+	font-size: 23px;
 	font-family: var(--font), sans-serif;
-	text-align: center;
+}
+
+.activities h3 b {
+	background: var(--accent-color-2);
+	color: #fff;
+	padding: 0 4px;
 }
 
 .activities h4 {
-	margin-top: 34px;
-	font-size: 30px;
+	margin-top: 20px;
+	font-size: 20px;
 	font-weight: 200;
 	font-family: var(--font), sans-serif;
-	text-align: center;
 }
 
 .activities h4 b {
@@ -158,11 +183,6 @@
 
 .activities > .content > div {
 	margin-top: 100px;
-	column-gap: 10%;
-}
-
-.activities .item {
-	flex: 1 1 0;
 }
 
 .activities .img img {
@@ -174,32 +194,36 @@
 }
 
 .activities .item img {
-	width: 160px;
+	width: 120px;
 }
 
 .activities .item .center {
-	margin-top: 20px;
-	font-size: 45px;
+	margin-top: 10px;
+	font-size: 25px;
 	font-family: var(--title-font), sans-serif;
 }
 
 .activities .item .button {
-	background: var(--accent-color-2);
+	background: var(--accent-color-1);
 	color: #fff;
-	padding: 10px 0;
+	padding: 5px 20px;
 	border-radius: 30px;
-	font-size: 22px;
+	font-size: 17px;
 	font-weight: 200;
-	margin-top: 20px;
+	margin-top: 10px;
 	text-align: center;
 }
 
 .activities .item .button:hover {
-	background: var(--accent-color-4);
+	background: var(--accent-color-3);
 }
 
 .activities .item a:hover {
 	text-decoration: none;
+}
+
+.photos {
+	box-shadow: 0 0.0625rem 0.1875rem var(--box-shadows);
 }
 
 .photos .swiper-slide {
@@ -236,6 +260,11 @@
 	font-size: 16px;
 }
 
+.profil-picture {
+	border-radius: 50%;
+	width: 150px;
+}
+
 @media screen and (max-width: 1650px) {
 	.cards {
 		grid-template-columns: auto;
@@ -249,26 +278,29 @@
 }
 
 @media screen and (max-width: 900px) {
-	/* .hero {
-		padding: 100px 20px 40px;
+	.hero {
+		padding: 0 20px;
 		position: relative;
+		height: auto;
+		margin-top: 0;
 		background: var(--accent-color-2);
 	}
 
 	.hero .left {
 		position: relative;
+		padding: 50px 0 95px;
 		z-index: 1;
 	}
 
 	.hero .left h1 {
-		font-size: 26px;
-		line-height: 27px;
+		font-size: 27px;
+		line-height: 29px;
 		color: #fff;
 		text-align: center;
 	}
 
 	.hero .left h2 {
-		font-size: 16px;
+		font-size: 20px;
 		line-height: initial;
 		margin-top: 10px;
 		color: #fff;
@@ -277,7 +309,7 @@
 
 	.hero .right {
 		display: none;
-	} */
+	}
 
 	.numbers .content {
 		flex-direction: column;
@@ -290,7 +322,11 @@
 	}
 
 	.numbers .title {
-		font-size: 40px;
+		font-size: 27px;
+	}
+
+	.numbers .margin-t--10 {
+		margin-top: 0;
 	}
 
 	.numbers .content > div {
@@ -312,6 +348,7 @@
 	.quote {
 		flex-direction: column;
 		gap: 0;
+		padding: 10px 20px;
 	}
 
 	.quote img.desktop {
@@ -326,27 +363,25 @@
 		width: 100%;
 	}
 
-	.quote span {
-		font-size: 24px;
-		line-height: 24px;
-		padding: 20px 40px;
+	.quote .content > span {
+		gap: 10px;
+	}
+
+	.quote .content > span > span {
+		font-size: 20px;
+		line-height: 20px;
+		padding: 10px;
 		text-align: center;
 	}
 
-	.quote span::before,
-	.quote span::after {
+	.quote .content > span::before,
+	.quote .content > span::after {
 		width: 40px;
 		height: 40px;
 	}
 
-	.quote span::before {
-		top: -20px;
-		left: 10px;
-	}
-
-	.quote span::after {
-		bottom: 0;
-		right: 10px;
+	.quote .content > span::after {
+		margin: 0px 0 33px;
 	}
 
 	.quote .flex-grow {
@@ -354,11 +389,9 @@
 	}
 
 	.quote .signature {
-		position: relative;
-		top: auto;
-		right: auto;
-		width: 100px;
-		margin: -10px 0 10px;
+		position: static;
+		width: 130px;
+		margin: 10px 0 0;
 	}
 
 	.activities {
@@ -366,8 +399,8 @@
 	}
 
 	.activities h3 {
-		margin-top: 20px;
-		font-size: 17px;
+		margin-top: 0;
+		font-size: 16px;
 		line-height: initial;
 	}
 
@@ -380,17 +413,25 @@
 		margin-top: 40px;
 	}
 
+	.activities .content .flex-row.width-50 > * {
+		width: 50%;
+	}
+
+	.activities .content .flex-row {
+		flex-direction: row;
+	}
+
 	.activities .item {
 		margin: 10px 0;
 	}
 
 	.activities .item img {
-		width: 120px;
+		width: 70px;
 	}
 
 	.activities .item .center {
 		margin-top: 10px;
-		font-size: 24px;
+		font-size: 27px;
 	}
 
 	.activities .item .button {
@@ -403,5 +444,49 @@
 
 	.contact a {
 		margin-top: -24px;
+	}
+}
+
+@media screen and (max-width: 680px) {
+	.hero .arrow-down {
+		animation: none;
+	}
+
+	.activities .content .flex-row.width-50 {
+		flex-direction: column;
+	}
+
+	.activities .content .flex-row.space-around {
+		margin-top: 40px;
+	}
+
+	.activities .content .flex-row .item {
+		flex-basis: 35%;
+	}
+
+	.flex-row.width-50 > * {
+		width: 100%;
+	}
+
+	.flex-row.gap-50 {
+		gap: 40px;
+	}
+
+	.activities {
+		padding: 0 0 40px 0;
+	}
+
+	.activities .content,
+	.activities > .content > div {
+		margin: 0;
+	}
+
+	.activities .flex-row h3,
+	.activities .flex-row h4 {
+		padding: 0 20px;
+	}
+
+	.activities .border-radius-20 {
+		border-radius: 0;
 	}
 }

@@ -1,20 +1,21 @@
 :root {
 	--main-txt-color: rgb(60, 66, 76);
-	--accent-color-1: rgb(174, 119, 148);
-	--accent-color-2: rgb(164, 196, 203);
-	--accent-color-3: rgb(151, 103, 129);
-	--accent-color-4: rgb(148, 176, 183);
+	--accent-color-1: rgb(215, 136, 184);
+	--accent-color-2: rgb(135, 198, 216);
+	--accent-color-3: rgba(215, 136, 183, 0.75);
+	--accent-color-4: rgba(135, 198, 216, 0.75);
 	--box-shadows: rgba(45, 46, 92, 0.15);
 	--light-borders: rgba(211, 215, 223, 0.5);
 	--swiper-navigation-size: 22px !important;
 	--valid-color: rgba(12, 143, 12, 0.705);
 	--invalid-color: firebrick;
 	--font: "Open Sans", Helvetica, sans-serif;
-	--title-font: "Bebas Neue", Helvetica, sans-serif;
+	--title-font: "Oswald", Helvetica, sans-serif;
 }
 
 body {
 	background: #f7f9fd;
+	overflow-y: scroll;
 }
 
 body,
@@ -141,6 +142,10 @@ select {
 	margin-bottom: 20px;
 }
 
+.border-radius-20 {
+	border-radius: 20px;
+}
+
 .bold {
 	font-weight: 700;
 }
@@ -185,9 +190,9 @@ section > .content {
 }
 
 section > .content h2 {
-	font-size: 22px;
-	margin-bottom: 40px;
-	text-align: center;
+	color: var(--accent-color-1);
+	font-size: 28px;
+	margin-bottom: 30px;
 	text-transform: uppercase;
 }
 
@@ -202,7 +207,10 @@ section.light {
 
 button,
 .fake-button {
-	display: inline-block;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 5px;
 	padding: 0.5rem 1.275rem;
 	background-color: var(--accent-color-1);
 	border: 1px solid var(--accent-color-1);
@@ -317,6 +325,7 @@ button.inverted-colors:focus {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	gap: 5px;
 }
 
 .card .content {
@@ -355,6 +364,28 @@ button.inverted-colors:focus {
 	align-items: center;
 	column-gap: 10px;
 	row-gap: 10px;
+}
+
+.flex-row.align-left {
+	justify-content: flex-start;
+	align-items: flex-start;
+}
+
+.flex-row.align-normal {
+	justify-content: normal;
+	align-items: normal;
+}
+
+.flex-row.width-50 {
+	flex-wrap: nowrap;
+}
+
+.flex-row.width-50 > * {
+	width: 50%;
+}
+
+.flex-row.gap-50 {
+	gap: 50px;
 }
 
 .flex-row span.price {
@@ -424,10 +455,11 @@ button.inverted-colors:focus {
 
 .box .title {
 	font-size: 24px;
-	font-weight: 400;
+	font-weight: 600;
 	border-bottom: 1px solid var(--light-borders);
 	padding-bottom: 1.2rem;
 	margin-bottom: 1rem;
+	margin-top: 1rem;
 }
 
 .box p {
@@ -630,6 +662,10 @@ input:focus {
 @media screen and (max-width: 900px) {
 	section .content > .flex-row {
 		flex-direction: column;
+	}
+
+	section .content > .flex-row.width-50 > * {
+		width: 100%;
 	}
 
 	.menu ul {
