@@ -24,7 +24,34 @@ const Activity = [
 		label: "Description de l'activité (version longue pour le listing de toutes les activités)",
 		uitype: "textarea"
 	},
-
+	{
+		name: "header",
+		type: "string",
+		label: "Titre de la page d'activité",
+		uitype: "text",
+		required: false
+	},
+	{
+		name: "product_page_short_description",
+		type: "string",
+		label: "Description courte de l'activité (pour la page produit)",
+		uitype: "rich-text",
+		required: false
+	},
+	{
+		name: "product_page_description",
+		type: "string",
+		label: "Description de l'activité (version longue pour la page produit)",
+		uitype: "rich-text",
+		required: false
+	},
+	{
+		name: "card_footer",
+		type: "string",
+		label: "Texte de bas de carte d'activité",
+		uitype: "textarea",
+		required: false
+	},
 	{
 		name: "is_collective",
 		type: "string",

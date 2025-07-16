@@ -393,21 +393,23 @@ router.route("/get-trainers-description").get(async (req, res) => {
 		{
 			id: 123,
 			name: "Chloe Ternier",
-			description: `Après avoir été infirmière pendant près de 10 ans, j'ai choisi de changer de voie pour m'investir dans le bien-être canin. Passionnée de sport (course à pied et triathlon), je suis persuadée que la pratique des sports canins peut permettre d'améliorer grandement non seulement la relation humain/chien, mais également aider à résoudre de nombreux troubles du comportement chez le chien.
-	
-J'ai également conscience que de nombreux propriétaires ont besoin d'être guidés dans l'éducation de leur chien, d'apprendre à communiquer avec lui, à répondre à ses besoins. Mais aussi du fait que ces propriétaires sont de plus en plus soucieux du bien-être de leur animal.  J'ai donc débuté ma formation de cynologiste en septembre 2020, avant de quitter mon poste à l'hôpital au mois de juillet suivant afin de me consacrer entièrement à cette reconversion et à ce projet.
-	
-J'ai obtenu mon diplôme de Cynologiste en juillet 2022.`,
+			description: `Infirmière pendant presque 10 ans, j’ai ressenti le besoin de donner un nouveau sens à ma carrière en me tournant vers le bien-être animal. 
+
+Sportive dans l’âme (course à pied, triathlon), je suis convaincue que les sports canins peuvent renforcer la relation humain-chien et apporter un réel mieux-être, tant physique qu’émotionnel.
+
+En 2020, j’ai débuté ma formation de Cynologiste, que j’ai validée en juillet 2022. J’ai alors quitté mon poste à l’hôpital pour m’investir pleinement dans cette reconversion. 
+
+Aujourd’hui, j’accompagne les humains soucieux du bien-être de leur chien, en leur donnant les clés pour mieux communiquer et répondre aux besoins de leur compagnon, dans la joie et la coopération.`,
 			photo: "/assets/medias/chloe.jpg"
 		},
 		{
 			id: 345,
 			name: "Elodie Decouleur",
-			description: `J'ai été commerciale durant 8 ans, avant d'être pendant 2 ans chef de publicité. En septembre 2020, j'ai décidé d'arrêter mon activité salariée, afin de me consacrer pleinement à mon activité secondaire, l'éducation et la rééducation des chiens de compagnie.
-	
-Je suis passionnée de chiens depuis toujours, mais c'est en 2016 que j'ai validé le diplôme d'éducatrice comportementaliste, Cynologiste et que j'ai ouvert Amity Dog.
-	
-J'accompagne depuis les familles et les associations de protection animale, en les aidant à mieux comprendre les chiens.`,
+			description: `Après 8 ans comme commerciale puis 2 ans cheffe de publicité, j’ai décidé en 2020 de quitter le monde du salariat pour me consacrer entièrement à ce qui était jusqu’alors mon activité secondaire : l’éducation et la rééducation des chiens de compagnie.
+
+Passionnée par les chiens depuis toujours, j’ai obtenu mon diplôme d’éducatrice comportementaliste – Cynologiste en 2016, et fondé Amity Dog dans la foulée. J’y ai accompagné de nombreuses familles et associations de protection animale, en parallèle de mon métier.
+
+Aujourd’hui, je suis pleinement investie dans cette voie, avec l’envie profonde d’aider chaque binôme humain-chien à mieux se comprendre et à avancer ensemble, dans le respect, la confiance et la bienveillance.`,
 			photo: "/assets/medias/FB_IMG_1599744511817.jpg"
 		}
 	];
@@ -457,6 +459,20 @@ router.route("/proxy/").get(async (req, res) => {
 
 		res.setHeader("Content-Type", "image/png");
 		res.end(response.data, "binary");
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+router.route("/public-activity/:id").get(async (req, res) => {
+	try {
+		const { id } = req.params;
+		const activity = await backend.get({
+			table: "activity",
+			id
+		});
+
+		res.send(activity.result);
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

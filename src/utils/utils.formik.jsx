@@ -6,6 +6,93 @@ import { Formik, Form, Field, ErrorMessage, useFormikContext, FieldArray } from 
 import { Interweave } from "interweave";
 import { useParams } from "react-router-dom";
 
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import { ClassicEditor, AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BalloonToolbar, BlockToolbar, Bold, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Heading, HorizontalLine, ImageBlock, ImageCaption, ImageInline, ImageInsert, ImageInsertViaUrl, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, ImageUpload, Indent, IndentBlock, Italic, Link, List, Paragraph, RemoveFormat, SelectAll, SimpleUploadAdapter, Strikethrough, TextTransformation, Underline, Undo, FindNextCommand } from "ckeditor5";
+import translations from "ckeditor5/translations/fr.js";
+import "ckeditor5/ckeditor5.css";
+
+const editorConfig = {
+	toolbar: {
+		items: ["undo", "redo", "|", "selectAll", "|", "heading", "|", "alignment:left", "alignment:right", "alignment:center", "alignment:justify", "|", "fontSize", "fontFamily", "fontColor", "fontBackgroundColor", "|", "bold", "italic", "underline", "strikethrough", "removeFormat", "|", "horizontalLine", "link", "insertImage", "|", "bulletedList", "numberedList", "outdent", "indent", "|", "accessibilityHelp"],
+		shouldNotGroupWhenFull: false
+	},
+	plugins: [AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BalloonToolbar, BlockToolbar, Bold, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Heading, HorizontalLine, ImageBlock, ImageCaption, ImageInline, ImageInsert, ImageInsertViaUrl, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, ImageUpload, Indent, IndentBlock, Italic, Link, List, Paragraph, RemoveFormat, SelectAll, SimpleUploadAdapter, Strikethrough, TextTransformation, Underline, Undo],
+	balloonToolbar: ["bold", "italic", "|", "link", "insertImage", "|", "bulletedList", "numberedList"],
+	blockToolbar: ["fontSize", "fontColor", "fontBackgroundColor", "|", "bold", "italic", "|", "link", "insertImage", "|", "bulletedList", "numberedList", "outdent", "indent"],
+	fontFamily: {
+		supportAllValues: true
+	},
+	fontSize: {
+		options: [10, 12, 14, "default", 18, 20, 22],
+		supportAllValues: true
+	},
+	heading: {
+		options: [
+			{
+				model: "paragraph",
+				title: "Paragraph",
+				class: "ck-heading_paragraph"
+			},
+			{
+				model: "heading1",
+				view: "h1",
+				title: "Heading 1",
+				class: "ck-heading_heading1"
+			},
+			{
+				model: "heading2",
+				view: "h2",
+				title: "Heading 2",
+				class: "ck-heading_heading2"
+			},
+			{
+				model: "heading3",
+				view: "h3",
+				title: "Heading 3",
+				class: "ck-heading_heading3"
+			},
+			{
+				model: "heading4",
+				view: "h4",
+				title: "Heading 4",
+				class: "ck-heading_heading4"
+			},
+			{
+				model: "heading5",
+				view: "h5",
+				title: "Heading 5",
+				class: "ck-heading_heading5"
+			},
+			{
+				model: "heading6",
+				view: "h6",
+				title: "Heading 6",
+				class: "ck-heading_heading6"
+			}
+		]
+	},
+	image: {
+		toolbar: ["toggleImageCaption", "imageTextAlternative", "|", "imageStyle:inline", "imageStyle:wrapText", "imageStyle:breakText", "|", "resizeImage"]
+	},
+	initialData: "",
+	language: "fr",
+	link: {
+		addTargetToExternalLinks: true,
+		defaultProtocol: "https://",
+		decorators: {
+			toggleDownloadable: {
+				mode: "manual",
+				label: "Downloadable",
+				attributes: {
+					download: "file"
+				}
+			}
+		}
+	},
+	placeholder: "Ecrivez ici",
+	translations: [translations]
+};
+
 const JSONToYupSchemeConverter = data => {
 	const scheme = {};
 
@@ -251,7 +338,9 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 					validationSchema={formOptions.validationSchema}
 					onSubmit={async (values, action) => {
 						setCustomIsSubmitting(true);
-						onSubmit({ values, setSubmitting: action.setSubmitting, setCustomIsSubmitting, setSubmitionError, setSubmitionFeedback });
+						await onSubmit({ values, setSubmitting: action.setSubmitting, setCustomIsSubmitting, setSubmitionError, setSubmitionFeedback });
+
+						setCustomIsSubmitting(false);
 					}}>
 					{({ isSubmitting, errors, touched, values }) => (
 						<Form>
@@ -437,6 +526,21 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 														}}
 													/>
 												</div>
+											</div>
+										);
+
+									case "rich-text":
+										return (
+											<div className='form-row' key={`form-row-${value.name}`}>
+												<label className='flex-row'>{value.label}</label>
+												<CKEditor
+													editor={ClassicEditor}
+													config={{ ...editorConfig, initialData: values[value.name] }}
+													onChange={(_, editor) => {
+														values[value.name] = editor.getData();
+														// setEditorData(editor.getData());
+													}}
+												/>
 											</div>
 										);
 									default:

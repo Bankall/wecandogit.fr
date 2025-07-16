@@ -63,7 +63,90 @@ const router = createBrowserRouter([
 				lazy: () => import("./routes/Agenda")
 			},
 			{
-				path: "/activites/:menu?",
+				path: "/activites",
+				children: [
+					{
+						path: "",
+						lazy: () => import("./routes/Activities")
+					},
+					{
+						path: "balades",
+						lazy: () => import("./routes/Walks")
+					},
+					{
+						path: "privatisations",
+						lazy: () => import("./routes/Privatization")
+					},
+					{
+						path: "parc-collectif",
+						lazy: () => import("./routes/Park")
+					},
+					{
+						path: "privatisation-parc",
+						lazy: () => import("./routes/Activities")
+					},
+					{
+						path: "sports-canins",
+						children: [
+							{
+								path: "",
+								lazy: () => import("./routes/Sports")
+							},
+							{
+								path: "agility-hoopers",
+								lazy: () => import("./routes/AgilityHoopers")
+							},
+							{
+								path: "mantrailing",
+								lazy: () => import("./routes/Mantrailing")
+							},
+							{
+								path: "nosework",
+								lazy: () => import("./routes/Nosework")
+							},
+							{
+								path: "cani-paddle",
+								lazy: () => import("./routes/CaniPaddle")
+							}
+						]
+					},
+					{
+						path: "education-reeducation",
+						children: [
+							{
+								path: "",
+								lazy: () => import("./routes/Education")
+							},
+							{
+								path: "soins-cooperatifs",
+								lazy: () => import("./routes/Care")
+							},
+							{
+								path: "bilan-comportemental",
+								lazy: () => import("./routes/Assessement")
+							},
+							{
+								path: "maternelle",
+								lazy: () => import("./routes/Kindergarten")
+							},
+							{
+								path: "classe-ado-adulte",
+								lazy: () => import("./routes/AdultClass")
+							},
+							{
+								path: "atelier-educatif",
+								lazy: () => import("./routes/Workshop")
+							},
+							{
+								path: "suivi-individuel",
+								lazy: () => import("./routes/IndividualTraining")
+							}
+						]
+					}
+				]
+			},
+			{
+				path: "/activites/:menu",
 				lazy: () => import("./routes/ListAllActivities")
 			},
 			{
