@@ -3,6 +3,8 @@ import { useFetch } from "../hooks/useFetch";
 
 import "./Footer.css";
 
+import { encode } from "../utils/utils.encode";
+
 export default function Footer() {
 	const activities = useFetch("/get-all-activities");
 
@@ -17,7 +19,7 @@ export default function Footer() {
 							{group.activities.map(activity => {
 								return (
 									<li key={activity.id}>
-										<Link to={`/activites/#${activity.group_label.trim()}`}>{activity.label}</Link>
+										<Link to={`/activites/${encode(activity.group_label.trim())}`}>{activity.label}</Link>
 									</li>
 								);
 							})}

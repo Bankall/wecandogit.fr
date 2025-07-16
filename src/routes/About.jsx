@@ -1,46 +1,16 @@
-import { useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
-
-import { Navigation } from "swiper/modules";
-import Swiper from "swiper";
 
 import "swiper/css";
 import "swiper/css/navigation";
 
-import "./About.css";
-import { Interweave } from "interweave";
+import { HeroLight } from "../components/HeroLight";
 
 function About() {
 	const trainers = useFetch("/get-trainers-description", () => {});
 
-	useEffect(() => {
-		if (!trainers.data?.trainers) {
-			return;
-		}
-
-		new Swiper(".swiper", {
-			modules: [Navigation],
-			navigation: {
-				nextEl: ".swiper-button-next",
-				prevEl: ".swiper-button-prev"
-			},
-			loop: true,
-			slidesPerView: "auto",
-			spaceBetween: 10,
-			autoplay: {
-				delay: 5000
-			}
-		});
-	}, [trainers]);
-
 	return (
 		<>
-			<section className='hero hero-light flex-row no-wrap'>
-				<div className='flex-row flex-col align-center justify-center'>
-					<h1>We Can Dog It</h1>
-					<h2>Unies par l'amour du chien, guidées par la bienveillance</h2>
-				</div>
-			</section>
+			<HeroLight />
 			<section className='about-us' id='a-propos'>
 				<div className='content'>
 					<h2>Qui sommes-nous ?</h2>

@@ -46,6 +46,7 @@
 
 .dashboard .content .box {
 	text-align: left;
+	background: #fff;
 }
 
 .dashboard .content .box .listing {

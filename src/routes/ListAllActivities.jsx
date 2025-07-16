@@ -3,12 +3,7 @@ import { useFetch } from "../hooks/useFetch";
 import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { Interweave } from "interweave";
 import { UrlMatcher } from "interweave-autolink";
-
-const encode = str =>
-	encodeURIComponent(str || "")
-		.replace(/%20/g, "+")
-		.replace(/\//g, "%2F");
-const decode = str => decodeURIComponent(str || "").replace(/\+/g, " ");
+import { encode, decode } from "../utils/utils.encode";
 
 function ListAllActivities() {
 	const params = useParams();
@@ -51,7 +46,7 @@ function ListAllActivities() {
 													<Interweave content={activity.long_description || activity.description} newWindow={true} matchers={[new UrlMatcher("url")]} />
 												</div>
 												<div className='bottom-line'>
-													{activity.spots ? `${activity.spots} places` : "Activité individuelle"} - {activity.price}€ la séance
+													{activity.spots > 1 ? `${activity.spots} places` : "Activité individuelle"} - {activity.price}€ la séance
 												</div>
 											</div>
 										))}

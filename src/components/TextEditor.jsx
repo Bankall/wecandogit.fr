@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
 
+import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { ClassicEditor, AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BalloonToolbar, BlockToolbar, Bold, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Heading, HorizontalLine, ImageBlock, ImageCaption, ImageInline, ImageInsert, ImageInsertViaUrl, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, ImageUpload, Indent, IndentBlock, Italic, Link, List, Paragraph, RemoveFormat, SelectAll, SimpleUploadAdapter, Strikethrough, TextTransformation, Underline, Undo, FindNextCommand } from "ckeditor5";
 
 import translations from "ckeditor5/translations/fr.js";

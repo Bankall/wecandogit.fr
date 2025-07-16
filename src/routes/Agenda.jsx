@@ -148,6 +148,7 @@ export default function Agenda() {
 						1: false
 					},
 					full: false,
+					disable: false,
 					events: {}
 			  };
 	});
@@ -171,6 +172,10 @@ export default function Agenda() {
 	};
 
 	const filterEvents = events => {
+		if (filters.disable) {
+			return events;
+		}
+
 		const hasAtLeastOneEventFilter = Object.values(filters.events).some(filter => filter);
 		const hasAtLeastOneTrainerFilter = Object.values(filters.trainers).some(filter => filter);
 
@@ -193,6 +198,7 @@ export default function Agenda() {
 		const filters = {
 			events: {},
 			trainers: {},
+			disable: document.querySelector(".filter-box input[name=disable-filter]").checked,
 			full: document.querySelector(".filter-box input[name=full-filter]").checked
 		};
 
@@ -246,10 +252,14 @@ export default function Agenda() {
 				{toggleFilters ? " Cacher les filtres" : " Afficher les filtres"}
 			</div>
 			<div className={`box filter-box margin-b-20${!toggleFilters ? " hidden" : ""}`}>
-				<div className='margin-b-20'>
+				<div className='margin-b-20 flex-row'>
 					<label className='flex-row'>
 						<input type='checkbox' name='full-filter' defaultChecked={false} onChange={saveFilters} />
 						Masquer les créneaux complets
+					</label>
+					<label className='flex-row'>
+						<input type='checkbox' name='disable-filter' defaultChecked={false} onChange={saveFilters} />
+						Désactiver les filtres
 					</label>
 				</div>
 				<div className='margin-b-20'>
