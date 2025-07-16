@@ -292,6 +292,20 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 														)}
 														<span className='flex-grow'>&nbsp;- {dog.label}</span>
 														{typeof dog.paid !== "undefined" && <span className={dog.paid ? "paid" : "unpaid"}>{dog.paid ? `Réglé${dog.payment_type === "package" ? " avec une formule" : dog.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
+														{typeof dog.paid !== "undefined" && !dog.paid && (
+															<button
+																className='smallest'
+																onClick={async () => {
+																	const { data } = await axios.put(`/reservation/${dog.id_reservation}`, { paid: 1 });
+																	const { id } = data;
+
+																	if (id) {
+																		dispatchEvent(new Event(`refresh-list-${type}`));
+																	}
+																}}>
+																Régler
+															</button>
+														)}
 													</li>
 												))}
 											</ul>
