@@ -9,7 +9,7 @@ export const ActivityDetail = ({ id, photos, activities, children }) => {
 	return (
 		<>
 			<HeroLight>
-				<h1>{data?.header}</h1>
+				<h1>{data?.header || data?.label}</h1>
 			</HeroLight>
 			<section className='all-activities' id='nos-activites'>
 				{photos && (
@@ -25,7 +25,7 @@ export const ActivityDetail = ({ id, photos, activities, children }) => {
 				</div>
 
 				{activities && (
-					<div className='content flex-row no-wrap md-wrap align-normal width-50 margin-t-50 gap-50'>
+					<div className='content flex-row no-wrap md-wrap align-normal width-33 margin-t-50 gap-50'>
 						{activities.map((activity, index) => (
 							<Activity key={index} id={activity} light={true} />
 						))}

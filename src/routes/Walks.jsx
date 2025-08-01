@@ -14,7 +14,7 @@ function Walks() {
 
 				<div className='content flex-row no-wrap md-wrap align-normal width-50 margin-t-50 gap-50'>
 					<Activity id='22' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='23' image='/assets/medias/DSCF1305.min.png' />
+					{/* <Activity id='23' image='/assets/medias/DSCF1305.min.png' /> */}
 					<Activity id='24' image='/assets/medias/DSCF1305.min.png' />
 				</div>
 

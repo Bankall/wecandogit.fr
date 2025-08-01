@@ -21,6 +21,11 @@ const Activity = ({ id, image, link, light }) => {
 
 	return (
 		<div className='box flex-col'>
+			{[45, 44].includes(id) && <img src='/assets/medias/achieve.png' style={{ width: 40, alignSelf: "center" }} />}
+			{[52].includes(id) && <img src='/assets/medias/surfboard.png' style={{ width: 40, alignSelf: "center" }} />}
+			{[10, 11].includes(id) && <img src='/assets/medias/dog-nose.png' style={{ width: 40, alignSelf: "center" }} />}
+			{[12, 51].includes(id) && <img src='/assets/medias/police-dog.png' style={{ width: 40, alignSelf: "center" }} />}
+			{[28, 29, 46].includes(id) && <img src='/assets/medias/dog-training.png' style={{ width: 40, alignSelf: "center" }} />}
 			{image && <img src={image} alt={data?.label} className='squared-picture align-self-center' />}
 
 			<div className='title'>{light ? data?.label : data?.header || data?.label}</div>

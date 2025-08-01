@@ -523,6 +523,8 @@
 	img {
 		max-width: 200px;
 		border-radius: 12px;
+		aspect-ratio: 3 / 2;
+		object-fit: cover;
 	}
 
 	h3,
