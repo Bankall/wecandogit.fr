@@ -49,7 +49,7 @@ const Activity = [
 		name: "card_footer",
 		type: "string",
 		label: "Texte de bas de carte d'activité",
-		uitype: "textarea",
+		uitype: "rich-text",
 		required: false
 	},
 	{

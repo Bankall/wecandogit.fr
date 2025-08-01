@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 function Component() {
 	return (
 		<>
-			<ActivityDetail id={28} activities={[28, 29, 46, 45]} photos={["/assets/medias/DSCF1305.min.png", "/assets/medias/DSCF1305.min.png", "/assets/medias/DSCF1305.min.png"]}>
+			<ActivityDetail id={28} activities={[28, 29, 46, 45]} photos={["/assets/medias/agility1.jpg", "/assets/medias/agility2.jpg", "/assets/medias/agility3.jpg"]}>
 				<Link to={`/activites/sports-canins`} className='button small'>
 					Retour aux sports canins
 				</Link>

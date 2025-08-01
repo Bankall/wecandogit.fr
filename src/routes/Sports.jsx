@@ -15,10 +15,10 @@ function Sports() {
 				</div>
 
 				<div className='content flex-row flex-wrap md-wrap align-normal width-50 margin-t-50 gap-50'>
-					<Activity id='10' image='/assets/medias/DSCF1305.min.png' link='nosework' />
-					<Activity id='28' image='/assets/medias/DSCF1305.min.png' link='agility-hoopers' />
-					<Activity id='12' image='/assets/medias/DSCF1305.min.png' link='mantrailing' />
-					<Activity id='52' image='/assets/medias/IMG_1639-2.jpg' link='cani-paddle' />
+					<Activity id='10' image='/assets/medias/nosework.jpg' link='nosework' />
+					<Activity id='28' image='/assets/medias/agility.jpg' link='agility-hoopers' />
+					<Activity id='12' image='/assets/medias/mantrailing.jpg' link='mantrailing' />
+					<Activity id='52' image='/assets/medias/canipaddle.jpg' link='cani-paddle' />
 				</div>
 
 				<div className='flex-row margin-t-50 justify-center'>

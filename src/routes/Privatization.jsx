@@ -14,9 +14,9 @@ function Privatization() {
 				</div>
 
 				<div className='content flex-row no-wrap md-wrap align-normal width-50 margin-t-50 gap-50'>
-					<Activity id='19' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='37' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='36' image='/assets/medias/DSCF1305.min.png' />
+					<Activity id='19' image='/assets/medias/DSCF7689.JPG' />
+					<Activity id='37' image='/assets/medias/DSCF1372.JPG' />
+					<Activity id='36' image='/assets/medias/DSCF9997.JPG' />
 				</div>
 
 				<div className='flex-row margin-t-50 justify-center'>
