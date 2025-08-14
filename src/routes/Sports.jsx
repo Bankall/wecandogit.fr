@@ -19,6 +19,8 @@ function Sports() {
 					<Activity id='28' image='/assets/medias/agility.jpg' link='agility-hoopers' />
 					<Activity id='12' image='/assets/medias/mantrailing.jpg' link='mantrailing' />
 					<Activity id='52' image='/assets/medias/canipaddle.jpg' link='cani-paddle' />
+					<Activity id='32' image='/assets/medias/dog_dancing.jpg' />
+					<Activity id='36' image='/assets/medias/DSCF9997.JPG' />
 				</div>
 
 				<div className='flex-row margin-t-50 justify-center'>

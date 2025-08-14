@@ -32,7 +32,7 @@ export default function Reviews() {
 										</div>
 
 										<div className='content'>
-											<Interweave content={review.text.text} />
+											<Interweave content={review.originalText.text} />
 										</div>
 									</div>
 								);

@@ -79,8 +79,8 @@ export default function Home() {
 							<div>
 								<img src='/assets/medias/park.png' alt='education' />
 							</div>
-							<div className='center'>NOTRE PARC</div>
-							<Link to='/activites/parc-collectif'>
+							<div className='center'>LOISIRS</div>
+							<Link to='/activites/loisirs'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>
