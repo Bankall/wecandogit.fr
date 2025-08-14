@@ -27,28 +27,28 @@ const Activity = [
 	{
 		name: "header",
 		type: "string",
-		label: "Titre de la page d'activité",
+		label: "Nom de l'activité (pour la page de listing des activités)",
 		uitype: "text",
 		required: false
 	},
 	{
 		name: "product_page_short_description",
 		type: "string",
-		label: "Description courte de l'activité (pour la page produit)",
+		label: "Description courte de l'activité (pour la page de listing des activités)",
 		uitype: "rich-text",
 		required: false
 	},
 	{
 		name: "product_page_description",
 		type: "string",
-		label: "Description de l'activité (version longue pour la page produit)",
+		label: "Description de l'activité (version longue pour la page dédiée à l'activité)",
 		uitype: "rich-text",
 		required: false
 	},
 	{
 		name: "card_footer",
 		type: "string",
-		label: "Texte de bas de carte d'activité",
+		label: "Texte de bas de carte d'activité (pour la page dédiée à l'activité)",
 		uitype: "rich-text",
 		required: false
 	},

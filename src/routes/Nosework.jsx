@@ -9,6 +9,13 @@ function Component() {
 					Retour aux sports canins
 				</Link>
 			</ActivityDetail>
+
+			<span className='content flex-row no-wrap md-wrap justify-center width-12 gap-50'>
+				<img src='/assets/medias/1000094331.jpg' />
+			</span>
+			<span className='content flex-row no-wrap md-wrap justify-center width-12 gap-50 margin-t-20'>
+				<img src='/assets/medias/1000016699.png' />
+			</span>
 		</>
 	);
 }

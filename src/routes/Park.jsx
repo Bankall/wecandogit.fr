@@ -14,9 +14,9 @@ function Park() {
 				</div>
 
 				<div className='content flex-row no-wrap md-wrap align-normal width-50 margin-t-50 gap-50'>
-					<Activity id='9' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='14' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='48' image='/assets/medias/DSCF1305.min.png' />
+					<Activity id='9' image='/assets/medias/collectif.jpg' />
+					<Activity id='14' image='/assets/medias/chiens_calmes.jpg' />
+					<Activity id='48' image='/assets/medias/grands_gab.jpg' />
 				</div>
 
 				<div className='flex-row margin-t-50 justify-center'>
