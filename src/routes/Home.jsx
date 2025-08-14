@@ -50,7 +50,6 @@ export default function Home() {
 								</div>
 							</Link>
 						</div>
-
 						<div className='item'>
 							<div>
 								<img src='/assets/medias/sport.png' alt='education' />
@@ -62,7 +61,6 @@ export default function Home() {
 								</div>
 							</Link>
 						</div>
-
 						<div className='item'>
 							<div>
 								<img src='/assets/medias/nosework.png' alt='education' />
@@ -74,13 +72,36 @@ export default function Home() {
 								</div>
 							</Link>
 						</div>
-
 						<div className='item'>
 							<div>
 								<img src='/assets/medias/park.png' alt='education' />
 							</div>
-							<div className='center'>LOISIRS</div>
-							<Link to='/activites/loisirs'>
+							<div className='center'>PARC</div>
+							<Link to='/activites/parc-collectif'>
+								<div className='button'>
+									En savoir <b>+</b>
+								</div>
+							</Link>
+						</div>
+
+						<div className='item'>
+							<div>
+								<img src='/assets/medias/castle.png' alt='education' />
+							</div>
+							<div className='center'>PRIVATISATION</div>
+							<Link to='/activites/privatisations'>
+								<div className='button'>
+									En savoir <b>+</b>
+								</div>
+							</Link>
+						</div>
+
+						<div className='item'>
+							<div>
+								<img src='/assets/medias/walks.png' alt='education' />
+							</div>
+							<div className='center'>BALADES</div>
+							<Link to='/activites/balades'>
 								<div className='button'>
 									En savoir <b>+</b>
 								</div>

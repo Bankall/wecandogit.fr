@@ -78,8 +78,8 @@ const router = createBrowserRouter([
 						lazy: () => import("./routes/Privatization")
 					},
 					{
-						path: "loisirs",
-						lazy: () => import("./routes/Leisures")
+						path: "parc-collectif",
+						lazy: () => import("./routes/Park")
 					},
 					{
 						path: "privatisation-parc",
