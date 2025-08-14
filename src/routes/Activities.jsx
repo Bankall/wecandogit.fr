@@ -46,14 +46,14 @@ function Activities() {
 							</div>
 						</Link>
 
-						<Link to='/activites/privatisations' className='activity-card'>
+						{/* <Link to='/activites/privatisations' className='activity-card'>
 							<img src='/assets/medias/privatisation.jpg' alt='Activities' />
 							<div className='flex-col'>
 								<h3>Privatisation du parc</h3>
 								<p>Canniversaire, accès individuel ou terrain de sport à louer pour un moment rien qu’à vous !</p>
 								<span className='button small align-self-left margin-t-20'>En savoir plus</span>
 							</div>
-						</Link>
+						</Link> */}
 					</div>
 				</div>
 			</section>
