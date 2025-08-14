@@ -5,7 +5,7 @@ function Park() {
 	return (
 		<>
 			<HeroLight>
-				<h1>Loisirs</h1>
+				<h1>Parc collectif</h1>
 			</HeroLight>
 			<section className='all-activities' id='nos-activites'>
 				<div className='content'>

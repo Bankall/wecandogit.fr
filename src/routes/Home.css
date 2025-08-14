@@ -155,6 +155,15 @@
 	margin-top: 8px;
 }
 
+.activities .content .item {
+	min-width: 140px;
+	text-align: center;
+
+	a {
+		display: inline-block;
+	}
+}
+
 .activities h3 {
 	font-size: 23px;
 	font-family: var(--font), sans-serif;
