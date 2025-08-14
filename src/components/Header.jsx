@@ -99,6 +99,9 @@ export default function Header() {
 								<NavLink to='/activites'>Nos activités</NavLink>
 							</li>
 							<li>
+								<NavLink to='/nos-eleves'>Nos élèves</NavLink>
+							</li>
+							<li>
 								<NavLink to='/formules-et-tarifs'>Formules et tarifs</NavLink>
 							</li>
 						</ul>

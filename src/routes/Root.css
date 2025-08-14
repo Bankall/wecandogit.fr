@@ -410,13 +410,27 @@ button.inverted-colors:focus {
 	width: 50%;
 }
 
+.flex-row.width-12 > * {
+	width: 12%;
+}
+
 .flex-row.width-50 > * {
 	width: calc(50% - 25px);
 	min-width: 0;
 }
 
-.flex-row.width-33 > * {
+.flex-row.width-33.gap-25 > * {
+	width: calc(33.3333% - 25px);
+	max-width: none;
+}
+
+.flex-row.width-33.gap-50 > * {
 	width: calc(33.3333% - 50px);
+}
+
+.flex-row.width-25 > * {
+	width: calc(25% - 25px);
+	max-width: none;
 }
 
 .gap-5 {
@@ -437,6 +451,10 @@ button.inverted-colors:focus {
 
 .gap-50 {
 	gap: 50px;
+}
+
+.gap-33 {
+	gap: 33px;
 }
 
 .flex-row span.price {
@@ -749,7 +767,9 @@ input:focus {
 		flex-direction: column;
 	}
 
-	section .content > .flex-row.width-50 > * {
+	section .content > .flex-row.width-50 > *,
+	section .content > .flex-row.width-33 > *,
+	section .content > .flex-row.width-25 > * {
 		width: 100%;
 	}
 

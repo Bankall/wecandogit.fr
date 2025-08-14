@@ -20,12 +20,12 @@ function Education() {
 					<Activity id='31' image='/assets/medias/DSCF1305.min.png' link='classe-ado-adulte' />
 					<Activity id='32' image='/assets/medias/DSCF1305.min.png' link='atelier-educatif' />
 					<Activity id='42' image='/assets/medias/DSCF1305.min.png' link='suivi-individuel' /> */}
-					<Activity id='13' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='18' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='30' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='31' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='32' image='/assets/medias/DSCF1305.min.png' />
-					<Activity id='42' image='/assets/medias/DSCF1305.min.png' />
+					<Activity id='13' image='/assets/medias/soins_co.jpg' />
+					<Activity id='18' image='/assets/medias/bilan.jpg' />
+					<Activity id='30' image='/assets/medias/maternelle.jpg' />
+					<Activity id='31' image='/assets/medias/ado.jpg' />
+					<Activity id='32' image='/assets/medias/dog_dancing.jpg' />
+					<Activity id='42' image='/assets/medias/suivi_individuel.jpg' />
 				</div>
 
 				<div className='flex-row margin-t-50 justify-center'>

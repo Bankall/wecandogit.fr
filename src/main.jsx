@@ -150,6 +150,10 @@ const router = createBrowserRouter([
 				lazy: () => import("./routes/ListAllActivities")
 			},
 			{
+				path: "/nos-eleves",
+				lazy: () => import("./routes/Students")
+			},
+			{
 				path: "/formules-et-tarifs/:menu?",
 				lazy: () => import("./routes/Packages")
 			},

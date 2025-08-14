@@ -272,6 +272,14 @@
 	border-radius: 5px;
 }
 
+.squared-picture.bounce {
+	transition: transform 0.2s ease-in-out;
+}
+
+.squared-picture.bounce:hover {
+	transform: scale(1.05);
+}
+
 @media screen and (max-width: 1650px) {
 	.cards {
 		grid-template-columns: auto;

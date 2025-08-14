@@ -258,7 +258,7 @@ export default function Agenda() {
 						Masquer les créneaux complets
 					</label>
 					<label className='flex-row'>
-						<input type='checkbox' name='disable-filter' defaultChecked={false} onChange={saveFilters} />
+						<input type='checkbox' name='disable-filter' defaultChecked={filters.disable} onChange={saveFilters} />
 						Désactiver les filtres
 					</label>
 				</div>

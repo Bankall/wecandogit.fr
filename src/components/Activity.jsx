@@ -47,14 +47,14 @@ const Activity = ({ id, image, link, light }) => {
 					{data?.duration && (
 						<span className='flex-row gap-5'>
 							<span className='icon clock-icon'></span>
-							Durée: {formatDuration(data.duration)}
+							Durée : {formatDuration(data.duration)}
 						</span>
 					)}
 
 					{data?.price && (
 						<span className='flex-row gap-5'>
 							<span className='icon shopping-icon'></span>
-							{data.price}€ la séance
+							{data.price} € la séance
 						</span>
 					)}
 				</div>

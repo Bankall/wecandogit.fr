@@ -4,7 +4,7 @@ function Walks() {
 	return (
 		<>
 			<HeroLight>
-				<h1>Balades collectives &&nbsp;éducatives</h1>
+				<h1>Balades collectives</h1>
 			</HeroLight>
 			<section className='all-activities' id='nos-activites'>
 				<div className='content'>
@@ -13,9 +13,9 @@ function Walks() {
 				</div>
 
 				<div className='content flex-row no-wrap md-wrap align-normal width-50 margin-t-50 gap-50'>
-					<Activity id='22' image='/assets/medias/DSCF1305.min.png' />
+					<Activity id='22' image='/assets/medias/balades_co.jpg' />
 					{/* <Activity id='23' image='/assets/medias/DSCF1305.min.png' /> */}
-					<Activity id='24' image='/assets/medias/DSCF1305.min.png' />
+					<Activity id='24' image='/assets/medias/balades_calmes.jpg' />
 				</div>
 
 				<div className='flex-row margin-t-50 justify-center'>
