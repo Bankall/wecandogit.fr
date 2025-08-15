@@ -36,6 +36,7 @@ function Students() {
 						<img src='/assets/medias/students/woodie.jpg' className='squared-picture align-self-center bounce' alt='woodie' />
 						<img src='/assets/medias/students/tayka.jpg' className='squared-picture align-self-center bounce' alt='tayka' />
 						<img src='/assets/medias/students/volt.jpg' className='squared-picture align-self-center bounce' alt='volt' />
+						<img src='/assets/medias/students/pongo.jpg' className='squared-picture align-self-center bounce' alt='pongo' />
 					</div>
 				</div>
 			</section>
