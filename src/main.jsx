@@ -250,6 +250,16 @@ const router = createBrowserRouter([
 				lazy: () => import("./routes/GenerateNewPassword")
 			}
 		]
+	},
+	{
+		path: "/maintenance",
+		errorElement: <ErrorPage />,
+		children: [
+			{
+				path: "",
+				lazy: async () => import("./routes/Maintenance")
+			}
+		]
 	}
 ]);
 
