@@ -729,6 +729,7 @@ router.route("/notification").get(async (req, res) => {
 				end package_usage
 			FROM notification n
 			JOIN user u on u.id = n.id_user
+			WHERE n.when > date_sub(current_timestamp, interval 1 month)
 			ORDER BY n.id DESC`,
 			[],
 			null,
