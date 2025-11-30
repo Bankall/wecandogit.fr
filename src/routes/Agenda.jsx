@@ -215,6 +215,7 @@ export default function Agenda() {
 	};
 
 	useEffect(() => {
+		let fetchTimeout;
 		const buttons = Array.from(document.querySelectorAll(".fc-button"));
 		buttons.forEach(button => {
 			button.addEventListener("click", () => {
@@ -224,12 +225,16 @@ export default function Agenda() {
 
 		const fetch = () => {
 			fetchEvents(setEvents);
-			setTimeout(fetch, 5000);
+			fetchTimeout = setTimeout(fetch, 5000);
 		};
 
 		fetch();
 		window.addEventListener("reservations-made", fetch);
-		return () => window.removeEventListener("reservations-made", fetch);
+
+		return () => {
+			window.removeEventListener("reservations-made", fetch);
+			clearTimeout(fetchTimeout);
+		};
 	}, []);
 
 	useEffect(() => {

@@ -166,6 +166,22 @@ function Cart() {
 										<ListItem item={item} key={index} setError={setError} />
 									))}
 
+									{trainer.tax_excluded > 0 && (
+										<>
+											<div className='flex-row row space-between margin-t-20'>
+												<span className='uppercase'>TOTAL NET HT: </span>
+												<span>{trainer.tax_excluded}€</span>
+											</div>
+										</>
+									)}
+									{trainer.vat > 0 && (
+										<>
+											<div className='flex-row row space-between margin-t-20'>
+												<span className='uppercase'>TVA (20%): </span>
+												<span>{trainer.vat}€</span>
+											</div>
+										</>
+									)}
 									<div className='flex-row row space-between margin-t-20'>
 										<span className='uppercase'>Total a payer maintenant: </span>
 										<span>{trainer.total}€</span>

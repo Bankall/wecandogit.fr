@@ -10,8 +10,8 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 export default function AccountInfo() {
 	const [formData, setFormData] = useState(false);
 	const { id } = useParams();
-	const navigate = useNavigate();
 	const { hash } = useLocation();
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		const fetch = async () => {

@@ -325,6 +325,15 @@ const UserProfile = [
 		}
 	},
 	{
+		name: "vat_applicable",
+		type: "string",
+		label: "Facturer la TVA sur mes prestations",
+		uitype: "checkbox",
+		acl: {
+			is_trainer: true
+		}
+	},
+	{
 		name: "newsletter_optin",
 		type: "string",
 		label: "Recevoir le planning de la semaine/le mois par email",

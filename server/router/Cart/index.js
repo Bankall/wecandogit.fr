@@ -254,6 +254,16 @@ const sortCartItemByTrainers = async req => {
 			}
 		}
 
+		for (const row in byTrainers) {
+			const trainer = byTrainers[row];
+			const VATApplicable = trainers.result.find(t => t.id === trainer.id)?.vat_applicable;
+
+			if (VATApplicable) {
+				trainer.tax_excluded = parseFloat((trainer.total / 1.2).toFixed(2));
+				trainer.vat = parseFloat((trainer.total - trainer.tax_excluded).toFixed(2));
+			}
+		}
+
 		return byTrainers;
 	} catch (err) {
 		errorHandler({ err, req });
@@ -345,6 +355,9 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 		const session = await stripe.checkout.sessions.create({
 			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}`,
 			line_items: lineItems,
+			automatic_tax: {
+				enabled: true
+			},
 			mode: "payment"
 		});
 
