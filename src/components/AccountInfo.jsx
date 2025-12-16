@@ -11,6 +11,7 @@ export default function AccountInfo() {
 	const [formData, setFormData] = useState(false);
 	const { id } = useParams();
 	const { hash } = useLocation();
+
 	const navigate = useNavigate();
 
 	useEffect(() => {

@@ -40,10 +40,12 @@ const updateCartItem = async (setError, action, item, value) => {
 	}
 };
 
-const ListItem = ({ item, setError }) => {
+const ListItem = ({ item, setError, unavailableSlots }) => {
+	const isAvailable = unavailableSlots?.find(slot => slot.id === item.id) ? false : true;
+
 	return (
 		<div className='row flex-col flex-stretch'>
-			<span className='flex-row'>
+			<span className={`flex-row ${!isAvailable ? "error-feedback" : ""}`}>
 				<span className='flex-grow'>{item.label}</span>
 				<span className='flex-row'>
 					<span className='price'>{item.price}€</span>
@@ -103,18 +105,109 @@ const fetchCartItems = async setCartItems => {
 		console.error(err);
 	}
 };
+
+const CartByTrainer = ({ trainer, disabled }) => {
+	const BACKEND_BASE_URL = import.meta.env.VITE_API_ENDPOINT;
+	const [error, setError] = useState("");
+	const [unavailableSlots, setUnavailableSlots] = useState([]);
+
+	const checkAvailability = async url => {
+		try {
+			const { data } = await axios.get("/get-all-slots");
+			const unavailableSlots = [];
+
+			trainer.slot.forEach(slot => {
+				const slotAvailable = data.result.find(availableSlot => {
+					if (availableSlot.id_slot === slot.id) {
+						return availableSlot.spots > (availableSlot.reservations || []).length;
+					}
+				});
+
+				if (!slotAvailable) {
+					unavailableSlots.push(slot);
+				}
+			});
+
+			if (!unavailableSlots.length) {
+				return (window.location.href = url);
+			}
+
+			setError(`Les créneaux suivants ne sont plus disponibles: ${unavailableSlots.map(slot => slot.label).join(", ")}`);
+			setUnavailableSlots(unavailableSlots);
+		} catch (err) {
+			console.error(err);
+		}
+	};
+
+	return (
+		<div className={`box ${disabled ? "disabled" : ""}`} style={{ maxWidth: "800px" }} key={trainer.id}>
+			<div className='title'>{trainer.firstname}</div>
+
+			{trainer.package.map((item, index) => (
+				<ListItem item={item} key={index} setError={setError} />
+			))}
+
+			{trainer.slot.map((item, index) => (
+				<ListItem item={item} key={index} setError={setError} unavailableSlots={unavailableSlots} />
+			))}
+
+			{trainer.tax_excluded > 0 && (
+				<>
+					<div className='flex-row row space-between margin-t-20'>
+						<span className='uppercase'>TOTAL NET HT: </span>
+						<span>{trainer.tax_excluded}€</span>
+					</div>
+				</>
+			)}
+
+			{trainer.vat > 0 && (
+				<>
+					<div className='flex-row row space-between margin-t-20'>
+						<span className='uppercase'>TVA (20%): </span>
+						<span>{trainer.vat}€</span>
+					</div>
+				</>
+			)}
+
+			<div className='flex-row row space-between margin-t-20'>
+				<span className='uppercase'>Total a payer maintenant: </span>
+				<span>{trainer.total}€</span>
+			</div>
+
+			<div className='margin-t-20 right'>
+				{trainer.total > 0 ? (
+					<a
+						className=''
+						onClick={() => {
+							checkAvailability(`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`);
+						}}>
+						<button>Payer</button>
+					</a>
+				) : (
+					<a
+						className=''
+						onClick={() => {
+							checkAvailability(`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`);
+						}}>
+						<button>Réserver</button>
+					</a>
+				)}
+			</div>
+
+			<div className='error-feedback margin-tb-20'>{error}</div>
+		</div>
+	);
+};
+
 function Cart() {
 	const [cartItems, setCartItems] = useState({});
-	const BACKEND_BASE_URL = import.meta.env.VITE_API_ENDPOINT;
-
-	const [error, setError] = useState("");
-
 	useEffect(() => {
 		const fetch = () => {
 			fetchCartItems(setCartItems);
 		};
 
 		fetch();
+
 		window.addEventListener("cart-modified", fetch);
 		return () => window.removeEventListener("cart-modified", fetch);
 	}, []);
@@ -153,58 +246,7 @@ function Cart() {
 								</div>
 							</div>
 						) : null}
-						{cartItems.data?.result?.length ? (
-							cartItems.data?.result?.map(trainer => (
-								<div className={`box ${Object.values(cartItems.data.notice).length ? "disabled" : ""}`} style={{ maxWidth: "800px" }} key={trainer.id}>
-									<div className='title'>{trainer.firstname}</div>
-
-									{trainer.package.map((item, index) => (
-										<ListItem item={item} key={index} setError={setError} />
-									))}
-
-									{trainer.slot.map((item, index) => (
-										<ListItem item={item} key={index} setError={setError} />
-									))}
-
-									{trainer.tax_excluded > 0 && (
-										<>
-											<div className='flex-row row space-between margin-t-20'>
-												<span className='uppercase'>TOTAL NET HT: </span>
-												<span>{trainer.tax_excluded}€</span>
-											</div>
-										</>
-									)}
-									{trainer.vat > 0 && (
-										<>
-											<div className='flex-row row space-between margin-t-20'>
-												<span className='uppercase'>TVA (20%): </span>
-												<span>{trainer.vat}€</span>
-											</div>
-										</>
-									)}
-									<div className='flex-row row space-between margin-t-20'>
-										<span className='uppercase'>Total a payer maintenant: </span>
-										<span>{trainer.total}€</span>
-									</div>
-
-									<div className='margin-t-20 right'>
-										{trainer.total > 0 ? (
-											<a className='' href={`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`}>
-												<button>Payer</button>
-											</a>
-										) : (
-											<a className='' href={`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`}>
-												<button>Réserver</button>
-											</a>
-										)}
-									</div>
-
-									<div className='error-feedback margin-tb-20'>{error}</div>
-								</div>
-							))
-						) : (
-							<div className='box'>Votre panier est vide</div>
-						)}
+						{cartItems.data?.result?.length ? cartItems.data?.result?.map(trainer => <CartByTrainer key={trainer.id} trainer={trainer} disabled={Object.values(cartItems.data.notice).length} />) : <div className='box'>Votre panier est vide</div>}
 					</div>
 				</div>
 			</section>
