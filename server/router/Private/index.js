@@ -824,9 +824,8 @@ router.route("/payment_history").get(async (req, res) => {
 		res.send(
 			payments.result.map(payment => {
 				payment.label = `${payment.firstname} ${payment.lastname} - ${payment.amount / 100}€ - ${payment.status}`;
-				console.log("-----------");
-				console.log(payment.details);
 				payment.details = JSON.parse(payment.details);
+
 				return payment;
 			})
 		);

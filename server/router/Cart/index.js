@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { Stripe } from "stripe";
 import { errorHandler } from "../../lib/utils.js";
+import MailSender from "../../lib/mail-sender/index.cjs";
+
 import config from "config";
 
 let backend;
@@ -353,7 +355,7 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 
 		const stripe = Stripe(stripe_sk);
 		const session = await stripe.checkout.sessions.create({
-			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}`,
+			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}/{CHECKOUT_SESSION_ID}`,
 			line_items: lineItems,
 			automatic_tax: {
 				enabled: true
@@ -363,6 +365,18 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 
 		req.session.stripe_session_id = session.id;
 		req.session.stripe_session_cart = cartItems;
+
+		await backend.post({
+			table: "payment_activity",
+			body: {
+				session_id: session.id,
+				id_user: req.session.user_id,
+				id_trainer: req.params.idTrainer,
+				details: JSON.stringify(cartItems)
+			}
+		});
+
+		await handleReservation(req, req.session.stripe_session_cart, session.id);
 
 		res.redirect(303, session.url);
 	} catch (err) {
@@ -408,16 +422,18 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					item.payment_type = parseInt(item.payment_type, 10);
 				}
 
-				await backend.post({
+				const reservation = await backend.post({
 					table: "reservation",
 					body: {
 						id_slot: item.id,
 						id_dog: item.id_dog,
-						paid: item.payment_type !== "later",
+						paid: !["direct", "later"].includes(item.payment_type),
 						payment_type: typeof item.payment_type === "number" ? "package" : item.payment_type,
 						payment_details: typeof item.payment_type === "number" ? item.payment_type : stripe_id
 					}
 				});
+
+				item.reservation_id = reservation.result.id;
 
 				await backend.notify({
 					who: req.session.user_id,
@@ -430,16 +446,18 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 			}
 
 			if (item.type === "package") {
-				await backend.post({
+				const user_package = await backend.post({
 					table: "user_package",
 					body: {
 						id_package: item.id,
 						id_user: req.session.user_id,
-						paid: item.payment_type !== "later",
+						paid: !["direct", "later"].includes(item.payment_type),
 						payment_type: item.payment_type,
 						payment_details: stripe_id
 					}
 				});
+
+				item.package_id = user_package.result.id;
 
 				await backend.notify({
 					who: req.session.user_id,
@@ -452,6 +470,35 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 		}
 
 		req.session.cart = req.session.cart.filter(item => !itemToReserve.some(paid_item => paid_item.id === item.id && paid_item.type === item.type));
+		req.session.item_to_pay = itemToReserve.filter(item => item.payment_type === "direct");
+
+		const user = await backend.get({
+			table: "user",
+			id: req.session.user_id
+		});
+
+		const content = `<p>Bonjour ${user.result.firstname},</p>
+		<p>Nous vous confirmons ${itemToReserve.length > 1 ? "vos réservations" : "votre réservation"}, voici le détail:</p>
+		<p>
+			<ul>
+				${itemToReserve.map(item => `<li>${item.label} - Paiement: ${typeof item.payment_type === "number" ? "Formule" : item.payment_type === "direct" ? "En ligne" : "En personne"}</li>`).join("")}
+			</ul>
+		</p>
+		<p></p>
+		<p>A bientôt !</p>
+		<br/><br/>
+		<p style='color: #ED4337;'>Attention, pour tout créneau au parc de loisirs, merci de laisser vos chiens patienter dans votre voiture jusqu'à ce que l'on vienne vous chercher pour votre activité, et de ne pas les promener sur le parking ni à proximité du jardin de nos voisins.</p>`;
+
+		await MailSender.send({
+			subject: "Confirmation de commande",
+			email: user.result.email,
+			macros: {
+				PRE_HEADER: "C'est reservé !",
+				CONTENT_HTML: content,
+				EMAIL_TYPE: "reminder",
+				EMAIL: user.result.email
+			}
+		});
 
 		return true;
 	} catch (err) {
@@ -460,12 +507,12 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 	}
 };
 
-router.route("/payment/success/:idTrainer").all(async (req, res) => {
+router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) => {
 	try {
 		const trainer = await backend.get({
 			table: "user",
 			query: {
-				id: req.params.idTrainer
+				id: req.params.id_trainer
 			}
 		});
 
@@ -476,7 +523,7 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 		}
 
 		const stripe = Stripe(stripe_sk);
-		const session = await stripe.checkout.sessions.retrieve(req.session.stripe_session_id);
+		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
 
 		await backend.post({
 			table: "payment_history",
@@ -485,7 +532,7 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 				payment_intent: session.payment_intent,
 				amount: session.amount_total,
 				id_user: req.session.user_id,
-				id_trainer: req.params.idTrainer,
+				id_trainer: req.params.id_trainer,
 				status: session.status,
 				details: JSON.stringify(req.session.stripe_session_cart)
 			}
@@ -495,9 +542,34 @@ router.route("/payment/success/:idTrainer").all(async (req, res) => {
 			return res.redirect("/cart#payment-error");
 		}
 
-		const allReserved = await handleReservation(req, req.session.stripe_session_cart, session.id);
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
-	} catch (e) {
+		for await (const item of req.session.item_to_pay) {
+			if (item.type === "slot") {
+				await backend.put({
+					table: "reservation",
+					id: item.reservation_id,
+					body: {
+						paid: 1,
+						payment_details: session.id
+					}
+				});
+			}
+
+			if (item.type === "package") {
+				await backend.put({
+					table: "user_package",
+					id: item.package_id,
+					body: {
+						paid: 1,
+						payment_details: session.id
+					}
+				});
+			}
+
+			req.session.item_to_pay = [];
+		}
+
+		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account"));
+	} catch (err) {
 		errorHandler({ err, req, res });
 	}
 });
