@@ -776,6 +776,8 @@ router.route("/notification").get(async (req, res) => {
 					if (notification.paid) {
 						notification.payment_type = notification.how !== "direct" ? "package" : notification.how;
 					}
+				} else {
+					delete notification.paid;
 				}
 
 				if (notification.package_usage) {
