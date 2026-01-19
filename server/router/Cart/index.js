@@ -178,7 +178,7 @@ const getSlotDetail = async (req, slot) => {
 				dogs.result && dogs.result.length
 					? dogs.result.map(dog => {
 							return { label: dog.label, id: dog.id };
-					  })
+						})
 					: []
 		};
 	} catch (err) {
@@ -441,7 +441,8 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					what: "slot",
 					how: item.payment_type,
 					id_what: item.id,
-					package_usage
+					package_usage,
+					detail_what: item.reservation_id
 				});
 			}
 
@@ -464,7 +465,8 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					action: "booked",
 					what: "package",
 					how: item.payment_type,
-					id_what: item.id
+					id_what: item.id,
+					detail_what: item.package_id
 				});
 			}
 		}

@@ -726,9 +726,13 @@ router.route("/notification").get(async (req, res) => {
 				end how,
                 case when n.package_usage is not null then concat(n.package_usage, "/", (select p.number_of_session from package p join user_package up on up.id_package = p.id where up.id = n.how))
 					else null
-				end package_usage
+				end package_usage,
+				coalesce(r.paid, up.paid, 1) paid
+                
 			FROM notification n
 			JOIN user u on u.id = n.id_user
+			LEFT OUTER JOIN reservation r on r.id = n.detail_what
+			LEFT OUTER JOIN user_package up on up.id = n.detail_what
 			WHERE n.when > date_sub(current_timestamp, interval 1 month)
 			ORDER BY n.id DESC`,
 			[],
@@ -767,7 +771,7 @@ router.route("/notification").get(async (req, res) => {
 				notification.label = `<b>${notification.who}</b> ${formatAction(notification)} ${notification.type === "slot" ? "le créneau" : "la formule"} <b>${notification.what}</b> ${notification.dog ? `pour <b>${notification.dog}</b>` : ""} ${formatPayment(notification)}`;
 
 				if (notification.action === "booked") {
-					notification.paid = notification.how !== "later";
+					notification.paid = notification.how === "direct" ? notification.paid : notification.how !== "later";
 
 					if (notification.paid) {
 						notification.payment_type = notification.how !== "direct" ? "package" : notification.how;

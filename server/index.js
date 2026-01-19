@@ -166,7 +166,7 @@ backend.start(() => {
 		}
 	};
 
-	backend.notify = async ({ who, action, what, how, id_what, package_usage, dog }) => {
+	backend.notify = async ({ who, action, what, how, id_what, detail_what, package_usage, dog }) => {
 		backend.post({
 			table: "notification",
 			body: {
@@ -175,6 +175,7 @@ backend.start(() => {
 				what,
 				how,
 				id_what,
+				detail_what,
 				dog,
 				package_usage
 			}

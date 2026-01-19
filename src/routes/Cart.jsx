@@ -177,13 +177,13 @@ const CartByTrainer = ({ trainer, disabled }) => {
 			<div className='margin-t-20'>
 				{trainer.total > 0 ? (
 					<>
-						<span style={{ fontSize: "0.8em" }}>La reservation sera validée au moment ou vous cliquez sur "Payer"</span>
+						<span style={{ fontSize: "0.8em" }}>La reservation sera validée au moment où vous cliquez sur le bouton ci-dessous</span>
 
 						<a
 							onClick={() => {
 								checkAvailability(`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`);
 							}}>
-							<button className='margin-t-10'>Payer</button>
+							<button className='margin-t-10'>Confirmer et Payer</button>
 						</a>
 					</>
 				) : (
