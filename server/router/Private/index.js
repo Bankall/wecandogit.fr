@@ -727,7 +727,10 @@ router.route("/notification").get(async (req, res) => {
                 case when n.package_usage is not null then concat(n.package_usage, "/", (select p.number_of_session from package p join user_package up on up.id_package = p.id where up.id = n.how))
 					else null
 				end package_usage,
-				coalesce(r.paid, up.paid, 1) paid
+				case 
+					when n.what = "slot" then r.paid
+					when n.what = "package" then up.paid
+				end paid
                 
 			FROM notification n
 			JOIN user u on u.id = n.id_user
