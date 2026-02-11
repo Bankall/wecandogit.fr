@@ -102,6 +102,9 @@ export default function Header() {
 								<a href='https://shopagility.wecandogit.com/'>Le shop agility</a>
 							</li>
 							<li>
+								<a href='https://nosework.wecandogit.com/'>Cours en ligne de nosework</a>
+							</li>
+							<li>
 								<NavLink to='/nos-eleves'>Nos élèves</NavLink>
 							</li>
 							<li>
