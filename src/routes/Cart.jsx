@@ -183,7 +183,7 @@ const CartByTrainer = ({ trainer, disabled }) => {
 							onClick={() => {
 								checkAvailability(`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`);
 							}}>
-							<button className='margin-t-10'>Confirmer et Payer</button>
+							<button className='margin-t-10'>Confirmer mes réservations</button>
 						</a>
 					</>
 				) : (

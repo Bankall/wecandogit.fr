@@ -21,7 +21,10 @@ header {
 	box-shadow: none;
 	padding: 25px 50px;
 	background: rgba(255, 255, 255, 0);
-	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed-faster) ease-in, background var(--transition-speed-faster) ease-in;
+	transition:
+		padding var(--transition-speed) ease-in,
+		box-shadow var(--transition-speed-faster) ease-in,
+		background var(--transition-speed-faster) ease-in;
 }
 
 header .flex-row {
@@ -33,7 +36,10 @@ header .flex-row {
 	box-shadow: var(--box-shadows) 0 5px 25px 0;
 	padding: 10px 20px;
 	background: rgba(255, 255, 255, 0.8);
-	transition: padding var(--transition-speed) ease-in, box-shadow var(--transition-speed) ease-in var(--transition-speed), background var(--transition-speed) ease-in;
+	transition:
+		padding var(--transition-speed) ease-in,
+		box-shadow var(--transition-speed) ease-in var(--transition-speed),
+		background var(--transition-speed) ease-in;
 }
 
 .menu-opened header {
@@ -172,7 +178,9 @@ header button:hover {
 	position: relative;
 	height: 2px;
 	background-color: #282f36;
-	transition: transform var(--transition-speed) ease-in, top var(--transition-speed) ease-in;
+	transition:
+		transform var(--transition-speed) ease-in,
+		top var(--transition-speed) ease-in;
 	transform-origin: 50% 1px;
 	top: 0;
 }
@@ -191,7 +199,7 @@ header button:hover {
 	top: -8px;
 }
 
-@media screen and (max-width: 900px) {
+@media screen and (max-width: 1050px) {
 	.logo img {
 		height: 100px;
 	}

@@ -170,7 +170,16 @@ const router = createBrowserRouter([
 			},
 			{
 				path: "/cart",
-				lazy: () => import("./routes/Cart")
+				children: [
+					{
+						path: "",
+						lazy: () => import("./routes/Cart")
+					},
+					{
+						path: "success/:id_trainer/:session_id",
+						lazy: () => import("./routes/CartSuccess")
+					}
+				]
 			},
 			{
 				path: "/account",

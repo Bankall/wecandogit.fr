@@ -1,6 +1,8 @@
 import { Router } from "express";
-import MailSender from "../../lib/mail-sender/index.cjs";
+import { Stripe } from "stripe";
 import { errorHandler } from "../../lib/utils.js";
+
+import MailSender from "../../lib/mail-sender/index.cjs";
 let backend;
 
 const router = Router();
@@ -11,11 +13,6 @@ router.route("/ping").get((req, res) => {
 const Cron = _backend => {
 	backend = _backend;
 	return router;
-};
-
-const formatDate = date => {
-	date = new Date(date.replace(/-/g, "/"));
-	return date.toLocaleString().slice(0, 16);
 };
 
 router.route("/send-reminder-mail").get(async (req, res) => {
@@ -79,6 +76,96 @@ router.route("/send-reminder-mail").get(async (req, res) => {
 
 		await Promise.all(promises);
 		res.send("Reminders sent");
+	} catch (err) {
+		errorHandler({ err, res, req });
+	}
+});
+
+router.route("/check-missing-payments").get(async (req, res) => {
+	try {
+		const stripeSkByTrainer = {};
+		const missingPayments = await backend.handleQuery(
+			`select 
+				pa.id_trainer,
+				pa.session_id,
+				pa.id_user,
+				pa.details
+			from 
+				payment_activity pa
+			left outer join payment_history ph on pa.session_id = ph.session_id
+			where ph.session_id is null
+			order by pa.id desc`,
+			null,
+			null,
+			true
+		);
+
+		if (!missingPayments.result || !missingPayments.result.length) {
+			return res.send("No missing payments");
+		}
+
+		for await (const payment of missingPayments.result) {
+			const { id_trainer, session_id, details, id_user } = payment;
+
+			if (!stripeSkByTrainer[id_trainer]) {
+				const trainer = await backend.get({
+					table: "user",
+					query: {
+						id: id_trainer
+					}
+				});
+
+				const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
+				stripeSkByTrainer[id_trainer] = stripe_sk;
+			}
+
+			const stripe_sk = stripeSkByTrainer[id_trainer];
+			const stripe = Stripe(stripe_sk);
+			const session = await stripe.checkout.sessions.retrieve(session_id);
+
+			const { amount_total, payment_status, status } = session;
+
+			if (payment_status === "paid") {
+				await backend.post({
+					table: "payment_history",
+					body: {
+						session_id,
+						details,
+						id_trainer,
+						id_user,
+						status,
+						amount: amount_total
+					}
+				});
+
+				const detailsParsed = JSON.parse(details);
+				for await (const item of detailsParsed) {
+					const { type, reservation_id, package_id } = item;
+
+					if (type === "slot" && reservation_id) {
+						await backend.put({
+							table: "reservation",
+							id: reservation_id,
+							body: {
+								paid: 1
+							}
+						});
+					}
+
+					if (type === "package" && package_id) {
+						await backend.put({
+							table: "user_package",
+							id: package_id,
+							body: {
+								paid: 1
+							}
+						});
+					}
+				}
+			}
+		}
+
+		res.send("Done");
 	} catch (err) {
 		errorHandler({ err, res, req });
 	}

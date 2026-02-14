@@ -366,6 +366,7 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 		req.session.stripe_session_id = session.id;
 		req.session.stripe_session_cart = cartItems;
 
+		await handleReservation(req, req.session.stripe_session_cart, session.id);
 		await backend.post({
 			table: "payment_activity",
 			body: {
@@ -376,12 +377,25 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 			}
 		});
 
-		await handleReservation(req, req.session.stripe_session_cart, session.id);
-
-		res.redirect(303, session.url);
+		req.session.stripe_session_url = session.url;
+		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}/`);
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}
+});
+
+router.route("/stripe-redirect/:id_trainer/:session_id").get(async (req, res) => {
+	const trainer = await backend.get({
+		table: "user",
+		query: {
+			id: req.params.id_trainer
+		}
+	});
+
+	const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
+	const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
+
+	res.redirect(303, session.url || req.session.stripe_session_url);
 });
 
 const handleReservation = async (req, itemToReserve, stripe_id) => {
