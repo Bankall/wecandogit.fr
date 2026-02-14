@@ -221,7 +221,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 											</span>
 										)}
 
-										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{item.paid ? `Réglé${item.payment_type === "package" ? " avec une formule" : item.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
+										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{item.paid ? `Réglé${item.payment_type === "package" ? " avec une formule" : item.payment_type === "direct" ? " via Stripe" : ""}` : item.how === "direct" ? "En attente de paiement" : "Non réglé"}</span>}
 
 										{allowedActions.includes("book-reservation") && (
 											<Link to={`/account/${type}/book/${item.id}`}>
@@ -345,7 +345,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 									) : null}
 								</div>
 							);
-					  })
+						})
 					: "Aucun élément pour l'instant"}
 			</div>
 		</>

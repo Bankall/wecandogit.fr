@@ -588,8 +588,8 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 		}
 
 		const cartItems = (allCartItems[req.params.idTrainer].slot || []).concat(allCartItems[req.params.idTrainer].package);
-
 		const allReserved = await handleReservation(req, cartItems);
+
 		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
 	} catch (err) {
 		errorHandler({ err, req });
