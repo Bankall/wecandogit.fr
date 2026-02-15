@@ -83,6 +83,7 @@ router.route("/send-reminder-mail").get(async (req, res) => {
 
 router.route("/check-missing-payments").get(async (req, res) => {
 	try {
+		const response = [];
 		const stripeSkByTrainer = {};
 		const missingPayments = await backend.handleQuery(
 			`select 
@@ -163,9 +164,16 @@ router.route("/check-missing-payments").get(async (req, res) => {
 					}
 				}
 			}
+
+			const user = await backend.get({
+				table: "user",
+				id: id_user
+			});
+
+			response.push([`${user.result.firstname} ${user.result.lastname}`, amount_total / 100, payment_status, status, session_id].join(" - "));
 		}
 
-		res.send("Done");
+		res.send(response.join("<br/>"));
 	} catch (err) {
 		errorHandler({ err, res, req });
 	}
