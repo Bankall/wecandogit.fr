@@ -36,7 +36,7 @@ export const Component = () => {
 								</p>
 								<p>Ce que vous venez de sélectionner est déjà enregistré dans votre compte.</p>
 
-								<p className='margin-b-20'>En cas de problème de paiement, vous pourrez finaliser le règlement depuis votre espace client.</p>
+								<p className='margin-b-20'>En cas de problème de paiement, veuillez nous contacter.</p>
 							</div>
 
 							<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect/${id_trainer}/${session_id}`}>
