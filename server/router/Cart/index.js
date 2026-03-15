@@ -529,6 +529,34 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 	}
 };
 
+router.route("/get-session-status/:id_trainer/:session_id").get(async (req, res) => {
+	try {
+		const trainer = await backend.get({
+			table: "user",
+			query: {
+				id: req.params.id_trainer
+			}
+		});
+
+		const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
+
+		if (!stripe_sk) {
+			throw "Payment non configuré";
+		}
+
+		const stripe = Stripe(stripe_sk);
+		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
+
+		res.send({
+			status: session.status,
+			payment_status: session.payment_status,
+			redirect: req.session.cart.length ? "/cart" : "/account"
+		});
+	} catch (err) {
+		errorHandler({ err, req, req });
+	}
+});
+
 router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) => {
 	try {
 		const trainer = await backend.get({
@@ -590,7 +618,7 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 			req.session.item_to_pay = [];
 		}
 
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account"));
+		res.redirect(config.get("FRONT_URI") + "/close");
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

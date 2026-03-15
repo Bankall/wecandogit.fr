@@ -1,11 +1,17 @@
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
+import { useFetch } from "../hooks/useFetch";
 
 export const Component = () => {
 	const { id_trainer, session_id } = useParams();
+	const { data } = useFetch({
+		url: `/cart/get-session-status/${id_trainer}/${session_id}`,
+		interval: 1
+	});
 
 	return (
 		<>
 			<section className='cart' id='a-propos'>
+				{data && data.payment_status === "paid" && <Navigate to={data.redirect} />}
 				<div className='content'>
 					<h2>Confirmation</h2>
 					<div className='widgets flex-col center'>
