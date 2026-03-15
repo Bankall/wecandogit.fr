@@ -49,7 +49,7 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 							</Button>
 						))}
 
-					{false && data.is_mine ? (
+					{data.is_mine ? (
 						<Link to={`/account/slots/filter/${data.id_slot}`}>
 							<button className='small'>Modifier</button>
 						</Link>
