@@ -39,7 +39,7 @@ export const Component = () => {
 								<p className='margin-b-20'>En cas de problème de paiement, veuillez nous contacter.</p>
 							</div>
 
-							<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect/${id_trainer}/${session_id}`}>
+							<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect/${id_trainer}/${session_id}`} target='_blank'>
 								<button className='margin-t-20'>Procéder au paiement</button>
 							</a>
 						</div>
