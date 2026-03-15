@@ -21,7 +21,7 @@ const getParams = options => {
 export function useFetch(options, callback) {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
-	const [data, setData] = useState(false);
+	const [data, setData] = useState(null);
 	const [rnd, setRnd] = useState(0);
 	const [first, setFirst] = useState(true);
 
