@@ -49,7 +49,7 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 							</Button>
 						))}
 
-					{data.is_mine ? (
+					{false && data.is_mine ? (
 						<Link to={`/account/slots/filter/${data.id_slot}`}>
 							<button className='small'>Modifier</button>
 						</Link>
@@ -150,7 +150,7 @@ export default function Agenda() {
 					full: false,
 					disable: false,
 					events: {}
-			  };
+				};
 	});
 
 	const [cookies, setCookies] = useCookies();
