@@ -83,6 +83,30 @@ const shouldBeFiltered = (filter, item) => {
 	}
 };
 
+const getPaymentLabel = item => {
+	if (item.paid) {
+		let label = "Réglé";
+
+		if (item.payment_type === "package") {
+			label += " avec une formule";
+		} else if (item.payment_type === "direct") {
+			label += " via Stripe";
+		}
+
+		return label;
+	}
+
+	if ((item.how || item.payment_type) === "direct") {
+		return "En attente de paiement";
+	}
+
+	return "Non réglé";
+};
+
+const isSupported = item => {
+	return true;
+};
+
 export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user, endpoint }) {
 	const [response, setResponse] = useState(false);
 	const [filter, setFilter] = useState(false);
@@ -221,7 +245,17 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 											</span>
 										)}
 
-										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{item.paid ? `Réglé${item.payment_type === "package" ? " avec une formule" : item.payment_type === "direct" ? " via Stripe" : ""}` : item.how === "direct" ? "En attente de paiement" : "Non réglé"}</span>}
+										{getPaymentLabel(item) === "En attente de paiement" && isSupported(item) && allowedActions.includes("pay") && (
+											<button
+												className='smallest'
+												onClick={async () => {
+													window.location.href = `${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect-no-trainer/${item.payment_details}`;
+												}}>
+												Régler
+											</button>
+										)}
+
+										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{getPaymentLabel(item)}</span>}
 
 										{allowedActions.includes("book-reservation") && (
 											<Link to={`/account/${type}/book/${item.id}`}>
@@ -291,7 +325,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 															</>
 														)}
 														<span className='flex-grow'>&nbsp;- {dog.label}</span>
-														{typeof dog.paid !== "undefined" && <span className={dog.paid ? "paid" : "unpaid"}>{dog.paid ? `Réglé${dog.payment_type === "package" ? " avec une formule" : dog.payment_type === "direct" ? " via Stripe" : ""}` : "Non réglé"}</span>}
+														{typeof dog.paid !== "undefined" && <span className={dog.paid ? "paid" : "unpaid"}>{getPaymentLabel(dog)}</span>}
 														{typeof dog.paid !== "undefined" && !dog.paid && (
 															<button
 																className='smallest'

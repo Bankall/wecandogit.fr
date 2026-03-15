@@ -248,12 +248,15 @@ const router = createBrowserRouter([
 			},
 			{
 				path: "/close",
+				loader: async () => {
+					window.close();
+					return null;
+				},
 				element: (
 					<>
 						<div style={{ padding: "50px", textAlign: "center" }}>
 							<h1>Vous pouvez fermer cette fenêtre</h1>
 						</div>
-						{window.close()}
 					</>
 				)
 			}

@@ -374,7 +374,8 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 				id_user: req.session.user_id,
 				id_trainer: req.params.idTrainer,
 				user_agent: req.headers["user-agent"],
-				details: JSON.stringify(cartItems)
+				expire_at: new Date(session.expires_at * 1000).toISOString().slice(0, 19).replace("T", " "),
+				details: JSON.stringify(req.session.item_to_pay)
 			}
 		});
 
@@ -401,6 +402,35 @@ router.route("/stripe-redirect/:id_trainer/:session_id").get(async (req, res) =>
 	} catch (err) {
 		errorHandler({ err, req });
 		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}`);
+	}
+});
+
+router.route("/stripe-redirect-no-trainer/:session_id").get(async (req, res) => {
+	try {
+		const payment_activity = await backend.get({
+			table: "payment_activity",
+			query: {
+				session_id: req.params.session_id
+			}
+		});
+
+		const id_trainer = payment_activity.result.length ? payment_activity.result[0].id_trainer : null;
+
+		if (!id_trainer) {
+			throw "Session introuvable";
+		}
+
+		const trainer = await backend.get({
+			table: "user",
+			id: id_trainer
+		});
+
+		const stripe_sk = payment_activity.result.length ? trainer.result.stripe_sk : null;
+		const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
+
+		res.redirect(303, session.url);
+	} catch (err) {
+		//	errorHandler({ err, req });
 	}
 });
 
@@ -550,7 +580,7 @@ router.route("/get-session-status/:id_trainer/:session_id").get(async (req, res)
 		res.send({
 			status: session.status,
 			payment_status: session.payment_status,
-			redirect: req.session.cart.length ? "/cart" : "/account"
+			redirect: !req.session.cart || !req.session.cart.length ? "/accout" : "/cart"
 		});
 	} catch (err) {
 		errorHandler({ err, req, req });
@@ -575,6 +605,15 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 		const stripe = Stripe(stripe_sk);
 		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
 
+		const payment_activity = await backend.get({
+			table: "payment_activity",
+			query: {
+				session_id: session.id
+			}
+		});
+
+		const payment_detail = payment_activity.result.length ? JSON.parse(payment_activity.result[0].details) : req.session.item_to_pay;
+
 		await backend.post({
 			table: "payment_history",
 			body: {
@@ -584,7 +623,7 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 				id_user: req.session.user_id,
 				id_trainer: req.params.id_trainer,
 				status: session.status,
-				details: JSON.stringify(req.session.stripe_session_cart)
+				details: JSON.stringify(payment_detail)
 			}
 		});
 
@@ -592,7 +631,7 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 			return res.redirect("/cart#payment-error");
 		}
 
-		for await (const item of req.session.item_to_pay) {
+		for await (const item of payment_detail) {
 			if (item.type === "slot") {
 				await backend.put({
 					table: "reservation",
@@ -614,11 +653,11 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 					}
 				});
 			}
-
-			req.session.item_to_pay = [];
 		}
 
-		res.redirect(config.get("FRONT_URI") + "/close");
+		const fromCart = !!req.session.item_to_pay.length;
+		req.session.item_to_pay = [];
+		res.redirect(config.get("FRONT_URI") + fromCart ? "/close" : "/account/waiting_payments");
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

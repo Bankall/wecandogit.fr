@@ -163,7 +163,8 @@ router
 					CONCAT(a.label, ' - ', d.label, ' - ', (select firstname from user where id = s.id_trainer)) label,
 					r.id,
 					r.paid,
-					r.payment_type
+					r.payment_type,
+					r.payment_details
 
 				FROM reservation r 
 				JOIN slot s on s.id = r.id_slot
@@ -811,6 +812,48 @@ router.route("/user-count").get(async (req, res) => {
 	}
 });
 
+router.route("/unpaid_cart").get(async (req, res) => {
+	try {
+		const carts = await backend.handleQuery(
+			`select
+				pa.id_user,
+				pa.id_trainer,
+				concat(u.firstname, ' ', u.lastname) label,
+				pa.details,
+				pa.expire_at,
+				pa.created_at date,
+				0 paid,
+				pa.session_id payment_details,
+				'direct' payment_type
+
+				
+			from payment_activity pa
+			join user u on u.id = pa.id_trainer
+			left outer join payment_history ph on ph.session_id = pa.session_id
+
+			where ph.session_id is null
+			and pa.expire_at > current_timestamp
+			and pa.id_user = ?`,
+			[req.session.user_id],
+			null,
+			true
+		);
+
+		if (!carts.result.length) {
+			return res.send([]);
+		}
+
+		res.send(
+			carts.result.map(cart => {
+				return {
+					...cart,
+					details: JSON.parse(cart.details)
+				};
+			})
+		);
+	} catch (err) {}
+});
+
 router.route("/payment_history").get(async (req, res) => {
 	try {
 		const payments = await backend.handleQuery(
@@ -840,7 +883,7 @@ router.route("/payment_history").get(async (req, res) => {
 		);
 	} catch (err) {
 		//console.log(err);
-		//errorHandler({ err, req, res });
+		errorHandler({ err, req, res });
 	}
 });
 

@@ -26,6 +26,8 @@ const switchRouter = params => {
 			return <AccountInfo />;
 		case "reservations":
 			return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete-24"]} />;
+		case "waiting_payments":
+			return <DashboardListComponent title='Mes paiements en attente' type='unpaid_cart' allowedActions={["pay"]} />;
 		case "packages":
 			return <DashboardListComponent addLabel='Ajouter une formule' title='Mes formules' type='package' />;
 		case "user_packages":
@@ -58,6 +60,9 @@ const DefaultAccountMenu = () => {
 		<>
 			<li>
 				<NavLink to='/account/profile'>Mes Informations</NavLink>
+			</li>
+			<li>
+				<NavLink to='/account/waiting_payments'>Paiements en attente</NavLink>
 			</li>
 			<li>
 				<NavLink to='/account/reservations'>Mes Reservations</NavLink>
