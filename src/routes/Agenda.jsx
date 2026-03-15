@@ -138,7 +138,7 @@ export default function Agenda() {
 	const [toggleFilters, setToggleFilters] = useState(false);
 	const isLoggedIn = useFetch("/is-logged-in");
 	const [filters, setFilters] = useState(() => {
-		const filters = localStorage.getItem("agenda-filters");
+		const filters = localStorage?.getItem("agenda-filters");
 		return filters && JSON.parse(filters) && JSON.parse(filters).events
 			? JSON.parse(filters)
 			: {
@@ -211,7 +211,7 @@ export default function Agenda() {
 		});
 
 		setFilters(filters);
-		localStorage.setItem("agenda-filters", JSON.stringify(filters));
+		localStorage?.setItem("agenda-filters", JSON.stringify(filters));
 	};
 
 	useEffect(() => {
