@@ -80,7 +80,7 @@ app.use(`${API_PATH}/cron`, Cron(backend));
 app.use(`${API_PATH}/waiting-list`, WaitingList(backend));
 
 app.get(`${API_PATH}/fake-user/:id?`, async (req, res) => {
-	if (![1, 36].includes(req.session.user_id)) {
+	if (!req.session.is_trainer) {
 		return res.send({
 			error: "Vous n'avez pas accès à cette page"
 		});

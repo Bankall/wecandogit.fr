@@ -141,7 +141,7 @@ function Account() {
 					<div className='menu'>
 						<ul>
 							<DefaultAccountMenu />
-							{me.data?.result.is_trainer === 1 ? <AdminAccountMenu /> : null}
+							{me.data?.result?.is_trainer === 1 ? <AdminAccountMenu /> : null}
 						</ul>
 					</div>
 					<div className='content widgets'>

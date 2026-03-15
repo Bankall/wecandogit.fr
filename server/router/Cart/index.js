@@ -373,29 +373,35 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 				session_id: session.id,
 				id_user: req.session.user_id,
 				id_trainer: req.params.idTrainer,
+				user_agent: req.headers["user-agent"],
 				details: JSON.stringify(cartItems)
 			}
 		});
 
 		req.session.stripe_session_url = session.url;
-		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}/`);
+		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}`);
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}
 });
 
 router.route("/stripe-redirect/:id_trainer/:session_id").get(async (req, res) => {
-	const trainer = await backend.get({
-		table: "user",
-		query: {
-			id: req.params.id_trainer
-		}
-	});
+	try {
+		const trainer = await backend.get({
+			table: "user",
+			query: {
+				id: req.params.id_trainer
+			}
+		});
 
-	const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
-	const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
+		const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
+		const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
 
-	res.redirect(303, session.url || req.session.stripe_session_url);
+		res.redirect(303, session.url || req.session.stripe_session_url);
+	} catch (err) {
+		errorHandler({ err, req });
+		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}`);
+	}
 });
 
 const handleReservation = async (req, itemToReserve, stripe_id) => {

@@ -215,7 +215,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 
 										{item.email && item.id && (
 											<span>
-												<a href={`${axios.defaults.baseURL}/fake-user/${item.id}`}>
+												<a href={`${axios.defaults.baseURL}/fake-user/${item.id}`} target='_blank'>
 													<button className='small'>Fake me</button>
 												</a>
 											</span>
