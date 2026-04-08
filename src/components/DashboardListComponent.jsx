@@ -246,13 +246,9 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 										)}
 
 										{getPaymentLabel(item) === "En attente de paiement" && isSupported(item) && allowedActions.includes("pay") && (
-											<button
-												className='smallest'
-												onClick={async () => {
-													window.location.href = `${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect-no-trainer/${item.payment_details}`;
-												}}>
-												Régler
-											</button>
+											<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect-no-trainer/${item.payment_details}`}>
+												<button className='smallest'>Régler</button>
+											</a>
 										)}
 
 										{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{getPaymentLabel(item)}</span>}

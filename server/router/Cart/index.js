@@ -355,7 +355,7 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 
 		const stripe = Stripe(stripe_sk);
 		const session = await stripe.checkout.sessions.create({
-			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}/{CHECKOUT_SESSION_ID}`,
+			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}/{CHECKOUT_SESSION_ID}/${req.session.user_id}`,
 			line_items: lineItems,
 			automatic_tax: {
 				enabled: true
@@ -428,7 +428,7 @@ router.route("/stripe-redirect-no-trainer/:session_id").get(async (req, res) => 
 		const stripe_sk = payment_activity.result.length ? trainer.result.stripe_sk : null;
 		const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
 
-		res.redirect(303, session.url);
+		res.redirect(303, session.url || `${config.get("FRONT_URI")}/account`);
 	} catch (err) {
 		//	errorHandler({ err, req });
 	}
@@ -452,7 +452,7 @@ const handleReservation = async (req, itemToReserve, stripe_id) => {
 					});
 
 					if (current_usage.result.usage < _package.result.number_of_session) {
-						package_usage = current_usage.result.usage + 1;
+						package_usage = (current_usage.result.usage || 0) + 1;
 
 						await backend.put({
 							table: "user_package",
@@ -580,14 +580,14 @@ router.route("/get-session-status/:id_trainer/:session_id").get(async (req, res)
 		res.send({
 			status: session.status,
 			payment_status: session.payment_status,
-			redirect: !req.session.cart || !req.session.cart.length ? "/accout" : "/cart"
+			redirect: !req.session || !req.session.cart || !req.session.cart.length ? "/account" : "/cart"
 		});
 	} catch (err) {
-		errorHandler({ err, req, req });
+		errorHandler({ err, req, res });
 	}
 });
 
-router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) => {
+router.route("/payment/success/:id_trainer/:session_id/:id_user").all(async (req, res) => {
 	try {
 		const trainer = await backend.get({
 			table: "user",
@@ -620,7 +620,7 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 				session_id: session.id,
 				payment_intent: session.payment_intent,
 				amount: session.amount_total,
-				id_user: req.session.user_id,
+				id_user: req.params.id_user || req.session.user_id,
 				id_trainer: req.params.id_trainer,
 				status: session.status,
 				details: JSON.stringify(payment_detail)
@@ -655,9 +655,10 @@ router.route("/payment/success/:id_trainer/:session_id").all(async (req, res) =>
 			}
 		}
 
-		const fromCart = !!req.session.item_to_pay.length;
+		const fromCart = !!req.session?.item_to_pay?.length;
+
 		req.session.item_to_pay = [];
-		res.redirect(config.get("FRONT_URI") + fromCart ? "/close" : "/account/waiting_payments");
+		res.redirect(config.get("FRONT_URI") + (fromCart ? "/close" : "/account/waiting_payments"));
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

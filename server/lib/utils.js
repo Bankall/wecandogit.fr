@@ -46,13 +46,17 @@ const errorHandler = ({ req, res, err }) => {
 	}
 
 	console.log(
-		`=============================\n
-At: ${req.originalUrl}
+		`=============================
+
+${new Date().toISOString()}
+
+At: ${req.originalUrl} 
 ${req.query ? `With query: ${JSON.stringify(req.query)}` : ""}
 ${req.params ? `With params: ${JSON.stringify(req.params)}` : ""}
 ${req.body ? `With body: ${JSON.stringify(req.body)}` : ""}
 ${req.session ? `With session: ${JSON.stringify(req.session)}` : ""}
-\n\n`,
+
+`,
 		err,
 		"\n\n============================="
 	);
