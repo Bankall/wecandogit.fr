@@ -12,6 +12,8 @@ import { Button } from "../components/Button";
 import { useCookies } from "react-cookie";
 import { useFetch } from "../hooks/useFetch";
 
+const FILTERS_SUFFIX = "-202604";
+
 const renderEventContent = (eventInfo, isLoggedIn) => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
 	const full = (data.reservations || []).length >= data.spots;
@@ -100,7 +102,7 @@ const convertToLocalDate = (date, increment) => {
 };
 
 const getEventColor = firstname => {
-	return firstname === "Elodie" ? "rgb(33, 70, 144)" : "rgb(112, 33, 111)";
+	return firstname === "Elodie" ? "rgb(33, 70, 144)" : firstname === "Chloé" ? "rgb(112, 33, 111)" : "rgb(135, 198, 216)";
 };
 
 const fetchEvents = async setEvents => {
@@ -138,13 +140,14 @@ export default function Agenda() {
 	const [toggleFilters, setToggleFilters] = useState(false);
 	const isLoggedIn = useFetch("/is-logged-in");
 	const [filters, setFilters] = useState(() => {
-		const filters = localStorage?.getItem("agenda-filters");
+		const filters = localStorage?.getItem(`agenda-filters${FILTERS_SUFFIX}`);
 		return filters && JSON.parse(filters) && JSON.parse(filters).events
 			? JSON.parse(filters)
 			: {
 					trainers: {
 						35: true,
 						34: true,
+						65: true,
 						1: false
 					},
 					full: false,
@@ -211,7 +214,7 @@ export default function Agenda() {
 		});
 
 		setFilters(filters);
-		localStorage?.setItem("agenda-filters", JSON.stringify(filters));
+		localStorage?.setItem(`agenda-filters${FILTERS_SUFFIX}`, JSON.stringify(filters));
 	};
 
 	useEffect(() => {
@@ -277,6 +280,10 @@ export default function Agenda() {
 						<label className='flex-row'>
 							<input type='checkbox' name={34} defaultChecked={filters.trainers["34"]} onChange={saveFilters} />
 							Elodie
+						</label>
+						<label className='flex-row'>
+							<input type='checkbox' name={65} defaultChecked={filters.trainers["65"]} onChange={saveFilters} />
+							Marie
 						</label>
 
 						{cookies.email === "christian.sulecki@gmail.com" && (
