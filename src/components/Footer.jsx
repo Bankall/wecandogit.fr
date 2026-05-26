@@ -55,11 +55,11 @@ export default function Footer() {
 					<li>
 						<Link to='/formules-et-tarifs'>Formules et tarifs</Link>
 					</li>
-					<li>
+					{/* <li>
 						<a href='https://docs.google.com/forms/d/e/1FAIpQLSeleVaqfG4q7Eb78hn87ur3-EdVo1CsOQat3OUCy99tfWLbvA/viewform' target='_blank'>
 							Obtenir un rdv pour un bilan comportemental
 						</a>
-					</li>
+					</li> */}
 				</ul>
 			</section>
 			<div className='copyright'>© {new Date().getFullYear()} Wecandogit - Tous droits réservés.</div>
