@@ -70,12 +70,14 @@ processed normally.
 
 ```
 router/            HTTP only: auth/ownership checks, request shaping, responses
-  Cart/  Private/  Stripe/ (webhook)  Cron/ …
+  Cart/  Private/  Stripe/ (webhook)  Cron/  Push/ …
 lib/
   booking.js       Domain services: reserveSlot, cancelReservation,
                    confirmCheckoutSession, markCheckoutExpired, refunds
   stripe.js        Per-trainer Stripe client cache (+ webhook secret lookup)
   payment-link.js  Signed payment links (HMAC) for unpaid reservations/packages
+  notification.js  Trainer activity feed: query, per-trainer ownership, wording
+  push.js          Web Push (VAPID) subscriptions and delivery to trainers
   db.js            mysql2/promise pool, query(), withTransaction()
 @bankall/mysql-backend   Legacy generic CRUD — being phased out, now behind an ACL
 ```
@@ -150,7 +152,32 @@ the trainers' Stripe accounts.
    ```
    If the table is missing, the copy buttons fall back to the long signed URLs
    instead of failing.
-6. Recommended indexes:
+6. **Trainer device notifications (Web Push)** — see section 7. `.env` additions:
+   ```
+   VAPID_PUBLIC_KEY=<from npx web-push generate-vapid-keys>
+   VAPID_PRIVATE_KEY=<idem>
+   VAPID_SUBJECT=mailto:contact@wecandogit.com   # optional, this is the default
+   ```
+   Without those two keys the whole feature is inert (nothing sent, and the UI
+   hides itself). Table — **already created** on the database reachable from
+   `config/developpment.json`; if production really points at another host
+   (`config/production.json` names a different one), run it there too:
+   ```sql
+   CREATE TABLE push_subscription (
+     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     id_user INT NOT NULL,
+     endpoint VARCHAR(512) NOT NULL,
+     p256dh VARCHAR(255) NOT NULL,
+     auth VARCHAR(255) NOT NULL,
+     user_agent VARCHAR(255) NULL,
+     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     UNIQUE KEY uniq_push_subscription_endpoint (endpoint),
+     KEY idx_push_subscription_user (id_user)
+   );
+   ```
+   Rotating the VAPID keys invalidates every stored subscription (each trainer
+   has to press "Activer" again), so keep them alongside the other secrets.
+7. Recommended indexes:
    ```sql
    CREATE INDEX idx_reservation_slot_enabled ON reservation (id_slot, enabled);
    CREATE INDEX idx_payment_activity_session ON payment_activity (session_id);
@@ -179,7 +206,63 @@ Until a trainer's `stripe_whsec` is set, their webhook endpoint simply rejects c
 and everything flows through return URL + cron. Remember the signing secret must be
 re-provisioned if the webhook endpoint is recreated.
 
-## 4. Dependencies
+## 4. Trainer notifications
+
+The `notification` table is the trainers' activity feed (bookings, cancellations,
+waiting-list entries, package purchases), written by `backend.notify()` and read
+on `/account/notifications`.
+
+**Ownership.** A notification has no `id_trainer` column: the trainer it concerns
+is derived from the slot or the package the event is about (`slot.id_trainer` /
+`package.id_trainer`). `lib/notification.js` computes that column, and owns both
+the feed query and the wording of an event, so the dashboard label and the push
+notification body can never drift apart.
+
+**Scoping.** `GET /notification` returns the calling trainer's own notifications;
+`?all=1` returns the association-wide feed. The dashboard shows both as a
+"Les miennes" / "Toutes" switch. Events on rows owned by an account that is not
+`is_trainer = 1` (there are legacy slots owned by user 36, and one owned by user
+0) only appear under "Toutes" and are pushed to nobody.
+
+**Device notifications (Web Push).** `lib/push.js` + `router/Push`:
+
+```
+trainer presses "Activer"  → sw.js registered, Notification permission asked
+                           → pushManager.subscribe(VAPID public key)
+                           → POST /push/subscribe   (one row per device)
+booking happens            → backend.notify() inserts the row
+                           → pushNotificationToTrainer() resolves the owner
+                           → web-push to each of that trainer's devices
+```
+
+- One `push_subscription` row per browser/device, keyed by its unique `endpoint`,
+  so each trainer enables it once per phone/computer. Re-subscribing updates the
+  row instead of duplicating it.
+- A push service answering **404/410** means the subscription is dead (browser
+  data cleared, notifications revoked): the row is deleted on the spot, so the
+  table never accumulates stale endpoints.
+- Sending is **fire-and-forget** from `backend.notify()`: contacting FCM/Mozilla
+  must never slow down or fail a booking.
+- `POST /push/test` sends a test notification to the caller's own devices —
+  the only practical way to tell a trainer's "it doesn't work" from a silent
+  platform problem.
+- `public/sw.js` has **no `fetch` handler and caches nothing**, on purpose:
+  registering it cannot make assets go stale. It only shows notifications and
+  focuses an existing tab on click.
+- **iOS requires the site to be installed** to the Home Screen (iOS 16.4+) before
+  Web Push works at all. The UI detects Safari-on-iOS outside standalone mode and
+  shows the "Partager → Sur l'écran d'accueil" instruction instead of a button
+  that could not work. Android and desktop Chrome/Firefox/Edge work as-is.
+- HTTPS is required (localhost excepted), which production already is.
+- Opening `/account/notifications` re-sends the subscription the browser holds
+  (idempotent upsert), so a subscription the server pruned or the browser renewed
+  heals itself without the trainer doing anything. The service worker does **not**
+  handle `pushsubscriptionchange` (Safari does not fire it, and the worker has no
+  way to know the API origin in development): in the rare case a browser rotates
+  a subscription and the trainer never reopens that page, notifications stop until
+  they press "Activer" again — the switch shows the real state.
+
+## 5. Dependencies
 
 Updated now: `stripe` 16→22, `config` 3→5 (3.x is broken on Node ≥ 23), `nodemailer`
 6→7, `dotenv` 16→17, `bcrypt` 5→6, `axios`/`cors`/`express-session`/
@@ -192,7 +275,7 @@ Deliberately deferred:
 - `md5` is still used for password-reset tokens — replace with random single-use,
   expiring tokens (`crypto.randomBytes`) stored server-side (phase 2).
 
-## 5. Roadmap
+## 6. Roadmap
 
 **Phase 2 — retire the generic CRUD (in progress direction: mysql2 + repositories)**
 - Move the remaining raw `backend.get/post/put/handleQuery` calls into explicit
@@ -213,7 +296,7 @@ Deliberately deferred:
   suite); CI running lint + tests.
 - Frontend deps (vite 5→7, eslint 9 flat config, react-router 6→7) as a separate task.
 
-## 6. Behavioral notes / policies
+## 7. Behavioral notes / policies
 
 - **Unpaid reservations hold their seat** (explicit business rule): abandoning or
   failing an online payment never cancels the booking. The user pays later via the

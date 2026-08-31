@@ -70,6 +70,41 @@
 	cursor: pointer;
 }
 
+/* Alternative server-side views of a listing ("mine" / "all"). */
+.dashboard .content .scope-box {
+	gap: 8px;
+}
+
+.dashboard .content .scope-box button.inactive {
+	background: transparent;
+	border: 1px solid var(--accent-color-2);
+	color: var(--main-txt-color);
+}
+
+/* Device notifications switch, above the notifications listing. */
+.dashboard .content .push-toggle {
+	padding: 10px 12px;
+	border: 1px solid var(--accent-color-2);
+	border-radius: 6px;
+	font-size: 13px;
+}
+
+.dashboard .content .push-toggle .flex-row {
+	gap: 8px;
+	align-items: center;
+}
+
+.dashboard .content .push-toggle .push-hint {
+	font-size: 11px;
+	opacity: 0.8;
+	text-align: right;
+}
+
+.dashboard .content .push-toggle .push-message {
+	display: inline-block;
+	margin-top: 8px;
+}
+
 .dashboard .paid,
 .dashboard .unpaid {
 	padding: 4px 10px;

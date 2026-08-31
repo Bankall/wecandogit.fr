@@ -10,6 +10,16 @@ import { useParams, useNavigate, NavLink } from "react-router-dom";
 const AccountInfo = lazy(() => import("../components/AccountInfo"));
 const DashboardListComponent = lazy(() => import("../components/DashboardListComponent"));
 const MailEditor = lazy(() => import("../components/MailEditor"));
+const PushNotificationToggle = lazy(() => import("../components/PushNotificationToggle"));
+
+/*
+ * Notifications default to the ones concerning the trainer's own slots and
+ * packages; the second scope shows the whole association's feed.
+ */
+const NOTIFICATION_SCOPES = [
+	{ label: "Les miennes", params: {} },
+	{ label: "Toutes", params: { all: 1 } }
+];
 
 const switchRouter = params => {
 	if (params.action) {
@@ -45,7 +55,7 @@ const switchRouter = params => {
 		case "user-packages":
 			return <DashboardListComponent title='Formules en attente de paiement' type='unpaid_user_package' allowedActions={["marked-package-as-paid"]} />;
 		case "notifications":
-			return <DashboardListComponent title='Notifications' type='notification' allowedActions={[]} />;
+			return <DashboardListComponent title='Notifications' type='notification' allowedActions={[]} scopes={NOTIFICATION_SCOPES} header={<PushNotificationToggle />} />;
 		case "all-user-packages":
 			return <DashboardListComponent title='Toutes les formules' type='user_package' endpoint='all_user_package' allowedActions={["modify"]} />;
 		case "payment-history":

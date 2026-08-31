@@ -4,6 +4,7 @@ import { errorHandler } from "../../lib/utils.js";
 import { query } from "../../lib/db.js";
 import { reserveSlot, cancelReservation, consumePackageCredit, CANCELLATION_CUTOFF_HOURS } from "../../lib/booking.js";
 import { buildPaymentUrl, buildShortPaymentUrls } from "../../lib/payment-link.js";
+import { listNotifications } from "../../lib/notification.js";
 
 import config from "config";
 
@@ -794,94 +795,21 @@ router.route("/send-mail").post(async (req, res) => {
 	}
 });
 
+/*
+ * A trainer only sees what happens on their own slots and packages by default;
+ * `?all=1` gives back the shared, association-wide feed.
+ */
 router.route("/notification").get(async (req, res) => {
 	try {
 		if (!req.session.is_trainer) {
 			return res.send({ error: "Vous n'avez pas accès à cette ressource" });
 		}
 
-		const notifications = await backend.handleQuery(
-			`SELECT
-				n.id_what id,
-				concat(u.firstname, ' ', u.lastname) who, 
-				n.action,
-				case
-					when n.what = 'slot' then (select concat(a.label, ' ', DATE_FORMAT(s.date, '%d/%m')) from reservation r join slot s on s.id = r.id_slot join activity a on a.id = s.id_activity where s.id = n.id_what group by s.id)
-					when n.what = 'package' then (select label from package where id = n.id_what) 
-				end what,
-				n.what type,
-				n.when date,
-				(select label from dog where id = n.dog) dog,
-				case
-					when n.how REGEXP '^[0-9]+$' then (select p.label from user_package up join package p on p.id = up.id_package where up.id = n.how)
-					else n.how
-				end how,
-                case when n.package_usage is not null then concat(n.package_usage, "/", (select p.number_of_session from package p join user_package up on up.id_package = p.id where up.id = n.how))
-					else null
-				end package_usage,
-				case 
-					when n.what = "slot" then r.paid
-					when n.what = "package" then up.paid
-				end paid
-                
-			FROM notification n
-			JOIN user u on u.id = n.id_user
-			LEFT OUTER JOIN reservation r on r.id = n.detail_what
-			LEFT OUTER JOIN user_package up on up.id = n.detail_what
-			WHERE n.when > date_sub(current_timestamp, interval 1 month)
-			ORDER BY n.id DESC`,
-			[],
-			null,
-			true
-		);
+		const notifications = await listNotifications({
+			id_trainer: req.query.all ? null : req.session.user_id
+		});
 
-		const formatAction = notification => {
-			if (notification.type === "slot") {
-				return notification.action === "booked" ? "a réservé" : notification.action === "unbooked" ? "a annulé" : "s'est inscrit sur la liste d'attente pour";
-			}
-
-			if (notification.type === "package") {
-				return notification.how === "direct" ? "a acheté" : "a commandé";
-			}
-		};
-
-		const formatPayment = notification => {
-			if (["unbooked", "waiting-list"].includes(notification.action)) {
-				return "";
-			}
-
-			if (notification.type === "package") {
-				return "";
-			}
-
-			if (!["direct", "later"].includes(notification.how)) {
-				return `avec la formule <b>${notification.how}</b>`;
-			}
-
-			return ``;
-		};
-
-		res.send(
-			notifications.result.map(notification => {
-				notification.label = `<b>${notification.who}</b> ${formatAction(notification)} ${notification.type === "slot" ? "le créneau" : "la formule"} <b>${notification.what}</b> ${notification.dog ? `pour <b>${notification.dog}</b>` : ""} ${formatPayment(notification)}`;
-
-				if (notification.action === "booked") {
-					notification.paid = notification.how === "direct" ? notification.paid : notification.how !== "later";
-
-					if (notification.paid) {
-						notification.payment_type = notification.how !== "direct" ? "package" : notification.how;
-					}
-				} else {
-					delete notification.paid;
-				}
-
-				if (notification.package_usage) {
-					notification.label += ` (utilisation: ${notification.package_usage})`;
-				}
-
-				return notification;
-			})
-		);
+		res.send(notifications);
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

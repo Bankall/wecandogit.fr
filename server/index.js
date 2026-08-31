@@ -19,8 +19,10 @@ import { Cart } from "./router/Cart/index.js";
 import { Cron } from "./router/Cron/index.js";
 import { WaitingList } from "./router/WaitingList/index.js";
 import { StripeWebhook } from "./router/Stripe/index.js";
+import { Push } from "./router/Push/index.js";
 import { errorHandler } from "./lib/utils.js";
 import { buildPaymentUrl, resolveShortCode } from "./lib/payment-link.js";
+import { pushNotificationToTrainer } from "./lib/push.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,6 +112,7 @@ app.use(`${API_PATH}/`, Public(backend));
 app.use(`${API_PATH}/cart`, Cart(backend));
 app.use(`${API_PATH}/cron`, Cron(backend));
 app.use(`${API_PATH}/waiting-list`, WaitingList(backend));
+app.use(`${API_PATH}/push`, Push());
 
 /*
  * Contrôle d'accès des endpoints CRUD générés automatiquement par
@@ -239,19 +242,26 @@ backend.start(() => {
 	backend.notify = async ({ who, action, what, how, id_what, detail_what, package_usage, dog }) => {
 		const body = { id_user: who, action, what, how, id_what, detail_what, dog, package_usage };
 
-		// Le CRUD générique sérialise en JSON toute valeur de type "object" : un null
-		// devient la chaîne "null", que MySQL refuse sur une colonne entière
-		// (package_usage, dog, id_what…). Seuls les champs renseignés sont transmis.
+		// The generic CRUD JSON-serialises any "object" value: a null becomes the
+		// string "null", which MySQL rejects on an integer column (package_usage,
+		// dog, id_what…). Only the fields that are set are sent.
 		Object.keys(body).forEach(key => {
 			if (body[key] === null || typeof body[key] === "undefined") {
 				delete body[key];
 			}
 		});
 
-		// Une notification est accessoire : elle ne doit jamais faire échouer
-		// l'action métier, ni provoquer un rejet non capturé (le processus tombe)
+		// A notification is incidental: it must never make the business action
+		// fail, nor cause an unhandled rejection (which would kill the process)
 		try {
-			await backend.post({ table: "notification", body });
+			const notification = await backend.post({ table: "notification", body });
+
+			// Device notification for the trainer owning the slot/package. Not
+			// awaited: talking to the push services must not slow down a booking,
+			// and their being unreachable is not the caller's problem.
+			pushNotificationToTrainer(notification?.result?.id).catch(err => {
+				console.log("Push notification failed:", err?.message || err);
+			});
 		} catch (err) {
 			console.log("Notification failed:", err?.error || err);
 		}

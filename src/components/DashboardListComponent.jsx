@@ -185,10 +185,17 @@ const CopyPaymentLinkButton = ({ url }) => {
 	);
 };
 
-export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user, endpoint }) {
+/*
+ * `scopes` lets a listing offer alternative server-side views of itself (e.g.
+ * "mine" vs "all"), each one being extra query parameters sent to the endpoint.
+ * `header` is rendered above the listing, for controls that belong to the page
+ * rather than to a row.
+ */
+export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user, endpoint, scopes, header }) {
 	const [response, setResponse] = useState(false);
 	const [filter, setFilter] = useState(false);
 	const [extraTitle, setExtraTitle] = useState(false);
+	const [scope, setScope] = useState(0);
 
 	const params = useParams();
 	const pathname = window.location.pathname;
@@ -203,7 +210,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 		let exited = false;
 		const fetch = async () => {
 			try {
-				const params = {};
+				const params = Object.assign({}, scopes ? scopes[scope].params : null);
 
 				if (id_user) {
 					params.id_user = id_user;
@@ -248,7 +255,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 			exited = true;
 			window.removeEventListener(`refresh-list-${type}`, fetch);
 		};
-	}, [params]);
+	}, [params, scope]);
 
 	if (!allowedActions) {
 		allowedActions = ["modify"];
@@ -261,6 +268,18 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				{extraTitle ? " - " + extraTitle : ""}
 			</div>
 			<div className='content'>
+				{header}
+
+				{scopes ?
+					<div className='scope-box margin-b-20 flex-row'>
+						{scopes.map((item, index) => (
+							<button className={index === scope ? "small" : "small inactive"} key={index} onClick={() => setScope(index)}>
+								{item.label}
+							</button>
+						))}
+					</div>
+				:	null}
+
 				{response.data?.length && (response.data?.length > 10 || params.action === "filter" || filter) ?
 					<div className='filter-box margin-b-20'>
 						<input
