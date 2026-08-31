@@ -1,7 +1,10 @@
 import { Router } from "express";
-import { Stripe } from "stripe";
 import { errorHandler } from "../../lib/utils.js";
 import MailSender from "../../lib/mail-sender/index.cjs";
+import { getTrainerStripe } from "../../lib/stripe.js";
+import { query } from "../../lib/db.js";
+import { reserveSlot, confirmCheckoutSession, isPackagePayment } from "../../lib/booking.js";
+import { verifyPaymentToken } from "../../lib/payment-link.js";
 
 import config from "config";
 
@@ -11,6 +14,13 @@ const router = Router();
 router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
+
+// La session est mutée juste avant des redirections (Stripe fait immédiatement
+// une nouvelle requête) : on force l'écriture en base avant de répondre.
+const saveSession = req =>
+	new Promise((resolve, reject) => {
+		req.session.save(err => (err ? reject(err) : resolve()));
+	});
 
 router.route("/count").get(async (req, res) => {
 	const count = req.session.cart ? req.session.cart.length : 0;
@@ -124,66 +134,69 @@ router
 	});
 
 const getPackageDetail = async _package => {
-	try {
-		const data = await backend.get({
-			table: "package",
-			id: _package.id
-		});
+	const data = await backend.get({
+		table: "package",
+		id: _package.id
+	});
 
-		return { label: data.result.label, price: data.result.price, id_trainer: data.result.id_trainer };
-	} catch (err) {
-		return err;
+	if (!data.result || !data.result.id) {
+		return null;
 	}
+
+	// parseFloat : le driver MySQL renvoie les DECIMAL en chaîne, ce qui
+	// transformait l'addition du total en concaténation
+	return { label: data.result.label, price: parseFloat(data.result.price), id_trainer: data.result.id_trainer };
 };
 
 const getSlotDetail = async (req, slot) => {
-	try {
-		const data = await backend.handleQuery(
-			`
-				SELECT
-					a.label,
-					a.id id_activity,
-					a.price,
-					s.id_trainer,
-					s.date
-				FROM activity a
-				JOIN slot s on s.id_activity = a.id
-				WHERE s.id = ?
-			`,
-			[slot.id],
-			"get-activity",
-			false
-		);
+	const data = await backend.handleQuery(
+		`
+			SELECT
+				a.label,
+				a.id id_activity,
+				a.price,
+				s.id_trainer,
+				s.date
+			FROM activity a
+			JOIN slot s on s.id_activity = a.id
+			WHERE s.id = ? AND s.enabled = 1
+		`,
+		[slot.id],
+		"get-activity",
+		false
+	);
 
-		const user_packages = await backend.getUserPackageForID({ id_slot: slot.id, available: true, req });
-		const dogs = await backend.get({
-			table: "dog",
-			query: {
-				id_user: req.session.user_id || 0
-			}
-		});
-
-		const date = new Date(data.result.date);
-		const formattedDate = new Intl.DateTimeFormat("fr-FR", {
-			day: "2-digit",
-			month: "2-digit"
-		}).format(date);
-
-		return {
-			label: `${data.result.label} - ${formattedDate}`,
-			price: data.result.price,
-			id_trainer: data.result.id_trainer,
-			package_available: user_packages,
-			dogs:
-				dogs.result && dogs.result.length
-					? dogs.result.map(dog => {
-							return { label: dog.label, id: dog.id };
-						})
-					: []
-		};
-	} catch (err) {
-		errorHandler({ err, req, res });
+	// Créneau supprimé ou désactivé entre l'ajout au panier et maintenant
+	if (!data.result || !data.result.date) {
+		return null;
 	}
+
+	const user_packages = await backend.getUserPackageForID({ id_slot: slot.id, available: true, req });
+	const dogs = await backend.get({
+		table: "dog",
+		query: {
+			id_user: req.session.user_id || 0
+		}
+	});
+
+	const date = new Date(data.result.date);
+	const formattedDate = new Intl.DateTimeFormat("fr-FR", {
+		day: "2-digit",
+		month: "2-digit"
+	}).format(date);
+
+	return {
+		label: `${data.result.label} - ${formattedDate}`,
+		price: parseFloat(data.result.price),
+		id_trainer: data.result.id_trainer,
+		package_available: user_packages,
+		dogs:
+			dogs.result && dogs.result.length
+				? dogs.result.map(dog => {
+						return { label: dog.label, id: dog.id };
+					})
+				: []
+	};
 };
 
 const getCartItemDetail = async (req, item) => {
@@ -194,10 +207,11 @@ const getCartItemDetail = async (req, item) => {
 			case "slot":
 				return await getSlotDetail(req, item);
 			default:
-				throw { error: "Produit inconnu dans le panier" };
+				return null;
 		}
 	} catch (err) {
-		return err;
+		errorHandler({ err, req });
+		return null;
 	}
 };
 
@@ -222,8 +236,27 @@ const sortCartItemByTrainers = async req => {
 			}
 		});
 
+		// Crédits restants par formule, décomptés au fil du panier pour ne pas
+		// affecter deux séances au même crédit (cause du bug de sur-réservation)
+		const creditsLeft = {};
+		const registerPackages = packages => {
+			(packages || []).forEach(user_package => {
+				if (typeof creditsLeft[user_package.id] === "undefined") {
+					creditsLeft[user_package.id] = Math.max(0, user_package.number_of_session - user_package.usage);
+				}
+			});
+		};
+
+		const invalidItems = [];
 		for (const item of req.session.cart) {
 			const data = await getCartItemDetail(req, item);
+
+			// Article devenu invalide (créneau supprimé...) : on le retire du panier
+			// au lieu de casser toute la page
+			if (!data || !data.id_trainer) {
+				invalidItems.push(item.id_cart_item);
+				continue;
+			}
 
 			if (!byTrainers[data.id_trainer]) {
 				byTrainers[data.id_trainer] = {
@@ -241,8 +274,24 @@ const sortCartItemByTrainers = async req => {
 			data.id_dog = item.id_dog || (dog.result && dog.result.length ? dog.result[0].id : 0);
 			data.id_cart_item = item.id_cart_item;
 
-			if (data.package_available && data.package_available.length && !data.payment_type) {
-				data.payment_type = data.package_available[0].id;
+			registerPackages(data.package_available);
+
+			if (isPackagePayment(data.payment_type)) {
+				// Choix explicite d'une formule : vérifier qu'il reste un crédit non
+				// déjà réclamé par un autre article du panier
+				const id_user_package = parseInt(data.payment_type, 10);
+				if (creditsLeft[id_user_package] > 0) {
+					creditsLeft[id_user_package] -= 1;
+				} else {
+					data.payment_type = "later";
+				}
+			} else if (!data.payment_type && data.package_available && data.package_available.length) {
+				const available = data.package_available.find(user_package => creditsLeft[user_package.id] > 0);
+
+				if (available) {
+					data.payment_type = available.id;
+					creditsLeft[available.id] -= 1;
+				}
 			}
 
 			if (!data.payment_type) {
@@ -251,9 +300,13 @@ const sortCartItemByTrainers = async req => {
 
 			byTrainers[data.id_trainer][item.type].push(data);
 
-			if (data.payment_type === "direct" || !data.payment_type) {
+			if (data.payment_type === "direct") {
 				byTrainers[data.id_trainer].total += data.price;
 			}
+		}
+
+		if (invalidItems.length) {
+			req.session.cart = req.session.cart.filter(item => !invalidItems.includes(item.id_cart_item));
 		}
 
 		for (const row in byTrainers) {
@@ -269,7 +322,7 @@ const sortCartItemByTrainers = async req => {
 		return byTrainers;
 	} catch (err) {
 		errorHandler({ err, req });
-		return err;
+		return {};
 	}
 };
 
@@ -320,53 +373,201 @@ router.route("/full-cart").get(async (req, res) => {
 	}
 });
 
+const removeFromCart = (req, id_cart_item) => {
+	req.session.cart = (req.session.cart || []).filter(item => item.id_cart_item !== id_cart_item);
+};
+
+/*
+ * Réserve les articles du panier. Ne s'arrête jamais en cours de route : un
+ * article qui échoue (formule épuisée, créneau complet...) est signalé dans
+ * `warnings` et le reste du panier est traité normalement.
+ */
+const handleReservation = async (req, itemToReserve) => {
+	const reserved = [];
+	const warnings = [];
+
+	for (const item of itemToReserve) {
+		try {
+			if (item.type === "slot") {
+				const result = await reserveSlot({
+					id_slot: item.id,
+					id_dog: item.id_dog,
+					payment_type: item.payment_type
+				});
+
+				if (result.unavailable || result.full || result.duplicate) {
+					warnings.push(`${item.label} : ${result.duplicate ? "vous avez déjà réservé ce créneau" : result.full ? "le créneau est désormais complet" : "le créneau n'est plus disponible"}`);
+					removeFromCart(req, item.id_cart_item);
+					continue;
+				}
+
+				if (result.downgraded) {
+					warnings.push(`${item.label} : plus de crédit disponible sur votre formule, la séance sera à régler sur place`);
+				}
+
+				item.payment_type = result.payment_type;
+				item.reservation_id = result.id_reservation;
+
+				await backend.notify({
+					who: req.session.user_id,
+					action: "booked",
+					what: "slot",
+					how: item.payment_type,
+					id_what: item.id,
+					package_usage: result.package_usage,
+					dog: item.id_dog,
+					detail_what: item.reservation_id
+				});
+
+				reserved.push(item);
+				removeFromCart(req, item.id_cart_item);
+			}
+
+			if (item.type === "package") {
+				const user_package = await backend.post({
+					table: "user_package",
+					body: {
+						id_package: item.id,
+						id_user: req.session.user_id,
+						paid: 0,
+						payment_type: item.payment_type
+					}
+				});
+
+				item.package_id = user_package.result.id;
+
+				await backend.notify({
+					who: req.session.user_id,
+					action: "booked",
+					what: "package",
+					how: item.payment_type,
+					id_what: item.id,
+					detail_what: item.package_id
+				});
+
+				reserved.push(item);
+				removeFromCart(req, item.id_cart_item);
+			}
+		} catch (err) {
+			errorHandler({ err, req });
+			warnings.push(`${item.label} : la réservation a échoué`);
+		}
+	}
+
+	req.session.item_to_pay = reserved.filter(item => item.payment_type === "direct");
+
+	if (reserved.length && req.session.user_id) {
+		try {
+			const user = await backend.get({
+				table: "user",
+				id: req.session.user_id
+			});
+
+			const content = `<p>Bonjour ${user.result.firstname},</p>
+			<p>Nous vous confirmons ${reserved.length > 1 ? "vos réservations" : "votre réservation"}, voici le détail:</p>
+			<p>
+				<ul>
+					${reserved.map(item => `<li>${item.label} - Paiement: ${typeof item.payment_type === "number" ? "Formule" : item.payment_type === "direct" ? "En ligne" : "En personne"}</li>`).join("")}
+				</ul>
+			</p>
+			<p></p>
+			<p>A bientôt !</p>
+			<br/><br/>
+			<p style='color: #ED4337;'>Attention, pour tout créneau au parc de loisirs, merci de laisser vos chiens patienter dans votre voiture jusqu'à ce que l'on vienne vous chercher pour votre activité, et de ne pas les promener sur le parking ni à proximité du jardin de nos voisins.</p>`;
+
+			await MailSender.send({
+				subject: "Confirmation de commande",
+				email: user.result.email,
+				macros: {
+					PRE_HEADER: "C'est reservé !",
+					CONTENT_HTML: content,
+					EMAIL_TYPE: "reminder",
+					EMAIL: user.result.email
+				}
+			});
+		} catch (err) {
+			errorHandler({ err, req });
+		}
+	}
+
+	return { reserved, warnings };
+};
+
+const buildWarningHash = warnings => (warnings.length ? `#${encodeURIComponent(warnings.join(" — "))}` : "");
+
 router.route("/checkout/:idTrainer").get(async (req, res) => {
 	try {
 		const allCartItems = await sortCartItemByTrainers(req);
-		const cartItems = allCartItems[req.params.idTrainer].slot.concat(allCartItems[req.params.idTrainer].package);
+		const trainerCart = allCartItems[req.params.idTrainer];
 
-		const lineItems = cartItems
-			.filter(item => item.payment_type === "direct")
-			.map(item => {
+		if (!trainerCart) {
+			// Panier déjà traité (double clic / retour arrière) : renvoyer vers la
+			// session de paiement en cours s'il y en a une
+			if (req.session.stripe_session_url) {
+				return res.redirect(303, req.session.stripe_session_url);
+			}
+
+			return res.redirect(`${config.get("FRONT_URI")}/cart`);
+		}
+
+		const cartItems = (trainerCart.slot || []).concat(trainerCart.package || []);
+		const { reserved, warnings } = await handleReservation(req, cartItems);
+		const directItems = reserved.filter(item => item.payment_type === "direct");
+
+		// Rien à payer en ligne : pas de passage par Stripe
+		if (!directItems.length) {
+			await saveSession(req);
+			return res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? `/cart${buildWarningHash(warnings)}` : `/account${buildWarningHash(warnings)}`));
+		}
+
+		const { stripe, vatApplicable } = await getTrainerStripe(req.params.idTrainer);
+		const user = req.session.user_id ? await backend.get({ table: "user", id: req.session.user_id }) : null;
+
+		const session = await stripe.checkout.sessions.create({
+			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}/{CHECKOUT_SESSION_ID}`,
+			cancel_url: `${config.get("FRONT_URI")}/account/waiting_payments`,
+			customer_email: user && user.result ? user.result.email : undefined,
+			line_items: directItems.map(item => {
 				return {
 					price_data: {
 						currency: "EUR",
 						product_data: {
 							name: item.label
 						},
-						unit_amount: item.price * 100
+						// Math.round : un prix décimal (ex : 42.7) produit sinon un montant
+						// non entier que Stripe rejette
+						unit_amount: Math.round(item.price * 100)
 					},
 					quantity: 1
 				};
-			});
-
-		const trainer = await backend.get({
-			table: "user",
-			query: {
-				id: req.params.idTrainer
-			}
-		});
-
-		const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
-
-		if (!stripe_sk) {
-			throw "Payment non configuré";
-		}
-
-		const stripe = Stripe(stripe_sk);
-		const session = await stripe.checkout.sessions.create({
-			success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.idTrainer}/{CHECKOUT_SESSION_ID}/${req.session.user_id}`,
-			line_items: lineItems,
+			}),
 			automatic_tax: {
-				enabled: true
+				// Ne l'activer que pour les éducateurs assujettis : sur un compte Stripe
+				// sans enregistrement fiscal, la création de session échoue
+				enabled: vatApplicable
 			},
 			mode: "payment"
 		});
 
-		req.session.stripe_session_id = session.id;
-		req.session.stripe_session_cart = cartItems;
+		// Relier les réservations/formules à la session pour le webhook et le cron
+		for (const item of directItems) {
+			if (item.type === "slot" && item.reservation_id) {
+				await backend.put({
+					table: "reservation",
+					where: { id: item.reservation_id },
+					body: { payment_details: session.id }
+				});
+			}
 
-		await handleReservation(req, req.session.stripe_session_cart, session.id);
+			if (item.type === "package" && item.package_id) {
+				await backend.put({
+					table: "user_package",
+					where: { id: item.package_id },
+					body: { payment_details: session.id }
+				});
+			}
+		}
+
 		await backend.post({
 			table: "payment_activity",
 			body: {
@@ -375,11 +576,15 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 				id_trainer: req.params.idTrainer,
 				user_agent: req.headers["user-agent"],
 				expire_at: new Date(session.expires_at * 1000).toISOString().slice(0, 19).replace("T", " "),
-				details: JSON.stringify(req.session.item_to_pay)
+				details: JSON.stringify(directItems)
 			}
 		});
 
+		req.session.stripe_session_id = session.id;
 		req.session.stripe_session_url = session.url;
+		req.session.item_to_pay = directItems;
+
+		await saveSession(req);
 		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}`);
 	} catch (err) {
 		errorHandler({ err, req, res });
@@ -388,20 +593,23 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 
 router.route("/stripe-redirect/:id_trainer/:session_id").get(async (req, res) => {
 	try {
-		const trainer = await backend.get({
-			table: "user",
-			query: {
-				id: req.params.id_trainer
-			}
-		});
+		const { stripe } = await getTrainerStripe(req.params.id_trainer);
+		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
 
-		const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
-		const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
+		if (session.status === "open" && session.url) {
+			return res.redirect(303, session.url);
+		}
 
-		res.redirect(303, session.url || req.session.stripe_session_url);
+		if (session.status === "complete") {
+			// Déjà payée : confirmer et renvoyer vers le compte plutôt que de
+			// tenter d'ouvrir une page Stripe qui n'existe plus
+			return res.redirect(303, `${config.get("BACK_URI")}/api/v1/cart/payment/success/${req.params.id_trainer}/${session.id}`);
+		}
+
+		res.redirect(`${config.get("FRONT_URI")}/cart#session-expiree`);
 	} catch (err) {
 		errorHandler({ err, req });
-		res.redirect(`${config.get("FRONT_URI")}/cart/success/${req.params.idTrainer}/${session.id}`);
+		res.redirect(`${config.get("FRONT_URI")}/cart`);
 	}
 });
 
@@ -420,161 +628,27 @@ router.route("/stripe-redirect-no-trainer/:session_id").get(async (req, res) => 
 			throw "Session introuvable";
 		}
 
-		const trainer = await backend.get({
-			table: "user",
-			id: id_trainer
-		});
+		const { stripe } = await getTrainerStripe(id_trainer);
+		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
 
-		const stripe_sk = payment_activity.result.length ? trainer.result.stripe_sk : null;
-		const session = await Stripe(stripe_sk).checkout.sessions.retrieve(req.params.session_id);
+		if (session.status === "open" && session.url) {
+			return res.redirect(303, session.url);
+		}
 
-		res.redirect(303, session.url || `${config.get("FRONT_URI")}/account`);
+		if (session.status === "complete") {
+			return res.redirect(303, `${config.get("BACK_URI")}/api/v1/cart/payment/success/${id_trainer}/${session.id}`);
+		}
+
+		res.redirect(`${config.get("FRONT_URI")}/account#session-expiree`);
 	} catch (err) {
-		//	errorHandler({ err, req });
+		errorHandler({ err, req });
+		res.redirect(`${config.get("FRONT_URI")}/account`);
 	}
 });
 
-const handleReservation = async (req, itemToReserve, stripe_id) => {
-	try {
-		for await (const item of itemToReserve) {
-			let package_usage = 0;
-
-			if (item.type === "slot") {
-				if (!["direct", "later"].includes(item.payment_type)) {
-					const current_usage = await backend.get({
-						table: "user_package",
-						id: item.payment_type
-					});
-
-					const _package = await backend.get({
-						table: "package",
-						id: current_usage.result.id_package
-					});
-
-					if (current_usage.result.usage < _package.result.number_of_session) {
-						package_usage = (current_usage.result.usage || 0) + 1;
-
-						await backend.put({
-							table: "user_package",
-							where: {
-								id: item.payment_type
-							},
-							body: {
-								usage: package_usage
-							}
-						});
-					} else {
-						return { error: `Vous avez dépassez le nombre d'utilisation de votre formule ${_package.result.label}` };
-					}
-				}
-
-				if (parseInt(item.payment_type, 10).toString() === item.payment_type) {
-					item.payment_type = parseInt(item.payment_type, 10);
-				}
-
-				const reservation = await backend.post({
-					table: "reservation",
-					body: {
-						id_slot: item.id,
-						id_dog: item.id_dog,
-						paid: !["direct", "later"].includes(item.payment_type),
-						payment_type: typeof item.payment_type === "number" ? "package" : item.payment_type,
-						payment_details: typeof item.payment_type === "number" ? item.payment_type : stripe_id
-					}
-				});
-
-				item.reservation_id = reservation.result.id;
-
-				await backend.notify({
-					who: req.session.user_id,
-					action: "booked",
-					what: "slot",
-					how: item.payment_type,
-					id_what: item.id,
-					package_usage,
-					detail_what: item.reservation_id
-				});
-			}
-
-			if (item.type === "package") {
-				const user_package = await backend.post({
-					table: "user_package",
-					body: {
-						id_package: item.id,
-						id_user: req.session.user_id,
-						paid: !["direct", "later"].includes(item.payment_type),
-						payment_type: item.payment_type,
-						payment_details: stripe_id
-					}
-				});
-
-				item.package_id = user_package.result.id;
-
-				await backend.notify({
-					who: req.session.user_id,
-					action: "booked",
-					what: "package",
-					how: item.payment_type,
-					id_what: item.id,
-					detail_what: item.package_id
-				});
-			}
-		}
-
-		req.session.cart = req.session.cart.filter(item => !itemToReserve.some(paid_item => paid_item.id === item.id && paid_item.type === item.type));
-		req.session.item_to_pay = itemToReserve.filter(item => item.payment_type === "direct");
-
-		const user = await backend.get({
-			table: "user",
-			id: req.session.user_id
-		});
-
-		const content = `<p>Bonjour ${user.result.firstname},</p>
-		<p>Nous vous confirmons ${itemToReserve.length > 1 ? "vos réservations" : "votre réservation"}, voici le détail:</p>
-		<p>
-			<ul>
-				${itemToReserve.map(item => `<li>${item.label} - Paiement: ${typeof item.payment_type === "number" ? "Formule" : item.payment_type === "direct" ? "En ligne" : "En personne"}</li>`).join("")}
-			</ul>
-		</p>
-		<p></p>
-		<p>A bientôt !</p>
-		<br/><br/>
-		<p style='color: #ED4337;'>Attention, pour tout créneau au parc de loisirs, merci de laisser vos chiens patienter dans votre voiture jusqu'à ce que l'on vienne vous chercher pour votre activité, et de ne pas les promener sur le parking ni à proximité du jardin de nos voisins.</p>`;
-
-		await MailSender.send({
-			subject: "Confirmation de commande",
-			email: user.result.email,
-			macros: {
-				PRE_HEADER: "C'est reservé !",
-				CONTENT_HTML: content,
-				EMAIL_TYPE: "reminder",
-				EMAIL: user.result.email
-			}
-		});
-
-		return true;
-	} catch (err) {
-		errorHandler({ err, req });
-		return false;
-	}
-};
-
 router.route("/get-session-status/:id_trainer/:session_id").get(async (req, res) => {
 	try {
-		const trainer = await backend.get({
-			table: "user",
-			query: {
-				id: req.params.id_trainer
-			}
-		});
-
-		const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
-
-		if (!stripe_sk) {
-			throw "Payment non configuré";
-		}
-
-		const stripe = Stripe(stripe_sk);
+		const { stripe } = await getTrainerStripe(req.params.id_trainer);
 		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
 
 		res.send({
@@ -587,80 +661,245 @@ router.route("/get-session-status/:id_trainer/:session_id").get(async (req, res)
 	}
 });
 
-router.route("/payment/success/:id_trainer/:session_id/:id_user").all(async (req, res) => {
+/*
+ * URL de retour Stripe. Le webhook est la source de vérité ; cette route ne
+ * fait que rejouer la même confirmation (idempotente) pour couvrir le cas où
+ * le webhook n'est pas encore configuré ou pas encore arrivé.
+ * L'ancien paramètre :id_user n'est plus utilisé : l'utilisateur est retrouvé
+ * via payment_activity, jamais depuis l'URL.
+ */
+router.route("/payment/success/:id_trainer/:session_id/:id_user?").all(async (req, res) => {
 	try {
-		const trainer = await backend.get({
-			table: "user",
-			query: {
-				id: req.params.id_trainer
-			}
-		});
-
-		const stripe_sk = trainer.result.length ? trainer.result[0].stripe_sk : null;
-
-		if (!stripe_sk) {
-			throw "Payment non configuré";
-		}
-
-		const stripe = Stripe(stripe_sk);
+		const { stripe } = await getTrainerStripe(req.params.id_trainer);
 		const session = await stripe.checkout.sessions.retrieve(req.params.session_id);
 
-		const payment_activity = await backend.get({
-			table: "payment_activity",
-			query: {
-				session_id: session.id
-			}
-		});
-
-		const payment_detail = payment_activity.result.length ? JSON.parse(payment_activity.result[0].details) : req.session.item_to_pay;
-
-		await backend.post({
-			table: "payment_history",
-			body: {
-				session_id: session.id,
-				payment_intent: session.payment_intent,
-				amount: session.amount_total,
-				id_user: req.params.id_user || req.session.user_id,
-				id_trainer: req.params.id_trainer,
-				status: session.status,
-				details: JSON.stringify(payment_detail)
-			}
-		});
-
 		if (session.status !== "complete" || session.payment_status !== "paid") {
-			return res.redirect("/cart#payment-error");
+			return res.redirect(`${config.get("FRONT_URI")}/cart#payment-error`);
 		}
 
-		for await (const item of payment_detail) {
-			if (item.type === "slot") {
-				await backend.put({
-					table: "reservation",
-					id: item.reservation_id,
-					body: {
-						paid: 1,
-						payment_details: session.id
-					}
-				});
-			}
-
-			if (item.type === "package") {
-				await backend.put({
-					table: "user_package",
-					id: item.package_id,
-					body: {
-						paid: 1,
-						payment_details: session.id
-					}
-				});
-			}
-		}
+		await confirmCheckoutSession({ id_trainer: req.params.id_trainer, session });
 
 		const fromCart = !!req.session?.item_to_pay?.length;
 
-		req.session.item_to_pay = [];
+		if (req.session) {
+			req.session.item_to_pay = [];
+
+			if (req.session.stripe_session_id === session.id) {
+				delete req.session.stripe_session_id;
+				delete req.session.stripe_session_url;
+			}
+
+			await saveSession(req);
+		}
+
 		res.redirect(config.get("FRONT_URI") + (fromCart ? "/close" : "/account/waiting_payments"));
 	} catch (err) {
 		errorHandler({ err, req, res });
+	}
+});
+
+/*
+ * Paiement d'un élément déjà réservé mais non réglé (bouton "Régler" du compte,
+ * ou lien de paiement copié par l'éducateur).
+ *
+ * L'utilisateur garde sa place même si sa session Checkout d'origine a expiré ou
+ * a échoué : on réutilise la session encore ouverte s'il y en a une, sinon on en
+ * crée une nouvelle pour ce seul élément. Fonctionne aussi pour les éléments
+ * marqués "à régler sur place" (later), et pour un créneau déjà passé (il arrive
+ * qu'une séance soit réglée après coup).
+ *
+ * Autorisation : signature du lien (client non connecté), propriétaire connecté,
+ * ou éducateur concerné.
+ */
+const isAuthorizedForPayment = (req, { type, id, id_owner, id_trainer }) => {
+	if (verifyPaymentToken({ type, id, token: req.query.t })) {
+		return true;
+	}
+
+	if (!req.session || !req.session.user_id) {
+		return false;
+	}
+
+	return req.session.user_id === id_owner || (!!req.session.is_trainer && req.session.user_id === id_trainer);
+};
+
+/**
+ * Crée (ou réutilise) une session Checkout pour un unique élément et l'enregistre
+ * dans payment_activity pour que la confirmation (URL de retour, cron, webhook)
+ * sache quoi marquer comme payé.
+ */
+const startSingleItemCheckout = async ({ req, id_trainer, id_user, email, label, price, existing_session_id, details, cancel_path }) => {
+	const { stripe, vatApplicable } = await getTrainerStripe(id_trainer);
+
+	// Session encore ouverte pour cet élément ? La réutiliser plutôt que d'en
+	// empiler une nouvelle (double clic, onglet refermé, lien renvoyé...)
+	if (String(existing_session_id || "").startsWith("cs_")) {
+		try {
+			const existing = await stripe.checkout.sessions.retrieve(existing_session_id);
+			if (existing.status === "open" && existing.url) {
+				return existing;
+			}
+		} catch (err) {
+			// session inconnue/illisible : on en crée une nouvelle
+		}
+	}
+
+	const session = await stripe.checkout.sessions.create({
+		success_url: `${config.get("BACK_URI")}/api/v1/cart/payment/success/${id_trainer}/{CHECKOUT_SESSION_ID}`,
+		cancel_url: `${config.get("FRONT_URI")}${cancel_path}`,
+		customer_email: email || undefined,
+		line_items: [
+			{
+				price_data: {
+					currency: "EUR",
+					product_data: {
+						name: label
+					},
+					unit_amount: Math.round(price * 100)
+				},
+				quantity: 1
+			}
+		],
+		automatic_tax: {
+			enabled: vatApplicable
+		},
+		mode: "payment"
+	});
+
+	await backend.post({
+		table: "payment_activity",
+		body: {
+			session_id: session.id,
+			// Toujours le propriétaire de l'élément : avec un lien signé, celui qui
+			// paie n'est pas forcément connecté
+			id_user,
+			id_trainer,
+			user_agent: req.headers["user-agent"],
+			expire_at: new Date(session.expires_at * 1000).toISOString().slice(0, 19).replace("T", " "),
+			details: JSON.stringify(details)
+		}
+	});
+
+	return session;
+};
+
+router.route("/pay-reservation/:id_reservation").get(async (req, res) => {
+	const fallback = `${config.get("FRONT_URI")}/account/waiting_payments`;
+
+	try {
+		const rows = await query(
+			`SELECT
+				r.id,
+				r.paid,
+				r.enabled,
+				r.payment_type,
+				r.payment_details,
+				s.date,
+				s.id_trainer,
+				a.label,
+				a.price,
+				d.id_user,
+				u.email
+			FROM reservation r
+			JOIN slot s ON s.id = r.id_slot
+			JOIN activity a ON a.id = s.id_activity
+			JOIN dog d ON d.id = r.id_dog
+			JOIN user u ON u.id = d.id_user
+			WHERE r.id = ?`,
+			[req.params.id_reservation]
+		);
+
+		const reservation = rows[0];
+
+		if (!reservation) {
+			return res.redirect(fallback);
+		}
+
+		if (!isAuthorizedForPayment(req, { type: "reservation", id: reservation.id, id_owner: reservation.id_user, id_trainer: reservation.id_trainer })) {
+			return res.redirect(req.session && req.session.user_id ? fallback : `${config.get("FRONT_URI")}/login`);
+		}
+
+		if (!reservation.enabled || reservation.paid === 1) {
+			return res.redirect(fallback);
+		}
+
+		const formattedDate = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(new Date(reservation.date));
+		const label = `${reservation.label} - ${formattedDate}`;
+
+		const session = await startSingleItemCheckout({
+			req,
+			id_trainer: reservation.id_trainer,
+			id_user: reservation.id_user,
+			email: reservation.email,
+			label,
+			price: parseFloat(reservation.price),
+			existing_session_id: reservation.payment_details,
+			details: [{ type: "slot", reservation_id: reservation.id, label, price: parseFloat(reservation.price) }],
+			cancel_path: "/account/waiting_payments"
+		});
+
+		await query("UPDATE reservation SET payment_type = 'direct', payment_details = ? WHERE id = ?", [session.id, reservation.id]);
+
+		res.redirect(303, session.url);
+	} catch (err) {
+		errorHandler({ err, req });
+		res.redirect(fallback);
+	}
+});
+
+router.route("/pay-package/:id_user_package").get(async (req, res) => {
+	const fallback = `${config.get("FRONT_URI")}/account/waiting_payments`;
+
+	try {
+		const rows = await query(
+			`SELECT
+				up.id,
+				up.paid,
+				up.id_user,
+				up.payment_details,
+				p.label,
+				p.price,
+				p.id_trainer,
+				u.email
+			FROM user_package up
+			JOIN package p ON p.id = up.id_package
+			JOIN user u ON u.id = up.id_user
+			WHERE up.id = ?`,
+			[req.params.id_user_package]
+		);
+
+		const user_package = rows[0];
+
+		if (!user_package) {
+			return res.redirect(fallback);
+		}
+
+		if (!isAuthorizedForPayment(req, { type: "user_package", id: user_package.id, id_owner: user_package.id_user, id_trainer: user_package.id_trainer })) {
+			return res.redirect(req.session && req.session.user_id ? fallback : `${config.get("FRONT_URI")}/login`);
+		}
+
+		if (user_package.paid === 1) {
+			return res.redirect(fallback);
+		}
+
+		const session = await startSingleItemCheckout({
+			req,
+			id_trainer: user_package.id_trainer,
+			id_user: user_package.id_user,
+			email: user_package.email,
+			label: user_package.label,
+			price: parseFloat(user_package.price),
+			existing_session_id: user_package.payment_details,
+			details: [{ type: "package", package_id: user_package.id, label: user_package.label, price: parseFloat(user_package.price) }],
+			cancel_path: "/account/waiting_payments"
+		});
+
+		await query("UPDATE user_package SET payment_type = 'direct', payment_details = ? WHERE id = ?", [session.id, user_package.id]);
+
+		res.redirect(303, session.url);
+	} catch (err) {
+		errorHandler({ err, req });
+		res.redirect(fallback);
 	}
 });
 
@@ -668,20 +907,16 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 	try {
 		const allCartItems = await sortCartItemByTrainers(req);
 		if (!allCartItems[req.params.idTrainer]) {
-			throw {
-				error: "Can't handle an empty cart",
-				idTrainer: req.params.idTrainer,
-				allCartItems
-			};
+			return res.redirect(`${config.get("FRONT_URI")}/cart`);
 		}
 
-		const cartItems = (allCartItems[req.params.idTrainer].slot || []).concat(allCartItems[req.params.idTrainer].package);
-		const allReserved = await handleReservation(req, cartItems);
+		const cartItems = (allCartItems[req.params.idTrainer].slot || []).concat(allCartItems[req.params.idTrainer].package || []);
+		const { warnings } = await handleReservation(req, cartItems);
 
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" + (allReserved.error ? "#" + allReserved.error : "") : "/account"));
+		await saveSession(req);
+		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account") + buildWarningHash(warnings));
 	} catch (err) {
-		errorHandler({ err, req });
-		return false;
+		errorHandler({ err, req, res });
 	}
 });
 

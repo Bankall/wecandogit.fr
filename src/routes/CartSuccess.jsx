@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
+
+const AUTO_REDIRECT_DELAY = 5;
 
 export const Component = () => {
 	const { id_trainer, session_id } = useParams();
@@ -7,6 +10,23 @@ export const Component = () => {
 		url: `/cart/get-session-status/${id_trainer}/${session_id}`,
 		interval: 1
 	});
+
+	const stripe_url = `${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect/${id_trainer}/${session_id}`;
+	const [countdown, setCountdown] = useState(AUTO_REDIRECT_DELAY);
+	const [auto_redirect, setAutoRedirect] = useState(true);
+
+	// Send the user to Stripe on its own unless they already clicked the button (the link opens in a new tab) or already paid
+	useEffect(() => {
+		if (!auto_redirect || (data && data.payment_status === "paid")) return;
+
+		if (countdown <= 0) {
+			window.location.href = stripe_url;
+			return;
+		}
+
+		const timeout = setTimeout(() => setCountdown(current => current - 1), 1000);
+		return () => clearTimeout(timeout);
+	}, [auto_redirect, countdown, data, stripe_url]);
 
 	return (
 		<>
@@ -45,9 +65,13 @@ export const Component = () => {
 								<p className='margin-b-20'>En cas de problème de paiement, veuillez nous contacter.</p>
 							</div>
 
-							<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect/${id_trainer}/${session_id}`} target='_blank'>
-								<button className='margin-t-20'>Procéder au paiement</button>
+							<a href={stripe_url} target='_blank' onClick={() => setAutoRedirect(false)}>
+								<button className='margin-t-20'>
+									Procéder au paiement
+									{auto_redirect && countdown > 0 && ` (${countdown})`}
+								</button>
 							</a>
+							{auto_redirect && <p className='margin-t-20'>Redirection automatique vers le paiement dans quelques secondes…</p>}
 						</div>
 					</div>
 				</div>

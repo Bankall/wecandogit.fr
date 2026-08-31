@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { exec } from "child_process";
 import { shuffle, errorHandler } from "../../lib/utils.js";
 import axios from "axios";
 
@@ -11,7 +12,8 @@ router.route("/ping").get((req, res) => {
 
 router.route("/get-current-version").get((req, res) => {
 	try {
-		require("child_process").exec("git rev-parse HEAD", function (err, stdout) {
+		// `require` n'existe pas en ESM : cette route plantait systématiquement
+		exec("git rev-parse HEAD", function (err, stdout) {
 			res.send({
 				version: stdout
 			});
@@ -72,6 +74,8 @@ router.route("/user/:id").get(async (req, res, next) => {
 		});
 
 		delete data.result[0].password;
+		delete data.result[0].stripe_sk;
+		delete data.result[0].stripe_whsec;
 
 		res.send({
 			ok: true,
@@ -96,6 +100,8 @@ router.route("/me").get(async (req, res) => {
 		}
 
 		delete data.result[0].password;
+		delete data.result[0].stripe_sk;
+		delete data.result[0].stripe_whsec;
 
 		res.send({
 			ok: true,
@@ -426,7 +432,11 @@ router.route("/get-reviews").get(async (req, res) => {
 			return res.send(cachedReviews);
 		}
 
-		const { data } = await axios.get("https://places.googleapis.com/v1/places/ChIJ8yRNHrKz7iUReSJcT90Ok7w?key=AIzaSyDtFaGeGR5rB75OjS-F5M1ZQn8xmrxkrGo&fields=reviews", {
+		if (!process.env.GOOGLE_PLACES_API_KEY) {
+			return res.send({ reviews: [] });
+		}
+
+		const { data } = await axios.get(`https://places.googleapis.com/v1/places/ChIJ8yRNHrKz7iUReSJcT90Ok7w?key=${process.env.GOOGLE_PLACES_API_KEY}&fields=reviews`, {
 			headers: {
 				Referer: "https://www.wecandogit.com/"
 			}

@@ -15,7 +15,7 @@ const switchRouter = params => {
 	if (params.action) {
 		switch (params.action) {
 			case "user-package":
-				return <DashboardListComponent addLabel='Ajouter une formule' title='Formules' type='user_package' id_user={params.id} />;
+				return <DashboardListComponent addLabel='Ajouter une formule' title='Formules' type='user_package' id_user={params.id} allowedActions={["modify", "copy-payment-link"]} />;
 			case "reservations":
 				return <DashboardListComponent title='Reservations' type='reservation' id_user={params.id} allowedActions={[]} />;
 		}
@@ -25,7 +25,7 @@ const switchRouter = params => {
 		case "profile":
 			return <AccountInfo />;
 		case "reservations":
-			return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete-24"]} />;
+			return <DashboardListComponent title='Mes réservations' type='reservation' allowedActions={["delete-24", "pay-reservation"]} />;
 		case "waiting_payments":
 			return <DashboardListComponent title='Mes paiements en attente' type='unpaid_cart' allowedActions={["pay"]} />;
 		case "packages":
@@ -37,9 +37,9 @@ const switchRouter = params => {
 		case "users":
 			return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage", "handleUserReservation", "modify"]} />;
 		case "slots":
-			return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation"]} />;
+			return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation", "copy-payment-link"]} />;
 		case "past-slots":
-			return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={[]} />;
+			return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={["copy-payment-link"]} />;
 		case "all-slots":
 			return <DashboardListComponent title='Tout les créneaux' type='all_slot' allowedActions={[]} />;
 		case "user-packages":

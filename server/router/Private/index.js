@@ -1,6 +1,12 @@
 import { Router } from "express";
 import MailSender from "../../lib/mail-sender/index.cjs";
 import { errorHandler } from "../../lib/utils.js";
+import { query } from "../../lib/db.js";
+import { reserveSlot, cancelReservation, consumePackageCredit, CANCELLATION_CUTOFF_HOURS } from "../../lib/booking.js";
+import { buildPaymentUrl, buildShortPaymentUrls } from "../../lib/payment-link.js";
+
+import config from "config";
+
 let backend;
 
 const router = Router();
@@ -8,35 +14,23 @@ router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
 
-const handleRefund = async ({ id_reservation, req }) => {
-	try {
-		const reservation = await backend.get({
-			table: "reservation",
-			id: id_reservation
-		});
+const getReservationContext = async id_reservation => {
+	const rows = await query(
+		`SELECT
+			r.id,
+			r.id_slot,
+			r.id_dog,
+			r.enabled,
+			s.date slot_date,
+			d.id_user
+		FROM reservation r
+		JOIN slot s ON s.id = r.id_slot
+		JOIN dog d ON d.id = r.id_dog
+		WHERE r.id = ?`,
+		[id_reservation]
+	);
 
-		if (reservation.result.paid === 1 && reservation.result.payment_type === "package") {
-			const user_package = await backend.get({
-				table: "user_package",
-				id: reservation.result.payment_details
-			});
-
-			const package_usage = user_package.result.usage - 1;
-			await backend.put({
-				table: "user_package",
-				where: {
-					id: reservation.result.payment_details
-				},
-				body: {
-					usage: package_usage
-				}
-			});
-
-			return package_usage;
-		}
-	} catch (err) {
-		errorHandler({ err, req });
-	}
+	return rows[0] || null;
 };
 
 router.route(["/activity/:id?", "/slot/:id?", "/package/:id?", "/payment_history"]).all((req, res, next) => {
@@ -166,7 +160,7 @@ router
 					r.payment_type,
 					r.payment_details
 
-				FROM reservation r 
+				FROM reservation r
 				JOIN slot s on s.id = r.id_slot
 				JOIN activity a on a.id = s.id_activity
 				JOIN dog d on d.id = r.id_dog
@@ -188,6 +182,42 @@ router
 	})
 	.post(async (req, res, next) => {
 		try {
+			if (!req.session.user_id) {
+				return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+			}
+
+			if (!req.session.is_trainer) {
+				// Un client ne peut réserver que pour son propre chien, sur un créneau
+				// avec de la place, en passant par le parcours transactionnel
+				const dog = await backend.get({ table: "dog", id: req.body.id_dog });
+				if (!dog.result || dog.result.id_user !== req.session.user_id) {
+					return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+				}
+
+				const user_packages = await backend.getUserPackageForID({ id_slot: req.body.id_slot, available: true, req });
+				const result = await reserveSlot({
+					id_slot: req.body.id_slot,
+					id_dog: req.body.id_dog,
+					payment_type: user_packages.length ? user_packages[0].id : "later"
+				});
+
+				if (result.unavailable || result.full || result.duplicate) {
+					return res.send({ error: result.duplicate ? "Vous avez déjà réservé ce créneau" : "Ce créneau n'est plus disponible" });
+				}
+
+				await backend.notify({
+					who: req.session.user_id,
+					action: "booked",
+					what: "slot",
+					how: typeof result.payment_type === "number" ? result.payment_type : "later",
+					package_usage: result.package_usage,
+					dog: req.body.id_dog,
+					id_what: req.body.id_slot
+				});
+
+				return res.send({ id: result.id_reservation });
+			}
+
 			if (!req.body.id_dog && req.body.dog_label) {
 				const dog = await backend.post({
 					table: "dog",
@@ -209,36 +239,31 @@ router
 			let package_usage = null;
 
 			if (user_package.length) {
-				package_usage = user_package[0].usage + 1;
+				// Consommation atomique : ne marque payé que si un crédit restait vraiment
+				package_usage = await consumePackageCredit(user_package[0].id);
 
-				await backend.put({
-					table: "user_package",
-					where: {
-						id: user_package[0].id
-					},
-					body: {
-						usage: package_usage
-					}
-				});
-
-				await backend.put({
-					table: "reservation",
-					where: {
-						id: reservation.result.id
-					},
-					body: {
-						paid: 1,
-						payment_details: user_package[0].id,
-						payment_type: "package"
-					}
-				});
+				if (package_usage !== false) {
+					await backend.put({
+						table: "reservation",
+						where: {
+							id: reservation.result.id
+						},
+						body: {
+							paid: 1,
+							payment_details: user_package[0].id,
+							payment_type: "package"
+						}
+					});
+				} else {
+					package_usage = null;
+				}
 			}
 
 			await backend.notify({
 				who: req.session.user_id,
 				action: "booked",
 				what: "slot",
-				how: user_package.length ? user_package[0].id : "later",
+				how: user_package.length && package_usage !== null ? user_package[0].id : "later",
 				package_usage,
 				dog: req.body.id_dog,
 				id_what: req.body.id_slot
@@ -251,25 +276,56 @@ router
 	})
 	.put(async (req, res, next) => {
 		try {
-			if (req.body.enabled === 0) {
-				const package_usage = await handleRefund({ id_reservation: req.params.id, req });
-				const reservation = await backend.get({ table: "reservation", id: req.params.id });
+			const reservation = await getReservationContext(req.params.id);
+			if (!reservation) {
+				return res.send({ error: "Réservation introuvable" });
+			}
 
-				await backend.notify({
-					who: req.session.user_id,
-					action: "unbooked",
-					what: "slot",
-					dog: reservation.result.id_dog,
-					how: "",
-					package_usage,
-					id_what: reservation.result.id_slot
+			const isOwner = reservation.id_user === req.session.user_id;
+			if (!req.session.is_trainer && !isOwner) {
+				return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+			}
+
+			if (req.body.enabled === 0) {
+				// Le délai d'annulation n'était vérifié que côté client
+				if (!req.session.is_trainer) {
+					const cutoff = new Date(Date.now() + CANCELLATION_CUTOFF_HOURS * 60 * 60 * 1000);
+					if (new Date(reservation.slot_date) <= cutoff) {
+						return res.send({ error: `Annulation impossible à moins de ${CANCELLATION_CUTOFF_HOURS}h du créneau` });
+					}
+				}
+
+				const outcome = await cancelReservation({ id_reservation: req.params.id, byTrainer: !!req.session.is_trainer });
+
+				if (!outcome.alreadyCancelled) {
+					await backend.notify({
+						who: req.session.user_id,
+						action: "unbooked",
+						what: "slot",
+						dog: reservation.id_dog,
+						how: "",
+						package_usage: outcome.package_usage,
+						id_what: reservation.id_slot
+					});
+				}
+
+				return res.send({
+					ok: true,
+					refund: outcome.refund || null,
+					package_usage: outcome.package_usage
 				});
 			}
-		} catch (err) {
-			errorHandler({ err, req });
-		}
 
-		next();
+			// Seul un éducateur peut marquer une réservation comme payée ou en
+			// modifier d'autres champs
+			if (!req.session.is_trainer) {
+				return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+			}
+
+			next();
+		} catch (err) {
+			errorHandler({ err, req, res });
+		}
 	});
 
 const getSlotsListing = async (req, res) => {
@@ -368,6 +424,18 @@ const getSlotsListing = async (req, res) => {
 				}
 			});
 		}
+
+		// Lien de paiement court, à copier et envoyer au client : il fonctionne même
+		// s'il n'est pas connecté. Un seul aller-retour en base pour tout le listing.
+		const unpaidDogs = Object.values(results)
+			.flatMap(slot => slot.dogs)
+			.filter(dog => !dog.paid && dog.id_reservation);
+
+		const payUrls = await buildShortPaymentUrls(unpaidDogs.map(dog => ({ type: "reservation", id: dog.id_reservation })));
+		unpaidDogs.forEach(dog => {
+			dog.pay_url = payUrls.get(`reservation:${dog.id_reservation}`);
+		});
+
 		res.send(
 			Object.values(results)
 				.sort((a, b) => {
@@ -396,19 +464,18 @@ router
 	.put(async (req, res, next) => {
 		try {
 			if (req.body.enabled === 0) {
+				// Annulation par l'éducateur : rembourse crédits de formule ET paiements
+				// Stripe de toutes les réservations actives du créneau
 				const reservations = await backend.get({
 					table: "reservation",
 					query: {
 						id_slot: req.params.id,
-						enabled: 1,
-						payment_type: "package"
+						enabled: 1
 					}
 				});
 
-				if (reservations.result.length) {
-					for await (const reservation of reservations.result) {
-						await handleRefund({ id_reservation: reservation.id, req });
-					}
+				for (const reservation of reservations.result || []) {
+					await cancelReservation({ id_reservation: reservation.id, byTrainer: true });
 				}
 			}
 
@@ -462,6 +529,10 @@ router.route("/create-slots").post(async (req, res) => {
 
 router.route("/user").get(async (req, res) => {
 	try {
+		if (!req.session.is_trainer) {
+			return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+		}
+
 		const users = await backend.get({
 			table: "user"
 		});
@@ -486,6 +557,11 @@ router.route("/user").get(async (req, res) => {
 			users.result
 				.filter(user => user.id !== 2 && user.firstname)
 				.map(user => {
+					// Jamais de secrets dans une réponse, même pour un éducateur
+					delete user.password;
+					delete user.stripe_sk;
+					delete user.stripe_whsec;
+
 					user.label = `<a href="tel:${user.phone}"><i class="fa-solid fa-phone"></i></a> ${user.firstname} ${user.lastname} <a href="mailto:${user.email}" target="_blank">&lt;${user.email}&gt;</a>`;
 					user.dogs = dogByUser[user.id];
 					return user;
@@ -498,11 +574,12 @@ router.route("/user").get(async (req, res) => {
 
 router.route("/user_package").get(async (req, res) => {
 	try {
+		// Un membre ne consulte que ses propres formules, quel que soit le paramètre
+		const id_user = req.session.is_trainer ? req.query.id_user || req.session.user_id : req.session.user_id;
+
 		const user_packages = await backend.get({
 			table: "user_package",
-			query: {
-				id_user: req.query.id_user || req.session.user_id
-			}
+			query: { id_user }
 		});
 
 		if (user_packages.result.length) {
@@ -514,6 +591,16 @@ router.route("/user_package").get(async (req, res) => {
 
 				user_package.label = `${_package.result.label} - ${user_package.usage}/${_package.result.number_of_session} - ${user_package.start}`;
 			}
+
+			// Lien de paiement d'une formule non réglée. Côté éducateur c'est un lien
+			// court, copié puis envoyé au client (qui n'est pas forcément connecté) ;
+			// côté membre, le lien direct suffit, sa session l'autorise.
+			const unpaid = user_packages.result.filter(user_package => !user_package.paid);
+			const payUrls = req.session.is_trainer ? await buildShortPaymentUrls(unpaid.map(user_package => ({ type: "user_package", id: user_package.id }))) : null;
+
+			unpaid.forEach(user_package => {
+				user_package.pay_url = payUrls ? payUrls.get(`user_package:${user_package.id}`) : buildPaymentUrl({ type: "user_package", id: user_package.id });
+			});
 		}
 
 		res.send(user_packages.result);
@@ -709,6 +796,10 @@ router.route("/send-mail").post(async (req, res) => {
 
 router.route("/notification").get(async (req, res) => {
 	try {
+		if (!req.session.is_trainer) {
+			return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+		}
+
 		const notifications = await backend.handleQuery(
 			`SELECT
 				n.id_what id,
@@ -812,46 +903,135 @@ router.route("/user-count").get(async (req, res) => {
 	}
 });
 
+/*
+ * "Mes paiements en attente" : tout ce qui reste à régler, quelle qu'en soit la
+ * raison (choisi "à régler sur place", paiement en ligne abandonné ou échoué),
+ * avec un lien de paiement par élément. Les tentatives de paiement en ligne non
+ * abouties de moins de 24h sont listées à part, avec le lien de leur session
+ * Stripe encore ouverte.
+ *
+ * Les impayés de plus de 3 mois ne sont plus listés : ce sont pour l'essentiel
+ * des séances anciennes réglées en personne mais jamais pointées comme payées.
+ * L'éducateur les retrouve dans ses créneaux passés (avec un lien de paiement).
+ * Tout ce qui est à venir reste listé, même au-delà de 3 mois.
+ */
+const UNPAID_HISTORY_MONTHS = 3;
+
 router.route("/unpaid_cart").get(async (req, res) => {
 	try {
-		const carts = await backend.handleQuery(
-			`select
-				pa.id_user,
-				pa.id_trainer,
-				concat(u.firstname, ' ', u.lastname) label,
-				pa.details,
-				pa.expire_at,
-				pa.created_at date,
-				0 paid,
-				pa.session_id payment_details,
-				'direct' payment_type
-
-				
-			from payment_activity pa
-			join user u on u.id = pa.id_trainer
-			left outer join payment_history ph on ph.session_id = pa.session_id
-
-			where ph.session_id is null
-			and pa.expire_at > current_timestamp
-			and pa.id_user = ?`,
-			[req.session.user_id],
-			null,
-			true
-		);
-
-		if (!carts.result.length) {
+		if (!req.session.user_id) {
 			return res.send([]);
 		}
 
-		res.send(
-			carts.result.map(cart => {
-				return {
-					...cart,
-					details: JSON.parse(cart.details)
-				};
-			})
+		const formatPrice = price => `${parseFloat(price)}€`;
+
+		const failedCheckouts = await query(
+			`SELECT
+				pa.session_id,
+				pa.details,
+				pa.created_at date,
+				concat(u.firstname, ' ', u.lastname) trainer
+
+			FROM payment_activity pa
+			JOIN user u ON u.id = pa.id_trainer
+			LEFT JOIN payment_history ph ON ph.session_id = pa.session_id
+
+			WHERE 	pa.id_user = ?
+			AND 	ph.session_id IS NULL
+			AND 	pa.created_at > date_sub(current_timestamp, interval 24 hour)
+
+			ORDER BY pa.created_at DESC`,
+			[req.session.user_id]
 		);
-	} catch (err) {}
+
+		const reservations = await query(
+			`SELECT
+				r.id,
+				r.paid,
+				r.payment_type,
+				r.payment_details,
+				s.date,
+				a.label,
+				a.price,
+				d.label dog
+
+			FROM reservation r
+			JOIN slot s ON s.id = r.id_slot
+			JOIN activity a ON a.id = s.id_activity
+			JOIN dog d ON d.id = r.id_dog
+
+			WHERE 	d.id_user = ?
+			AND 	r.enabled = 1
+			AND 	r.paid = 0
+			AND 	s.date > date_sub(current_timestamp, interval ? month)
+
+			ORDER BY s.date DESC`,
+			[req.session.user_id, UNPAID_HISTORY_MONTHS]
+		);
+
+		const user_packages = await query(
+			`SELECT
+				up.id,
+				up.paid,
+				up.payment_type,
+				up.payment_details,
+				up.start date,
+				p.label,
+				p.price,
+				p.number_of_session
+
+			FROM user_package up
+			JOIN package p ON p.id = up.id_package
+
+			WHERE 	up.id_user = ?
+			AND 	up.paid = 0
+			AND 	up.start > date_sub(current_timestamp, interval ? month)
+
+			ORDER BY up.start DESC`,
+			[req.session.user_id, UNPAID_HISTORY_MONTHS]
+		);
+
+		res.send([
+			...failedCheckouts.map(checkout => {
+				const details = checkout.details ? JSON.parse(checkout.details) : [];
+
+				return {
+					id: checkout.session_id,
+					group_label: "Paiement en ligne non abouti",
+					label: `${checkout.trainer} - ${formatPrice(details.reduce((total, item) => total + parseFloat(item.price || 0), 0))}`,
+					date: checkout.date,
+					paid: 0,
+					payment_type: "direct",
+					payment_details: checkout.session_id,
+					details,
+					// Reprise de la session Stripe existante (encore ouverte)
+					pay_url: `${config.get("BACK_URI")}/api/v1/cart/stripe-redirect-no-trainer/${checkout.session_id}`
+				};
+			}),
+			...reservations.map(reservation => ({
+				id: reservation.id,
+				group_label: "Réservation",
+				label: `${reservation.label} - ${reservation.dog} - ${formatPrice(reservation.price)}`,
+				date: reservation.date,
+				paid: reservation.paid,
+				payment_type: reservation.payment_type,
+				payment_details: reservation.payment_details,
+				pay_url: buildPaymentUrl({ type: "reservation", id: reservation.id })
+			})),
+			...user_packages.map(user_package => ({
+				id: user_package.id,
+				group_label: "Formule",
+				label: `${user_package.label} - ${user_package.number_of_session} séances - ${formatPrice(user_package.price)}`,
+				date: user_package.date,
+				paid: user_package.paid,
+				payment_type: user_package.payment_type,
+				payment_details: user_package.payment_details,
+				pay_url: buildPaymentUrl({ type: "user_package", id: user_package.id })
+			}))
+		]);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
 });
 
 router.route("/payment_history").get(async (req, res) => {
