@@ -83,6 +83,63 @@ const shouldBeFiltered = (filter, item) => {
 	}
 };
 
+/*
+ * Filter values are kept in localStorage, keyed by the current URL, so they
+ * survive a remount (navigating away then back) without leaking to other pages.
+ * They expire after a while so an old filter never silently hides rows.
+ */
+const FILTER_STORAGE_PREFIX = "dashboard-filter:";
+const FILTER_STORAGE_TTL = 5 * 60 * 1000;
+
+// Pages that always start with an empty filter.
+const FILTER_STORAGE_EXCLUDED_PATHS = ["/account/notifications"];
+
+const getFilterStorageKey = pathname => {
+	pathname = pathname.replace(/\/+$/, "");
+
+	if (FILTER_STORAGE_EXCLUDED_PATHS.includes(pathname)) {
+		return false;
+	}
+
+	return pathname;
+};
+
+const readStoredFilter = key => {
+	if (!key) {
+		return false;
+	}
+
+	try {
+		const stored = JSON.parse(window.localStorage.getItem(FILTER_STORAGE_PREFIX + key));
+
+		if (!stored || !stored.value || stored.expires < Date.now()) {
+			window.localStorage.removeItem(FILTER_STORAGE_PREFIX + key);
+			return false;
+		}
+
+		return stored.value;
+	} catch (err) {
+		return false;
+	}
+};
+
+const writeStoredFilter = (key, value) => {
+	if (!key) {
+		return;
+	}
+
+	try {
+		if (!value) {
+			window.localStorage.removeItem(FILTER_STORAGE_PREFIX + key);
+			return;
+		}
+
+		window.localStorage.setItem(FILTER_STORAGE_PREFIX + key, JSON.stringify({ value, expires: Date.now() + FILTER_STORAGE_TTL }));
+	} catch (err) {
+		// localStorage unavailable (private mode, quota exceeded) : the filter simply won't persist
+	}
+};
+
 const getPaymentLabel = item => {
 	if (item.paid) {
 		let label = "Réglé";
@@ -103,8 +160,29 @@ const getPaymentLabel = item => {
 	return "Non réglé";
 };
 
-const isSupported = item => {
-	return true;
+/*
+ * Lien de paiement signé, à copier puis envoyer au client (SMS, mail...) : il
+ * fonctionne même si le client n'est pas connecté.
+ */
+const CopyPaymentLinkButton = ({ url }) => {
+	const [copied, setCopied] = useState(false);
+
+	const copy = async () => {
+		try {
+			await navigator.clipboard.writeText(url);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		} catch (err) {
+			// Presse-papier indisponible (http, permission refusée) : on affiche le lien
+			window.prompt("Lien de paiement à copier", url);
+		}
+	};
+
+	return (
+		<button className='smallest' onClick={copy} title={url}>
+			{copied ? "Lien copié !" : "Copier le lien de paiement"}
+		</button>
+	);
 };
 
 export default function DashboardListComponent({ type, title, addLabel, allowedActions, id_user, endpoint }) {
@@ -113,9 +191,12 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 	const [extraTitle, setExtraTitle] = useState(false);
 
 	const params = useParams();
+	const pathname = window.location.pathname;
+	const storageKey = getFilterStorageKey(pathname);
 
 	const setFilterWrapper = value => {
 		setFilter(value);
+		writeStoredFilter(storageKey, value);
 	};
 
 	useEffect(() => {
@@ -142,7 +223,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 			}
 		};
 
-		setFilter(false);
+		setFilter(readStoredFilter(storageKey));
 		setExtraTitle(false);
 
 		fetch();
@@ -180,23 +261,23 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				{extraTitle ? " - " + extraTitle : ""}
 			</div>
 			<div className='content'>
-				{response.data?.length && (response.data?.length > 10 || params.action === "filter") ?
+				{response.data?.length && (response.data?.length > 10 || params.action === "filter" || filter) ?
 					<div className='filter-box margin-b-20'>
 						<input
 							type='text'
 							name='filter'
 							defaultValue={filter ? filter : ""}
 							onKeyUp={event => {
-								setFilter(event.target.value);
+								setFilterWrapper(event.target.value);
 							}}
 							placeholder='Filtrer les résultats'
-							key={type}
+							key={pathname}
 						/>
 						<span
 							className='clear-filter'
 							onClick={() => {
 								document.querySelector("input[name=filter]").value = "";
-								setFilter(false);
+								setFilterWrapper(false);
 							}}>
 							x
 						</span>
@@ -242,11 +323,19 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 										</span>
 									)}
 
-									{getPaymentLabel(item) === "En attente de paiement" && isSupported(item) && allowedActions.includes("pay") && (
-										<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/stripe-redirect-no-trainer/${item.payment_details}`}>
-											<button className='smallest'>Régler</button>
+									{allowedActions.includes("pay") && item.pay_url && !item.paid && (
+										<a href={item.pay_url}>
+											<button className='smallest'>Payer en ligne</button>
 										</a>
 									)}
+
+									{allowedActions.includes("pay-reservation") && typeof item.paid !== "undefined" && !item.paid && (
+										<a href={`${import.meta.env.VITE_API_ENDPOINT}/cart/pay-reservation/${item.id}`}>
+											<button className='smallest'>Payer en ligne</button>
+										</a>
+									)}
+
+									{allowedActions.includes("copy-payment-link") && item.pay_url && !item.paid && <CopyPaymentLinkButton url={item.pay_url} />}
 
 									{typeof item.paid !== "undefined" && <span className={item.paid ? "paid" : "unpaid"}>{getPaymentLabel(item)}</span>}
 
@@ -280,7 +369,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 											onClick={() => {
 												markAsPaid(item.id, "user_package", type);
 											}}>
-											Marquer comme payé
+											Marquer comme réglé
 										</button>
 									)}
 
@@ -319,6 +408,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 													)}
 													<span className='flex-grow'>&nbsp;- {dog.label}</span>
 													{typeof dog.paid !== "undefined" && <span className={dog.paid ? "paid" : "unpaid"}>{getPaymentLabel(dog)}</span>}
+													{allowedActions.includes("copy-payment-link") && dog.pay_url && !dog.paid && <CopyPaymentLinkButton url={dog.pay_url} />}
 													{typeof dog.paid !== "undefined" && !dog.paid && (
 														<button
 															className='smallest'
@@ -330,7 +420,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 																	dispatchEvent(new Event(`refresh-list-${type}`));
 																}
 															}}>
-															Régler
+															Marquer comme réglé
 														</button>
 													)}
 												</li>
