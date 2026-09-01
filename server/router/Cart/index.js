@@ -240,7 +240,9 @@ const sortCartItemByTrainers = async req => {
 		// affecter deux séances au même crédit (cause du bug de sur-réservation)
 		const creditsLeft = {};
 		const registerPackages = packages => {
-			(packages || []).forEach(user_package => {
+			// An unexpected shape here used to throw, and the catch below then hid the
+			// whole cart behind "votre panier est vide"
+			(Array.isArray(packages) ? packages : []).forEach(user_package => {
 				if (typeof creditsLeft[user_package.id] === "undefined") {
 					creditsLeft[user_package.id] = Math.max(0, user_package.number_of_session - user_package.usage);
 				}

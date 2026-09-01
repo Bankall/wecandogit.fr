@@ -232,7 +232,10 @@ backend.start(() => {
 				true
 			);
 
-			return user_package.result;
+			// The generic query helper returns an empty object, not an empty array,
+			// when a SELECT matches no row. Callers expect a list, so normalise it:
+			// having no package covering the slot is a perfectly valid case.
+			return Array.isArray(user_package.result) ? user_package.result : [];
 		} catch (err) {
 			console.log(err);
 			return [];

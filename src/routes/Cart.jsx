@@ -62,7 +62,7 @@ const ListItem = ({ item, setError, unavailableSlots }) => {
 					{item.dogs && item.dogs.length > 1 && (
 						<select
 							name='dog-selector'
-							value={item.id_dog || items.dogs[0].id}
+							value={item.id_dog || item.dogs[0].id}
 							onChange={event => {
 								updateCartItem(setError, "update-dog", item, event.currentTarget.value);
 							}}>
@@ -84,7 +84,7 @@ const ListItem = ({ item, setError, unavailableSlots }) => {
 						<option value='direct'>Payer en ligne</option>
 						{item.type === "slot" && <option value='later'>Payer en personne</option>}
 						{item.type === "slot" &&
-							item.package_available?.length &&
+							item.package_available?.length > 0 &&
 							item.package_available.map((_package, index) => (
 								<option value={_package.id} key={index}>
 									Utiliser la formule {_package.label}
