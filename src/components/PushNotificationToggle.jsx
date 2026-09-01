@@ -25,7 +25,7 @@ export default function PushNotificationToggle() {
 					<span className='push-hint'>Ce navigateur ne gère pas les notifications</span>
 				: needsInstall ?
 					<span className='push-hint'>Sur iPhone/iPad : ouvre le menu Partager puis « Sur l'écran d'accueil », et réessaye depuis l'icône installée</span>
-				:	<>
+				:	<span className='flex-row no-wrap'>
 						{subscribed && (
 							<button className='smallest' disabled={busy} onClick={sendTest}>
 								Tester
@@ -33,14 +33,22 @@ export default function PushNotificationToggle() {
 						)}
 
 						<button className='small' disabled={busy} onClick={subscribed ? unsubscribe : subscribe}>
-							{busy ? "…" : subscribed ? "Désactiver" : "Activer"}
+							{busy ?
+								"…"
+							: subscribed ?
+								"Désactiver"
+							:	"Activer"}
 						</button>
-					</>
+					</span>
 				}
 			</div>
 
-			{error ? <div className='push-message unpaid'>{error}</div> : null}
-			{message ? <div className='push-message paid'>{message}</div> : null}
+			{error ?
+				<div className='push-message unpaid'>{error}</div>
+			:	null}
+			{message ?
+				<div className='push-message paid'>{message}</div>
+			:	null}
 		</div>
 	);
 }

@@ -271,7 +271,7 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 				{header}
 
 				{scopes ?
-					<div className='scope-box margin-b-20 flex-row'>
+					<div className='scope-box margin-b-20 flex-row md-flex-row'>
 						{scopes.map((item, index) => (
 							<button className={index === scope ? "small" : "small inactive"} key={index} onClick={() => setScope(index)}>
 								{item.label}
