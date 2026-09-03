@@ -73,6 +73,12 @@ router.route("/user/:id").get(async (req, res, next) => {
 			}
 		});
 
+		// A listing of no row is an empty list: reading [0] of it blindly turned an
+		// unknown id into a TypeError instead of a clean error (as /me already does)
+		if (!data.result.length) {
+			throw { error: "Could not find user data" };
+		}
+
 		delete data.result[0].password;
 		delete data.result[0].stripe_sk;
 		delete data.result[0].stripe_whsec;

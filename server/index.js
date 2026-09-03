@@ -42,6 +42,34 @@ const backend = new MySQLBackend({
 	}
 });
 
+/*
+ * An empty listing must be an empty array, not an empty object.
+ *
+ * The query helper returns {} whenever a SELECT matches no row, whatever the
+ * shape asked for. Every caller that treats a listing as a list then blew up on
+ * the perfectly valid "nothing yet" case, because {} passes a `result || []`
+ * guard and is neither iterable nor mappable, and that same {} was served as-is
+ * to the frontend.
+ *
+ * A listing is exactly a query the helper is asked to return as an array, and
+ * every read goes through handleQuery — including get() and the auto-generated
+ * CRUD, which dispatch on `this` — so normalising here covers the whole
+ * codebase. A get by id is not a listing and keeps returning an object, so
+ * `if (!user.result.id)` checks are unaffected.
+ */
+const isEmptyObject = value => !!value && typeof value === "object" && !Array.isArray(value) && !Object.keys(value).length;
+const queryWithoutNormalising = backend.handleQuery.bind(backend);
+
+backend.handleQuery = async (query, args, eventKey, array, insertId) => {
+	const response = await queryWithoutNormalising(query, args, eventKey, array, insertId);
+
+	if (array && isEmptyObject(response.result)) {
+		response.result = [];
+	}
+
+	return response;
+};
+
 app.set("trust proxy", 1);
 
 app.use(
