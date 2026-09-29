@@ -344,6 +344,16 @@ const UserProfile = [
 		type: "string",
 		label: "Recevoir les rappels de réservation par email",
 		uitype: "checkbox"
+	},
+	{
+		name: "can_pay_later",
+		type: "string",
+		label: "Autoriser le paiement en personne (sinon : en ligne ou avec une formule déjà réglée)",
+		uitype: "checkbox",
+		acl: {
+			// A permission a trainer sets on a member, not a field of one's own profile
+			other_user: true
+		}
 	}
 ];
 

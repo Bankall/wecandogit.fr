@@ -40,7 +40,7 @@ const updateCartItem = async (setError, action, item, value) => {
 	}
 };
 
-const ListItem = ({ item, setError, unavailableSlots }) => {
+const ListItem = ({ item, setError, unavailableSlots, canPayLater }) => {
 	const isAvailable = unavailableSlots?.find(slot => slot.id === item.id) ? false : true;
 
 	return (
@@ -82,7 +82,7 @@ const ListItem = ({ item, setError, unavailableSlots }) => {
 							updateCartItem(setError, "update-payment", item, event.currentTarget.value);
 						}}>
 						<option value='direct'>Payer en ligne</option>
-						{item.type === "slot" && <option value='later'>Payer en personne</option>}
+						{item.type === "slot" && canPayLater && <option value='later'>Payer en personne</option>}
 						{item.type === "slot" &&
 							item.package_available?.length > 0 &&
 							item.package_available.map((_package, index) => (
@@ -106,7 +106,7 @@ const fetchCartItems = async setCartItems => {
 	}
 };
 
-const CartByTrainer = ({ trainer, disabled }) => {
+const CartByTrainer = ({ trainer, disabled, canPayLater }) => {
 	const BACKEND_BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 	const [error, setError] = useState("");
 	const [unavailableSlots, setUnavailableSlots] = useState([]);
@@ -144,11 +144,11 @@ const CartByTrainer = ({ trainer, disabled }) => {
 			<div className='title'>{trainer.firstname}</div>
 
 			{trainer.package.map((item, index) => (
-				<ListItem item={item} key={index} setError={setError} />
+				<ListItem item={item} key={index} setError={setError} canPayLater={canPayLater} />
 			))}
 
 			{trainer.slot.map((item, index) => (
-				<ListItem item={item} key={index} setError={setError} unavailableSlots={unavailableSlots} />
+				<ListItem item={item} key={index} setError={setError} unavailableSlots={unavailableSlots} canPayLater={canPayLater} />
 			))}
 
 			{trainer.tax_excluded > 0 && (
@@ -249,7 +249,7 @@ function Cart() {
 								</div>
 							</div>
 						) : null}
-						{cartItems.data?.result?.length ? cartItems.data?.result?.map(trainer => <CartByTrainer key={trainer.id} trainer={trainer} disabled={Object.values(cartItems.data.notice).length} />) : <div className='box'>Votre panier est vide</div>}
+						{cartItems.data?.result?.length ? cartItems.data?.result?.map(trainer => <CartByTrainer key={trainer.id} trainer={trainer} disabled={Object.values(cartItems.data.notice).length} canPayLater={cartItems.data.can_pay_later !== false} />) : <div className='box'>Votre panier est vide</div>}
 					</div>
 				</div>
 			</section>

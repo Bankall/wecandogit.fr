@@ -2,7 +2,7 @@ import { Router } from "express";
 import MailSender from "../../lib/mail-sender/index.cjs";
 import { errorHandler } from "../../lib/utils.js";
 import { query } from "../../lib/db.js";
-import { reserveSlot, cancelReservation, consumePackageCredit, CANCELLATION_CUTOFF_HOURS } from "../../lib/booking.js";
+import { reserveSlot, cancelReservation, consumePackageCredit, defaultPaymentType, CANCELLATION_CUTOFF_HOURS } from "../../lib/booking.js";
 import { buildPaymentUrl, buildShortPaymentUrls } from "../../lib/payment-link.js";
 import { listNotifications } from "../../lib/notification.js";
 
@@ -196,10 +196,15 @@ router
 				}
 
 				const user_packages = await backend.getUserPackageForID({ id_slot: req.body.id_slot, available: true, req });
+
+				// Without a package credit the session is to be settled in person, unless
+				// the member lost that option, in which case they owe an online payment
+				const fallback = await defaultPaymentType(req.session.user_id);
 				const result = await reserveSlot({
 					id_slot: req.body.id_slot,
 					id_dog: req.body.id_dog,
-					payment_type: user_packages.length ? user_packages[0].id : "later"
+					payment_type: user_packages.length ? user_packages[0].id : fallback,
+					downgrade_payment_type: fallback
 				});
 
 				if (result.unavailable || result.full || result.duplicate) {
@@ -210,7 +215,7 @@ router
 					who: req.session.user_id,
 					action: "booked",
 					what: "slot",
-					how: typeof result.payment_type === "number" ? result.payment_type : "later",
+					how: result.payment_type,
 					package_usage: result.package_usage,
 					dog: req.body.id_dog,
 					id_what: req.body.id_slot
@@ -842,8 +847,65 @@ router.route("/user-count").get(async (req, res) => {
  * des séances anciennes réglées en personne mais jamais pointées comme payées.
  * L'éducateur les retrouve dans ses créneaux passés (avec un lien de paiement).
  * Tout ce qui est à venir reste listé, même au-delà de 3 mois.
+ *
+ * Nothing a member no longer owes is listed: a reservation on a slot the trainer
+ * deleted is off the hook, whatever its own `enabled` flag says (slots deleted
+ * before cancellation became part of that flow left their reservations active).
  */
 const UNPAID_HISTORY_MONTHS = 3;
+
+const parseCheckoutDetails = details => {
+	try {
+		return details ? JSON.parse(details) : [];
+	} catch (err) {
+		return [];
+	}
+};
+
+/*
+ * An unfinished online payment is only worth showing while its Stripe session can
+ * still be paid as it stands. Once one of the items it covers is gone (cancelled
+ * by the trainer) or settled another way, paying that session would charge for it
+ * anyway, so the attempt is dropped from the list — whatever is still owed is
+ * listed item by item below, each with its own payment link.
+ */
+const keepResumableCheckouts = async checkouts => {
+	const items = checkouts.flatMap(checkout => checkout.items);
+	const reservationIds = items.filter(item => item.type === "slot" && item.reservation_id).map(item => item.reservation_id);
+	const packageIds = items.filter(item => item.type === "package" && item.package_id).map(item => item.package_id);
+
+	const payableReservations = reservationIds.length
+		? new Set(
+				(
+					await query(
+						`SELECT r.id
+						FROM reservation r
+						JOIN slot s ON s.id = r.id_slot
+						WHERE r.id IN (?) AND r.enabled = 1 AND s.enabled = 1 AND r.paid = 0`,
+						[reservationIds]
+					)
+				).map(row => row.id)
+			)
+		: new Set();
+
+	const payablePackages = packageIds.length ? new Set((await query("SELECT id FROM user_package WHERE id IN (?) AND paid = 0", [packageIds])).map(row => row.id)) : new Set();
+
+	return checkouts.filter(
+		checkout =>
+			checkout.items.length &&
+			checkout.items.every(item => {
+				if (item.type === "slot") {
+					return payableReservations.has(item.reservation_id);
+				}
+
+				if (item.type === "package") {
+					return payablePackages.has(item.package_id);
+				}
+
+				return false;
+			})
+	);
+};
 
 router.route("/unpaid_cart").get(async (req, res) => {
 	try {
@@ -872,6 +934,8 @@ router.route("/unpaid_cart").get(async (req, res) => {
 			[req.session.user_id]
 		);
 
+		const resumableCheckouts = await keepResumableCheckouts(failedCheckouts.map(checkout => Object.assign({}, checkout, { items: parseCheckoutDetails(checkout.details) })));
+
 		const reservations = await query(
 			`SELECT
 				r.id,
@@ -890,6 +954,7 @@ router.route("/unpaid_cart").get(async (req, res) => {
 
 			WHERE 	d.id_user = ?
 			AND 	r.enabled = 1
+			AND 	s.enabled = 1
 			AND 	r.paid = 0
 			AND 	s.date > date_sub(current_timestamp, interval ? month)
 
@@ -920,22 +985,18 @@ router.route("/unpaid_cart").get(async (req, res) => {
 		);
 
 		res.send([
-			...failedCheckouts.map(checkout => {
-				const details = checkout.details ? JSON.parse(checkout.details) : [];
-
-				return {
-					id: checkout.session_id,
-					group_label: "Paiement en ligne non abouti",
-					label: `${checkout.trainer} - ${formatPrice(details.reduce((total, item) => total + parseFloat(item.price || 0), 0))}`,
-					date: checkout.date,
-					paid: 0,
-					payment_type: "direct",
-					payment_details: checkout.session_id,
-					details,
-					// Reprise de la session Stripe existante (encore ouverte)
-					pay_url: `${config.get("BACK_URI")}/api/v1/cart/stripe-redirect-no-trainer/${checkout.session_id}`
-				};
-			}),
+			...resumableCheckouts.map(checkout => ({
+				id: checkout.session_id,
+				group_label: "Paiement en ligne non abouti",
+				label: `${checkout.trainer} - ${formatPrice(checkout.items.reduce((total, item) => total + parseFloat(item.price || 0), 0))}`,
+				date: checkout.date,
+				paid: 0,
+				payment_type: "direct",
+				payment_details: checkout.session_id,
+				details: checkout.items,
+				// Reprise de la session Stripe existante (encore ouverte)
+				pay_url: `${config.get("BACK_URI")}/api/v1/cart/stripe-redirect-no-trainer/${checkout.session_id}`
+			})),
 			...reservations.map(reservation => ({
 				id: reservation.id,
 				group_label: "Réservation",

@@ -5,6 +5,40 @@ const CANCELLATION_CUTOFF_HOURS = parseInt(process.env.CANCELLATION_CUTOFF_HOURS
 
 const isPackagePayment = payment_type => /^\d+$/.test(String(payment_type));
 
+/*
+ * Paying in person ("later") is a per-member permission: some members booked
+ * session after session that way and never settled, so a trainer can take the
+ * option away from them (`user.can_pay_later = 0` on their profile). Those
+ * members can then only pay online or spend a package credit.
+ *
+ * The column is tolerated as absent (the migration may not have run yet), in
+ * which case everybody keeps the option, as before.
+ */
+let userHasCanPayLaterColumn = null;
+const canPayLater = async id_user => {
+	if (!id_user) {
+		return true;
+	}
+
+	if (userHasCanPayLaterColumn === null) {
+		const columns = await query("SHOW COLUMNS FROM user LIKE 'can_pay_later'");
+		userHasCanPayLaterColumn = columns.length > 0;
+	}
+
+	if (!userHasCanPayLaterColumn) {
+		return true;
+	}
+
+	const rows = await query("SELECT can_pay_later FROM user WHERE id = ?", [id_user]);
+	return !rows.length || rows[0].can_pay_later !== 0;
+};
+
+/**
+ * The payment type a member ends up with when no package credit is left: paying
+ * on site if they are allowed to, an online payment to settle otherwise.
+ */
+const defaultPaymentType = async id_user => ((await canPayLater(id_user)) ? "later" : "direct");
+
 /**
  * Décrémente atomiquement le crédit restant d'une formule.
  * Retourne la nouvelle utilisation, ou false si plus aucun crédit disponible.
@@ -47,11 +81,14 @@ const restorePackageCredit = async (id_user_package, connection) => {
  * - verrouille le créneau (FOR UPDATE) pour sérialiser les réservations concurrentes
  * - vérifie la capacité et les doublons
  * - consomme atomiquement un crédit de formule ; s'il n'en reste plus, la réservation
- *   est conservée mais bascule en paiement "sur place" (later) au lieu d'échouer
+ *   est conservée mais bascule sur `downgrade_payment_type` au lieu d'échouer
  *
  * payment_type: "direct" | "later" | id de user_package (number ou string numérique)
+ *
+ * `downgrade_payment_type` is what an exhausted package falls back to: "later" for a
+ * member who may still pay in person, "direct" for one who may not (see canPayLater).
  */
-const reserveSlot = ({ id_slot, id_dog, payment_type, payment_details = null }) => {
+const reserveSlot = ({ id_slot, id_dog, payment_type, payment_details = null, downgrade_payment_type = "later" }) => {
 	return withTransaction(async connection => {
 		const slots = await query(
 			`SELECT
@@ -94,7 +131,7 @@ const reserveSlot = ({ id_slot, id_dog, payment_type, payment_details = null }) 
 			if (package_usage === false) {
 				downgraded = true;
 				package_usage = null;
-				finalPaymentType = "later";
+				finalPaymentType = downgrade_payment_type;
 			}
 		}
 
@@ -327,4 +364,4 @@ const markCheckoutExpired = async ({ session_id }) => {
 	return { settled: true };
 };
 
-export { reserveSlot, cancelReservation, consumePackageCredit, restorePackageCredit, confirmCheckoutSession, markCheckoutExpired, refundStripePayment, isPackagePayment, CANCELLATION_CUTOFF_HOURS };
+export { reserveSlot, cancelReservation, consumePackageCredit, restorePackageCredit, confirmCheckoutSession, markCheckoutExpired, refundStripePayment, isPackagePayment, canPayLater, defaultPaymentType, CANCELLATION_CUTOFF_HOURS };

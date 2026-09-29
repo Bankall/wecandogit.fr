@@ -177,7 +177,13 @@ the trainers' Stripe accounts.
    ```
    Rotating the VAPID keys invalidates every stored subscription (each trainer
    has to press "Activer" again), so keep them alongside the other secrets.
-7. Recommended indexes:
+7. **Per-member "pay in person" permission** (section 7) — required for the trainer
+   checkbox on a member's profile to work. Until it is run, the code behaves as
+   before (everybody may pay in person) and the checkbox cannot be saved:
+   ```sql
+   ALTER TABLE user ADD COLUMN can_pay_later TINYINT(1) NOT NULL DEFAULT 1;
+   ```
+8. Recommended indexes:
    ```sql
    CREATE INDEX idx_reservation_slot_enabled ON reservation (id_slot, enabled);
    CREATE INDEX idx_payment_activity_session ON payment_activity (session_id);
@@ -303,6 +309,22 @@ Deliberately deferred:
   "Régler" button on their reservations page; the trainer sees the unpaid badge on the
   slot and can cancel or mark it paid in person. Consequence: a slot can fill up with
   unpaid bookings — releasing seats is a deliberate, manual trainer decision.
+- **Paying in person is a per-member permission.** Booking a slot offers "Payer en
+  personne" (`payment_type = 'later'`, settled with the trainer), and some members
+  used it session after session without ever settling. A trainer can therefore take
+  the option away from one member, from their profile
+  (`/account/user/edit/:id` → "Autoriser le paiement en personne", stored in
+  `user.can_pay_later`, granted by default). That member can then only pay online or
+  spend a package credit: the option disappears from their cart, `PUT /cart/:item/…`
+  refuses it if asked for anyway, a `later` left in an older cart is dropped, and an
+  exhausted package credit downgrades their booking to an online payment instead of a
+  session to pay on site (`reserveSlot`'s `downgrade_payment_type`). `canPayLater()`
+  in `lib/booking.js` is the single source of that answer. The restriction is about
+  *booking*: a trainer still marks any session paid in person afterwards, which is
+  what `payment_type = 'later'` also means on an already-settled reservation.
+  A member cannot lift their own restriction: `PUT /update-user` (no `:id`) now only
+  writes a whitelist of self-editable fields — which also closes the older hole of a
+  member granting themselves `is_trainer`.
 - **Paying afterwards.** `/account/waiting_payments` lists everything a member still
   owes: unpaid reservations and unpaid packages (whatever the reason — "pay on site" or
   an online payment that never went through), each with its amount and its own
@@ -316,6 +338,15 @@ Deliberately deferred:
   reuse the open session if there is one, otherwise create a fresh single-item one;
   both accept past slots (a session is often settled after the fact) and refuse
   anything already paid or cancelled.
+  **Only what is really still owed is listed.** A reservation whose *slot* the trainer
+  deleted is never listed (nor payable): deleting a slot cancels its reservations
+  today, but deletions from before that left them `enabled = 1`, and members kept
+  being asked to pay for sessions that no longer existed — so the listing and
+  `/cart/pay-reservation/:id` both check `slot.enabled`, as `/reservation` already
+  did. An unfinished online attempt is only offered while **all** of the items its
+  Checkout session covers are still unpaid and active: resuming a session charges its
+  original total, so once one item is gone the attempt is dropped and the remaining
+  items are paid one by one from their own links.
   Trainers can copy those links from `/account/slots`, `/account/past-slots` and
   `/account/users/user-package/:id_user` and send them to a client. A copied link
   carries an HMAC signature over its (type, id) so it works **without a session** —

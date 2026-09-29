@@ -3,7 +3,7 @@ import { errorHandler } from "../../lib/utils.js";
 import MailSender from "../../lib/mail-sender/index.cjs";
 import { getTrainerStripe } from "../../lib/stripe.js";
 import { query } from "../../lib/db.js";
-import { reserveSlot, confirmCheckoutSession, isPackagePayment } from "../../lib/booking.js";
+import { reserveSlot, confirmCheckoutSession, isPackagePayment, canPayLater } from "../../lib/booking.js";
 import { verifyPaymentToken } from "../../lib/payment-link.js";
 
 import config from "config";
@@ -88,17 +88,21 @@ router.route("/add").post(async (req, res) => {
 
 router
 	.route("/:id_cart_item/:type/:id/:id_dog")
-	.put((req, res) => {
+	.put(async (req, res) => {
 		try {
 			if (!req.session.cart) {
 				throw "Panier vide";
 			}
 
+			// The option is hidden in the cart for a member who lost it, but the choice
+			// is sent by the browser: refuse it here too, or it is a one-request bypass
+			const payLaterRefused = req.body.payment_type === "later" && !(await canPayLater(req.session.user_id));
+
 			req.session.cart = req.session.cart.map(item => {
 				try {
 					if (item.id_cart_item === parseInt(req.params.id_cart_item, 10)) {
 						if (req.body.payment_type) {
-							item.payment_type = req.body.payment_type;
+							item.payment_type = payLaterRefused ? "direct" : req.body.payment_type;
 						}
 
 						if (req.body.id_dog) {
@@ -236,6 +240,8 @@ const sortCartItemByTrainers = async req => {
 			}
 		});
 
+		const payLaterAllowed = await canPayLater(req.session.user_id);
+
 		// Crédits restants par formule, décomptés au fil du panier pour ne pas
 		// affecter deux séances au même crédit (cause du bug de sur-réservation)
 		const creditsLeft = {};
@@ -276,6 +282,12 @@ const sortCartItemByTrainers = async req => {
 			data.id_dog = item.id_dog || (dog.result && dog.result.length ? dog.result[0].id : 0);
 			data.id_cart_item = item.id_cart_item;
 
+			// A member who lost the "pay in person" option may still have "later" sitting
+			// in a cart chosen before that: forget it and pick a payment type again
+			if (data.payment_type === "later" && !payLaterAllowed) {
+				data.payment_type = null;
+			}
+
 			registerPackages(data.package_available);
 
 			if (isPackagePayment(data.payment_type)) {
@@ -285,7 +297,7 @@ const sortCartItemByTrainers = async req => {
 				if (creditsLeft[id_user_package] > 0) {
 					creditsLeft[id_user_package] -= 1;
 				} else {
-					data.payment_type = "later";
+					data.payment_type = payLaterAllowed ? "later" : "direct";
 				}
 			} else if (!data.payment_type && data.package_available && data.package_available.length) {
 				const available = data.package_available.find(user_package => creditsLeft[user_package.id] > 0);
@@ -368,7 +380,9 @@ router.route("/full-cart").get(async (req, res) => {
 		const byTrainers = await sortCartItemByTrainers(req);
 		res.send({
 			result: Object.values(byTrainers),
-			notice
+			notice,
+			// Whether to offer "Payer en personne" at all on this member's slots
+			can_pay_later: await canPayLater(req.session.user_id)
 		});
 	} catch (err) {
 		errorHandler({ err, req, res });
@@ -387,6 +401,7 @@ const removeFromCart = (req, id_cart_item) => {
 const handleReservation = async (req, itemToReserve) => {
 	const reserved = [];
 	const warnings = [];
+	const payLaterAllowed = await canPayLater(req.session.user_id);
 
 	for (const item of itemToReserve) {
 		try {
@@ -394,7 +409,8 @@ const handleReservation = async (req, itemToReserve) => {
 				const result = await reserveSlot({
 					id_slot: item.id,
 					id_dog: item.id_dog,
-					payment_type: item.payment_type
+					payment_type: item.payment_type,
+					downgrade_payment_type: payLaterAllowed ? "later" : "direct"
 				});
 
 				if (result.unavailable || result.full || result.duplicate) {
@@ -404,7 +420,7 @@ const handleReservation = async (req, itemToReserve) => {
 				}
 
 				if (result.downgraded) {
-					warnings.push(`${item.label} : plus de crédit disponible sur votre formule, la séance sera à régler sur place`);
+					warnings.push(`${item.label} : plus de crédit disponible sur votre formule, la séance sera à régler ${payLaterAllowed ? "sur place" : "en ligne"}`);
 				}
 
 				item.payment_type = result.payment_type;
@@ -798,6 +814,7 @@ router.route("/pay-reservation/:id_reservation").get(async (req, res) => {
 				r.payment_details,
 				s.date,
 				s.id_trainer,
+				s.enabled slot_enabled,
 				a.label,
 				a.price,
 				d.id_user,
@@ -821,7 +838,9 @@ router.route("/pay-reservation/:id_reservation").get(async (req, res) => {
 			return res.redirect(req.session && req.session.user_id ? fallback : `${config.get("FRONT_URI")}/login`);
 		}
 
-		if (!reservation.enabled || reservation.paid === 1) {
+		// Nothing to pay for a cancelled reservation, nor for one whose slot the trainer
+		// deleted (old deletions left the reservations themselves enabled)
+		if (!reservation.enabled || !reservation.slot_enabled || reservation.paid === 1) {
 			return res.redirect(fallback);
 		}
 
@@ -913,10 +932,15 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 		}
 
 		const cartItems = (allCartItems[req.params.idTrainer].slot || []).concat(allCartItems[req.params.idTrainer].package || []);
-		const { warnings } = await handleReservation(req, cartItems);
+		const { reserved, warnings } = await handleReservation(req, cartItems);
+
+		// This route is for a cart with nothing to pay online (everything covered by
+		// packages). A credit exhausted between the cart page and here leaves a member
+		// who cannot pay in person with an online payment to make: point them at it.
+		const owesOnlinePayment = reserved.some(item => item.payment_type === "direct");
 
 		await saveSession(req);
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : "/account") + buildWarningHash(warnings));
+		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : owesOnlinePayment ? "/account/waiting_payments" : "/account") + buildWarningHash(warnings));
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

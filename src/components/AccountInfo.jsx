@@ -26,6 +26,12 @@ export default function AccountInfo() {
 								return false;
 							}
 
+							// Permissions a trainer grants to a member: only shown when editing
+							// someone else's profile (/account/user/edit/:id), never one's own
+							if (row.acl && row.acl.other_user && !id) {
+								return false;
+							}
+
 							return true;
 						}).map(row => {
 							const item = Object.assign({}, row);

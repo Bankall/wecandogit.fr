@@ -38,6 +38,17 @@ router.route("/is-logged-in").get((req, res) => {
 	});
 });
 
+/*
+ * Fields a member may set on their own profile. Anything else in the body is
+ * dropped: this route used to write whatever it was given, so a member could
+ * grant themselves `is_trainer` or hand back a `can_pay_later` a trainer took
+ * away. A trainer editing someone (`/update-user/:id`) is not restricted.
+ */
+const SELF_EDITABLE_USER_FIELDS = ["email", "firstname", "lastname", "phone", "address", "postal_code", "city", "instagram", "newsletter_optin", "reminder_optin"];
+
+// A trainer also administers their own Stripe account and VAT status
+const SELF_EDITABLE_TRAINER_FIELDS = ["stripe_sk", "stripe_whsec", "vat_applicable"];
+
 router.route("/update-user/:id?").put(async (req, res, next) => {
 	try {
 		const { id } = req.params;
@@ -45,11 +56,21 @@ router.route("/update-user/:id?").put(async (req, res, next) => {
 			throw { error: "You are not allowed to update another user" };
 		}
 
-		await backend.put({
-			table: "user",
-			id: id || req.session.user_id,
-			body: req.body
-		});
+		let body = req.body;
+
+		if (!id) {
+			const allowed = req.session.is_trainer ? SELF_EDITABLE_USER_FIELDS.concat(SELF_EDITABLE_TRAINER_FIELDS) : SELF_EDITABLE_USER_FIELDS;
+
+			body = Object.fromEntries(Object.entries(req.body).filter(([field]) => allowed.includes(field)));
+		}
+
+		if (Object.keys(body).length) {
+			await backend.put({
+				table: "user",
+				id: id || req.session.user_id,
+				body
+			});
+		}
 
 		res.send({
 			ok: true
