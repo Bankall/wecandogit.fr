@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Formik, Form, Field, ErrorMessage, useFormikContext, FieldArray } from "formik";
 import { Interweave } from "interweave";
 import { useParams } from "react-router-dom";
+import { AddressAutocompleteField } from "../components/AddressAutocompleteField";
 
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { ClassicEditor, AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BalloonToolbar, BlockToolbar, Bold, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, Heading, HorizontalLine, ImageBlock, ImageCaption, ImageInline, ImageInsert, ImageInsertViaUrl, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, ImageUpload, Indent, IndentBlock, Italic, Link, List, Paragraph, RemoveFormat, SelectAll, SimpleUploadAdapter, Strikethrough, TextTransformation, Underline, Undo, FindNextCommand } from "ckeditor5";
@@ -355,6 +356,7 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 									case "number":
 									case "tel":
 									case "address":
+									case "address-autocomplete":
 									case "date":
 									case "datetime-local":
 									case "field-array-datetime-local":
@@ -419,6 +421,8 @@ const FormikWrapper = ({ options, onSubmit, submitText }) => {
 																</div>
 															)}
 														/>
+													) : value.uitype === "address-autocomplete" ? (
+														<AddressAutocompleteField name={value.name} placeholder={options.use_placeholders ? value.label : value.placeholder} maxLength={value.maxLength} />
 													) : (
 														<Field type={value.uitype} name={value.name} inputMode={value.inputmode} autoComplete={value.disableAutocomplete ? "one-time-code" : value.name} maxLength={value.maxLength} placeholder={options.use_placeholders ? value.label : value.placeholder} />
 													)}

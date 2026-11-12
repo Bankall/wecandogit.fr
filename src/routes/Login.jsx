@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { FormikWrapper } from "../utils/utils.formik";
 
@@ -7,11 +7,19 @@ import axios from "axios";
 import { LoginForm, RegisterForm } from "../data/dashboard-form-data";
 
 import "./Login.css";
+
+// `?next=` takes a full path (the `:redirect` segment only fits one level). Only
+// paths on this site are followed, never another origin ("//evil.example")
+const getSafeNextPath = next => (next && next.startsWith("/") && !next.startsWith("//") ? next : "");
+
+export { getSafeNextPath };
+
 export default function Login() {
 	const { hash } = useLocation();
 	const navigate = useNavigate();
 	const params = useParams();
-	const redirect = params.redirect ? `/${params.redirect}` : "";
+	const [searchParams] = useSearchParams();
+	const redirect = params.redirect ? `/${params.redirect}` : getSafeNextPath(searchParams.get("next"));
 
 	const GoogleOAuthUrl = useFetch({
 		url: "/auth/oauth/get-google-redirect-url",

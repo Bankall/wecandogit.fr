@@ -5,7 +5,7 @@ import "./index.css";
 
 import Root from "./routes/Root";
 import Home from "./routes/Home";
-import Login from "./routes/Login";
+import Login, { getSafeNextPath } from "./routes/Login";
 import ErrorPage from "./routes/ErrorPage";
 import { Component as Maintenance } from "./routes/Maintenance";
 
@@ -178,6 +178,10 @@ const router = createBrowserRouter([
 					{
 						path: "success/:id_trainer/:session_id",
 						lazy: () => import("./routes/CartSuccess")
+					},
+					{
+						path: "liste-attente/:id",
+						lazy: () => import("./routes/WaitingListClaim")
 					}
 				]
 			},
@@ -266,9 +270,9 @@ const router = createBrowserRouter([
 		path: "/login/:redirect?",
 		element: <Login />,
 		errorElement: <ErrorPage />,
-		loader: async ({ params }) => {
+		loader: async ({ params, request }) => {
 			const ok = await isLoggedIn();
-			return ok ? redirect(params.redirect ? `/${params.redirect}` : "/account") : null;
+			return ok ? redirect(params.redirect ? `/${params.redirect}` : getSafeNextPath(new URL(request.url).searchParams.get("next")) || "/account") : null;
 		}
 	},
 	{

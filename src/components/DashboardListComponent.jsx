@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Interweave } from "interweave";
 
 import axios from "axios";
@@ -47,6 +47,121 @@ const handleDelete = async (id, typeOverride, type) => {
 	} catch (err) {
 		await LogError(err);
 	}
+};
+
+/*
+ * Trainer cancelling a reservation paid online: the Stripe payment is refunded only
+ * if they say so (`refund`). A package credit, the other way to have paid, is always
+ * given back by the server, so that case needs no question.
+ */
+const cancelReservationWithRefundChoice = async (id_reservation, refund, type) => {
+	try {
+		const { data } = await axios.put(`/reservation/${id_reservation}`, { enabled: 0, refund });
+
+		if (data.error) {
+			throw data.error;
+		}
+
+		if (refund && data.refund && !data.refund.ok) {
+			window.alert(`La réservation est annulée, mais le remboursement Stripe a échoué (${data.refund.reason}). Il est à faire depuis le tableau de bord Stripe.`);
+		}
+
+		window.dispatchEvent(new Event(`refresh-list-${type}`));
+	} catch (err) {
+		window.alert(`L'annulation a échoué : ${err}`);
+		await LogError(err);
+	}
+};
+
+// choice: { dog, type } while open. onChoose(true | false) cancels with / without refund,
+// onChoose() closes without doing anything (also Escape)
+const RefundChoiceDialog = ({ choice, onChoose }) => {
+	const dialogRef = useRef(null);
+
+	useEffect(() => {
+		const dialog = dialogRef.current;
+
+		if (!dialog) {
+			return;
+		}
+
+		if (choice && !dialog.open) {
+			dialog.showModal();
+		}
+
+		if (!choice && dialog.open) {
+			dialog.close();
+		}
+	}, [choice]);
+
+	return (
+		<dialog ref={dialogRef} className='box' style={{ maxWidth: "500px", justifySelf: "center", alignSelf: "center" }} onClose={() => onChoose()}>
+			{choice && (
+				<>
+					<div className='title'>Annuler la réservation</div>
+					<div className='content'>
+						<p>La séance de {choice.dog.label} a été réglée en ligne. Faut-il rembourser le paiement Stripe ?</p>
+						<div className='flex-row margin-t-20'>
+							<button className='small' onClick={() => onChoose(true)}>
+								Annuler et rembourser
+							</button>
+							<button className='small inactive' onClick={() => onChoose(false)}>
+								Annuler sans rembourser
+							</button>
+							<button className='small inactive' onClick={() => onChoose()}>
+								Ne rien faire
+							</button>
+						</div>
+					</div>
+				</>
+			)}
+		</dialog>
+	);
+};
+
+/*
+ * Makes every upcoming slot of the trainer that is hidden from the agenda visible.
+ * Shown only while the listing holds some; the count is the listing's (upcoming slots).
+ */
+const PublishHiddenSlotsButton = ({ items, type }) => {
+	const [publishing, setPublishing] = useState(false);
+	const hiddenCount = (items || []).filter(item => item.is_public === false).length;
+
+	if (!hiddenCount) {
+		return null;
+	}
+
+	const label = hiddenCount === 1 ? "Publier le créneau masqué dans l'agenda" : `Publier les ${hiddenCount} créneaux masqués dans l'agenda`;
+
+	return (
+		<button
+			className=''
+			disabled={publishing}
+			onClick={async () => {
+				if (!window.confirm(hiddenCount === 1 ? "Rendre ce créneau visible dans l'agenda ?" : `Rendre ces ${hiddenCount} créneaux visibles dans l'agenda ?`)) {
+					return;
+				}
+
+				setPublishing(true);
+
+				try {
+					const { data } = await axios.post("/publish-hidden-slots");
+
+					if (data.error) {
+						throw data.error;
+					}
+
+					window.dispatchEvent(new Event(`refresh-list-${type}`));
+				} catch (err) {
+					window.alert(`La publication a échoué : ${err}`);
+					await LogError(err);
+				} finally {
+					setPublishing(false);
+				}
+			}}>
+			{label}
+		</button>
+	);
 };
 
 const shouldBeFiltered = (filter, item) => {
@@ -261,6 +376,16 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 		allowedActions = ["modify"];
 	}
 
+	const [refundChoice, setRefundChoice] = useState(null);
+	const chooseRefund = refund => {
+		const choice = refundChoice;
+		setRefundChoice(null);
+
+		if (choice && typeof refund === "boolean") {
+			cancelReservationWithRefundChoice(choice.dog.id_reservation, refund, choice.type);
+		}
+	};
+
 	return (
 		<>
 			<div className='title'>
@@ -269,6 +394,8 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 			</div>
 			<div className='content'>
 				{header}
+
+				<RefundChoiceDialog choice={refundChoice} onChoose={chooseRefund} />
 
 				{scopes ?
 					<div className='scope-box margin-b-20 flex-row md-flex-row'>
@@ -303,11 +430,15 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 					</div>
 				:	null}
 
-				{addLabel && (
-					<Link className='margin-b-20' to={`/account/${type}/create${id_user ? `/${id_user}` : ""}`}>
-						<button>{addLabel}</button>
-					</Link>
-				)}
+				<div class='flex-row margin-b-20'>
+					{addLabel && (
+						<Link to={`/account/${type}/create${id_user ? `/${id_user}` : ""}`}>
+							<button>{addLabel}</button>
+						</Link>
+					)}
+
+					{allowedActions.includes("publish-hidden-slots") && <PublishHiddenSlotsButton items={response.data} type={type} />}
+				</div>
 
 				{response.data?.length ?
 					response.data.map((item, index) => {
@@ -416,6 +547,10 @@ export default function DashboardListComponent({ type, title, addLabel, allowedA
 																	aria-hidden='true'
 																	style={{ color: "var(--invalid-color)", cursor: "pointer" }}
 																	onClick={() => {
+																		if (dog.stripe_paid) {
+																			return setRefundChoice({ dog, type: "slot" });
+																		}
+
 																		handleDelete(dog.id_reservation, "reservation", "slot");
 																	}}></i>
 															)}

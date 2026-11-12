@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { exec } from "child_process";
 import { shuffle, errorHandler } from "../../lib/utils.js";
+import { slotLocationSelect } from "../../lib/slot-location.js";
+import { slotIsPublicCondition } from "../../lib/slot-visibility.js";
 import axios from "axios";
 
 let backend;
@@ -139,7 +141,7 @@ router.route("/me").get(async (req, res) => {
 	}
 });
 
-const getNextSlotsQuery = `
+const getNextSlotsQuery = async () => `
 	SELECT 
 		a.label,
 		u.firstname,
@@ -151,6 +153,7 @@ const getNextSlotsQuery = `
 		WHERE	a.is_public = 1
 		AND 	a.is_collective = ?
 		AND 	s.date > CURRENT_TIMESTAMP()
+		AND 	${await slotIsPublicCondition()}
 
 	ORDER BY date asc
 	LIMIT 5
@@ -158,7 +161,7 @@ const getNextSlotsQuery = `
 
 router.route("/get-next-collective-slots").get(async (req, res) => {
 	try {
-		const slots = await backend.handleQuery(getNextSlotsQuery, [1], "get-slot", true);
+		const slots = await backend.handleQuery(await getNextSlotsQuery(), [1], "get-slot", true);
 
 		res.send({
 			result: slots.result
@@ -170,7 +173,7 @@ router.route("/get-next-collective-slots").get(async (req, res) => {
 
 router.route("/get-next-individual-slots").get(async (req, res) => {
 	try {
-		const slots = await backend.handleQuery(getNextSlotsQuery, [0], "get-slot", true);
+		const slots = await backend.handleQuery(await getNextSlotsQuery(), [0], "get-slot", true);
 
 		res.send({
 			result: slots.result
@@ -196,18 +199,20 @@ router.route("/get-all-slots").get(async (req, res) => {
 					a.label,
 					u.id id_trainer,
 					u.firstname,
+					${await slotLocationSelect()}
 					s.date,
 					a.duration,
 					s.id id_slot,
 					a.spots,
 					case
-                    when (select id from waiting_list where id_slot = s.id and id_user = ? and declined = 0 limit 1) is not null then 1 end waiting
+                    when (select id from waiting_list where id_slot = s.id and id_user = ? and proposed = 0 and declined = 0 limit 1) is not null then 1 end waiting
 				FROM slot s
 				INNER JOIN activity a on a.id = s.id_activity
 				INNER JOIN user u on u.id = s.id_trainer
 				
 				WHERE 	s.date > CURRENT_TIMESTAMP()
 				AND 	s.enabled = 1
+				AND 	${await slotIsPublicCondition()}
 				
 				ORDER BY date asc`,
 			[req.session.user_id || 0],

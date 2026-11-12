@@ -1,5 +1,7 @@
 import { query, withTransaction } from "./db.js";
 import { getTrainerStripe } from "./stripe.js";
+import { slotLocationSelect } from "./slot-location.js";
+import { slotIsPublicCondition } from "./slot-visibility.js";
 
 const CANCELLATION_CUTOFF_HOURS = parseInt(process.env.CANCELLATION_CUTOFF_HOURS || "24", 10);
 
@@ -88,20 +90,27 @@ const restorePackageCredit = async (id_user_package, connection) => {
  * `downgrade_payment_type` is what an exhausted package falls back to: "later" for a
  * member who may still pay in person, "direct" for one who may not (see canPayLater).
  */
-const reserveSlot = ({ id_slot, id_dog, payment_type, payment_details = null, downgrade_payment_type = "later" }) => {
+const reserveSlot = async ({ id_slot, id_dog, payment_type, payment_details = null, downgrade_payment_type = "later" }) => {
+	const locationColumn = await slotLocationSelect();
+	// Members book through here only (trainers register dogs through their own route):
+	// a slot hidden from the agenda is unavailable to them
+	const isPublic = await slotIsPublicCondition();
+
 	return withTransaction(async connection => {
 		const slots = await query(
 			`SELECT
 				s.id,
 				s.date,
 				s.id_trainer,
+				${locationColumn}
 				a.spots,
 				a.price,
 				a.label,
+				a.duration,
 				(SELECT COUNT(*) FROM reservation r WHERE r.id_slot = s.id AND r.enabled = 1) reserved
 			FROM slot s
 			JOIN activity a ON a.id = s.id_activity
-			WHERE s.id = ? AND s.enabled = 1
+			WHERE s.id = ? AND s.enabled = 1 AND ${isPublic}
 			FOR UPDATE`,
 			[id_slot],
 			connection
@@ -219,10 +228,11 @@ const refundStripePayment = async ({ id_trainer, session_id, amount, id_user, la
  * Annule une réservation de façon idempotente :
  * - la désactivation est atomique (une double annulation ne rembourse qu'une fois)
  * - paiement par formule -> le crédit est rendu
- * - paiement Stripe -> remboursement automatique (toujours si annulée par l'éducateur,
- *   sinon uniquement en dehors du délai d'annulation)
+ * - paiement Stripe -> remboursement automatique : si annulée par l'éducateur, selon
+ *   son choix (`refundStripe`, oui par défaut) ; sinon uniquement en dehors du délai
+ *   d'annulation. Le crédit de formule, lui, est toujours rendu.
  */
-const cancelReservation = async ({ id_reservation, byTrainer = false }) => {
+const cancelReservation = async ({ id_reservation, byTrainer = false, refundStripe = true }) => {
 	const outcome = await withTransaction(async connection => {
 		const rows = await query(
 			`SELECT
@@ -272,6 +282,11 @@ const cancelReservation = async ({ id_reservation, byTrainer = false }) => {
 	const paidThroughStripe = reservation.paid === 1 && reservation.payment_type === "direct" && String(reservation.payment_details || "").startsWith("cs_");
 
 	if (paidThroughStripe) {
+		if (byTrainer && !refundStripe) {
+			outcome.refund = { ok: false, reason: "declined-by-trainer" };
+			return outcome;
+		}
+
 		const cutoff = new Date(Date.now() + CANCELLATION_CUTOFF_HOURS * 60 * 60 * 1000);
 		const refundable = byTrainer || new Date(reservation.slot_date) > cutoff;
 

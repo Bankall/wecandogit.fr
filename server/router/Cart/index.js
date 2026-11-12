@@ -5,6 +5,10 @@ import { getTrainerStripe } from "../../lib/stripe.js";
 import { query } from "../../lib/db.js";
 import { reserveSlot, confirmCheckoutSession, isPackagePayment, canPayLater } from "../../lib/booking.js";
 import { verifyPaymentToken } from "../../lib/payment-link.js";
+import { buildReservationEvent, buildIcsAttachment } from "../../lib/calendar.js";
+import { getClaimableSlot } from "../../lib/waiting-list.js";
+import { selectCalendarEvents, buildConfirmationMail } from "../../lib/confirmation-mail.js";
+import { slotIsPublicCondition } from "../../lib/slot-visibility.js";
 
 import config from "config";
 
@@ -21,6 +25,23 @@ const saveSession = req =>
 	new Promise((resolve, reject) => {
 		req.session.save(err => (err ? reject(err) : resolve()));
 	});
+
+/*
+ * Two independent carts live in the session: the regular one, and the one a
+ * waiting-list offer fills (`?source=waiting-list`). Booking a freed spot from an
+ * offer mail must neither pick up nor empty whatever the member left in their
+ * regular cart, so every cart route works on the cart its `source` names; the
+ * regular cart stays the default.
+ */
+const WAITING_LIST_SOURCE = "waiting-list";
+const isWaitingListCart = req => req.query.source === WAITING_LIST_SOURCE;
+const getCart = req => req.session[isWaitingListCart(req) ? "waiting_list_cart" : "cart"] || [];
+const setCart = (req, items) => {
+	req.session[isWaitingListCart(req) ? "waiting_list_cart" : "cart"] = items;
+};
+
+// Front page showing the cart in use, to come back to while it still holds something
+const getCartPagePath = req => (isWaitingListCart(req) && req.session.waiting_list_claim_id ? `/cart/liste-attente/${req.session.waiting_list_claim_id}` : "/cart");
 
 router.route("/count").get(async (req, res) => {
 	const count = req.session.cart ? req.session.cart.length : 0;
@@ -40,6 +61,14 @@ router.route("/add").post(async (req, res) => {
 			id: req.body.id,
 			id_cart_item: parseInt(Math.random() * 1000000, 10)
 		};
+
+		// Only what the agenda shows can be booked: not a deleted slot, nor one hidden from it
+		if (cartItem.type === "slot") {
+			const slots = await query(`SELECT s.id FROM slot s WHERE s.id = ? AND s.enabled = 1 AND ${await slotIsPublicCondition()}`, [cartItem.id]);
+			if (!slots.length) {
+				throw { message: "Ce créneau n'est pas disponible" };
+			}
+		}
 
 		if (req.session.user_id) {
 			const dogs = await backend.get({
@@ -90,7 +119,7 @@ router
 	.route("/:id_cart_item/:type/:id/:id_dog")
 	.put(async (req, res) => {
 		try {
-			if (!req.session.cart) {
+			if (!getCart(req).length) {
 				throw "Panier vide";
 			}
 
@@ -98,7 +127,7 @@ router
 			// is sent by the browser: refuse it here too, or it is a one-request bypass
 			const payLaterRefused = req.body.payment_type === "later" && !(await canPayLater(req.session.user_id));
 
-			req.session.cart = req.session.cart.map(item => {
+			const cart = getCart(req).map(item => {
 				try {
 					if (item.id_cart_item === parseInt(req.params.id_cart_item, 10)) {
 						if (req.body.payment_type) {
@@ -116,6 +145,7 @@ router
 				return item;
 			});
 
+			setCart(req, cart);
 			res.send({ ok: true });
 		} catch (err) {
 			errorHandler({ err, req, res });
@@ -123,13 +153,10 @@ router
 	})
 	.delete((req, res) => {
 		try {
-			req.session.cart = req.session.cart.filter(item => {
-				if (item.id_cart_item === parseInt(req.params.id_cart_item, 10)) {
-					return false;
-				}
-
-				return true;
-			});
+			setCart(
+				req,
+				getCart(req).filter(item => item.id_cart_item !== parseInt(req.params.id_cart_item, 10))
+			);
 
 			res.send({ ok: true });
 		} catch (err) {
@@ -163,7 +190,7 @@ const getSlotDetail = async (req, slot) => {
 				s.date
 			FROM activity a
 			JOIN slot s on s.id_activity = a.id
-			WHERE s.id = ? AND s.enabled = 1
+			WHERE s.id = ? AND s.enabled = 1 AND ${await slotIsPublicCondition()}
 		`,
 		[slot.id],
 		"get-activity",
@@ -195,11 +222,11 @@ const getSlotDetail = async (req, slot) => {
 		id_trainer: data.result.id_trainer,
 		package_available: user_packages,
 		dogs:
-			dogs.result && dogs.result.length
-				? dogs.result.map(dog => {
-						return { label: dog.label, id: dog.id };
-					})
-				: []
+			dogs.result && dogs.result.length ?
+				dogs.result.map(dog => {
+					return { label: dog.label, id: dog.id };
+				})
+			:	[]
 	};
 };
 
@@ -221,7 +248,8 @@ const getCartItemDetail = async (req, item) => {
 
 const sortCartItemByTrainers = async req => {
 	try {
-		if (!req.session.cart || !req.session.cart.length) {
+		const cart = getCart(req);
+		if (!cart.length) {
 			return {};
 		}
 
@@ -256,7 +284,7 @@ const sortCartItemByTrainers = async req => {
 		};
 
 		const invalidItems = [];
-		for (const item of req.session.cart) {
+		for (const item of cart) {
 			const data = await getCartItemDetail(req, item);
 
 			// Article devenu invalide (créneau supprimé...) : on le retire du panier
@@ -320,7 +348,10 @@ const sortCartItemByTrainers = async req => {
 		}
 
 		if (invalidItems.length) {
-			req.session.cart = req.session.cart.filter(item => !invalidItems.includes(item.id_cart_item));
+			setCart(
+				req,
+				getCart(req).filter(item => !invalidItems.includes(item.id_cart_item))
+			);
 		}
 
 		for (const row in byTrainers) {
@@ -346,7 +377,7 @@ const isValidAddress = user => {
 
 router.route("/full-cart").get(async (req, res) => {
 	try {
-		if (!req.session.cart || !req.session.cart.length) {
+		if (!getCart(req).length) {
 			return res.send({ result: [] });
 		}
 
@@ -390,7 +421,10 @@ router.route("/full-cart").get(async (req, res) => {
 });
 
 const removeFromCart = (req, id_cart_item) => {
-	req.session.cart = (req.session.cart || []).filter(item => item.id_cart_item !== id_cart_item);
+	setCart(
+		req,
+		getCart(req).filter(item => item.id_cart_item !== id_cart_item)
+	);
 };
 
 /*
@@ -414,7 +448,13 @@ const handleReservation = async (req, itemToReserve) => {
 				});
 
 				if (result.unavailable || result.full || result.duplicate) {
-					warnings.push(`${item.label} : ${result.duplicate ? "vous avez déjà réservé ce créneau" : result.full ? "le créneau est désormais complet" : "le créneau n'est plus disponible"}`);
+					warnings.push(
+						`${item.label} : ${
+							result.duplicate ? "vous avez déjà réservé ce créneau"
+							: result.full ? "le créneau est désormais complet"
+							: "le créneau n'est plus disponible"
+						}`
+					);
 					removeFromCart(req, item.id_cart_item);
 					continue;
 				}
@@ -425,6 +465,21 @@ const handleReservation = async (req, itemToReserve) => {
 
 				item.payment_type = result.payment_type;
 				item.reservation_id = result.id_reservation;
+				// What the confirmation mail and the calendar entry say about this session
+				item.session = {
+					activity: result.slot.label,
+					dog: (item.dogs || []).find(dog => dog.id === item.id_dog)?.label,
+					start: result.slot.date,
+					location: result.slot.location
+				};
+				item.calendar_event = buildReservationEvent({
+					id_reservation: result.id_reservation,
+					activity: item.session.activity,
+					start: item.session.start,
+					duration_minutes: result.slot.duration,
+					dog: item.session.dog,
+					location: item.session.location
+				});
 
 				await backend.notify({
 					who: req.session.user_id,
@@ -481,27 +536,22 @@ const handleReservation = async (req, itemToReserve) => {
 				id: req.session.user_id
 			});
 
-			const content = `<p>Bonjour ${user.result.firstname},</p>
-			<p>Nous vous confirmons ${reserved.length > 1 ? "vos réservations" : "votre réservation"}, voici le détail:</p>
-			<p>
-				<ul>
-					${reserved.map(item => `<li>${item.label} - Paiement: ${typeof item.payment_type === "number" ? "Formule" : item.payment_type === "direct" ? "En ligne" : "En personne"}</li>`).join("")}
-				</ul>
-			</p>
-			<p></p>
-			<p>A bientôt !</p>
-			<br/><br/>
-			<p style='color: #ED4337;'>Attention, pour tout créneau au parc de loisirs, merci de laisser vos chiens patienter dans votre voiture jusqu'à ce que l'on vienne vous chercher pour votre activité, et de ne pas les promener sur le parking ni à proximité du jardin de nos voisins.</p>`;
+			// One .ics per session with a known place (one event each, which every calendar
+			// app imports; Gmail also turns them into its own "add to calendar" cards)
+			const calendarEvents = selectCalendarEvents(reserved);
+
+			const mail = buildConfirmationMail({ firstname: user.result.firstname, reserved });
 
 			await MailSender.send({
-				subject: "Confirmation de commande",
+				subject: mail.subject,
 				email: user.result.email,
 				macros: {
-					PRE_HEADER: "C'est reservé !",
-					CONTENT_HTML: content,
+					PRE_HEADER: mail.pre_header,
+					CONTENT_HTML: mail.html,
 					EMAIL_TYPE: "reminder",
 					EMAIL: user.result.email
-				}
+				},
+				attachments: calendarEvents.map(event => buildIcsAttachment(event))
 			});
 		} catch (err) {
 			errorHandler({ err, req });
@@ -525,7 +575,7 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 				return res.redirect(303, req.session.stripe_session_url);
 			}
 
-			return res.redirect(`${config.get("FRONT_URI")}/cart`);
+			return res.redirect(`${config.get("FRONT_URI")}${getCartPagePath(req)}`);
 		}
 
 		const cartItems = (trainerCart.slot || []).concat(trainerCart.package || []);
@@ -535,7 +585,7 @@ router.route("/checkout/:idTrainer").get(async (req, res) => {
 		// Rien à payer en ligne : pas de passage par Stripe
 		if (!directItems.length) {
 			await saveSession(req);
-			return res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? `/cart${buildWarningHash(warnings)}` : `/account${buildWarningHash(warnings)}`));
+			return res.redirect(config.get("FRONT_URI") + (getCart(req).length ? getCartPagePath(req) : "/account") + buildWarningHash(warnings));
 		}
 
 		const { stripe, vatApplicable } = await getTrainerStripe(req.params.idTrainer);
@@ -928,7 +978,7 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 	try {
 		const allCartItems = await sortCartItemByTrainers(req);
 		if (!allCartItems[req.params.idTrainer]) {
-			return res.redirect(`${config.get("FRONT_URI")}/cart`);
+			return res.redirect(`${config.get("FRONT_URI")}${getCartPagePath(req)}`);
 		}
 
 		const cartItems = (allCartItems[req.params.idTrainer].slot || []).concat(allCartItems[req.params.idTrainer].package || []);
@@ -940,7 +990,73 @@ router.route("/make-reservation/:idTrainer").get(async (req, res) => {
 		const owesOnlinePayment = reserved.some(item => item.payment_type === "direct");
 
 		await saveSession(req);
-		res.redirect(config.get("FRONT_URI") + (req.session.cart.length ? "/cart" : owesOnlinePayment ? "/account/waiting_payments" : "/account") + buildWarningHash(warnings));
+		res.redirect(
+			config.get("FRONT_URI") +
+				(getCart(req).length ? getCartPagePath(req)
+				: owesOnlinePayment ? "/account/waiting_payments"
+				: "/account") +
+				buildWarningHash(warnings)
+		);
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
+/*
+ * Link of a waiting-list offer mail ("une place s'est libérée"): puts that one slot
+ * in the waiting-list cart, where the member picks the dog and the payment method
+ * as in the regular cart, which is left untouched. The spot is not held: if someone
+ * booked it first, the member is told so here, or at checkout at the latest.
+ *
+ * The link carries no secret on purpose: all it does is offer a public slot for
+ * booking, which the agenda does for anyone anyway.
+ */
+router.route("/waiting-list/:id_waiting_list").post(async (req, res) => {
+	try {
+		if (!req.session.user_id) {
+			return res.send({ login: true });
+		}
+
+		const claim = await getClaimableSlot(req.params.id_waiting_list);
+
+		if (claim.notFound) {
+			return res.send({ error: "Ce lien n'est plus valide" });
+		}
+
+		const slot = { id_slot: claim.entry.id_slot, label: claim.entry.label, date: claim.entry.date };
+
+		if (claim.unavailable || claim.full) {
+			return res.send({ full: !!claim.full, unavailable: !!claim.unavailable, slot });
+		}
+
+		const id_slot = claim.entry.id_slot;
+		const current = req.session.waiting_list_cart || [];
+
+		// Reopening the link (or reloading the page) keeps the dog and payment already chosen
+		if (!(current.length === 1 && current[0].type === "slot" && current[0].id === id_slot)) {
+			const dogs = await query("SELECT id FROM dog WHERE id_user = ? ORDER BY id", [req.session.user_id]);
+			const booked = await query("SELECT r.id_dog FROM reservation r JOIN dog d ON d.id = r.id_dog WHERE r.id_slot = ? AND r.enabled = 1 AND d.id_user = ?", [id_slot, req.session.user_id]);
+			const bookedDogIds = booked.map(reservation => reservation.id_dog);
+			const freeDog = dogs.find(dog => !bookedDogIds.includes(dog.id));
+
+			if (dogs.length && !freeDog) {
+				return res.send({ already_booked: true, slot });
+			}
+
+			req.session.waiting_list_cart = [
+				{
+					type: "slot",
+					id: id_slot,
+					id_dog: freeDog ? freeDog.id : undefined,
+					id_cart_item: parseInt(Math.random() * 1000000, 10)
+				}
+			];
+		}
+
+		req.session.waiting_list_claim_id = claim.entry.id;
+		await saveSession(req);
+
+		res.send({ ok: true, slot });
 	} catch (err) {
 		errorHandler({ err, req, res });
 	}

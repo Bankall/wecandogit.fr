@@ -5,6 +5,10 @@ import { query } from "../../lib/db.js";
 import { reserveSlot, cancelReservation, consumePackageCredit, defaultPaymentType, CANCELLATION_CUTOFF_HOURS } from "../../lib/booking.js";
 import { buildPaymentUrl, buildShortPaymentUrls } from "../../lib/payment-link.js";
 import { listNotifications } from "../../lib/notification.js";
+import { offerFreedSpots } from "../../lib/waiting-list.js";
+import { saveSlotLocation } from "../../lib/slot-location.js";
+import { notifyLocationChange } from "../../lib/location-change.js";
+import { normalizeIsPublic, hasSlotIsPublicColumn, slotIsPublicSelect } from "../../lib/slot-visibility.js";
 
 import config from "config";
 
@@ -301,9 +305,21 @@ router
 					}
 				}
 
-				const outcome = await cancelReservation({ id_reservation: req.params.id, byTrainer: !!req.session.is_trainer });
+				// A trainer chooses whether a Stripe payment is refunded (`refund: false` to
+				// keep it); package credits are always given back
+				const outcome = await cancelReservation({
+					id_reservation: req.params.id,
+					byTrainer: !!req.session.is_trainer,
+					refundStripe: req.body.refund !== false
+				});
 
 				if (!outcome.alreadyCancelled) {
+					// The spot may have been the last one: tell the waiting list. Not awaited,
+					// mailing must not hold up the cancellation (the cron catches up if it fails)
+					offerFreedSpots(reservation.id_slot).catch(err => {
+						console.log("Waiting-list offer failed:", err?.message || err);
+					});
+
 					await backend.notify({
 						who: req.session.user_id,
 						action: "unbooked",
@@ -339,6 +355,7 @@ const getSlotsListing = async (req, res) => {
 		const slots = await backend.handleQuery(
 			`SELECT 
 			${req.body.all ? "u.firstname trainer," : ""}
+			${await slotIsPublicSelect()}
 			s.id,
 			s.date,
 			a.label,
@@ -347,6 +364,7 @@ const getSlotsListing = async (req, res) => {
 			r.id id_reservation,
 			r.paid,
 			r.payment_type,
+			CASE WHEN r.paid = 1 AND r.payment_type = 'direct' AND r.payment_details LIKE 'cs\\_%' THEN 1 ELSE 0 END stripe_paid,
 			CASE WHEN d.breed != "" THEN concat(d.label, ' (', d.breed, ' ', d.sexe, ')') ELSE concat(d.label, " *") END label_dog
 			
 		FROM slot s
@@ -369,8 +387,10 @@ const getSlotsListing = async (req, res) => {
 		const waitingList = await backend.handleQuery(
 			`SELECT
 				s.id id_slot,
+				wl.id_user,
 				concat(u.firstname, " ", u.lastname) user,
-				case when wl.proposed = 1 then "En attente de réponse" else "Sur la liste" end status
+				wl.proposed,
+				wl.proposed_at
 				
 			FROM waiting_list wl
 			JOIN user u on u.id = wl.id_user
@@ -378,35 +398,59 @@ const getSlotsListing = async (req, res) => {
 
 			WHERE 	wl.declined = 0
 			AND 	s.date > CURRENT_TIMESTAMP
-			AND 	s.enabled = 1`,
+			AND 	s.enabled = 1
+
+			ORDER BY wl.date ASC, wl.id ASC`,
 			[req.session.user_id],
 			null,
 			true
 		);
 
-		const waitingListById = {};
-		if (waitingList.result.length) {
-			waitingList.result.forEach(item => {
-				if (!waitingListById[item.id_slot]) {
-					waitingListById[item.id_slot] = [];
-				}
+		// proposed_at is written by the database clock, which runs in UTC
+		const formatProposedAt = proposed_at => {
+			const date = proposed_at instanceof Date ? proposed_at : new Date(`${String(proposed_at).replace(" ", "T")}Z`);
+			return new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(date);
+		};
 
-				waitingListById[item.id_slot].push({
-					label: item.user,
-					status: item.status
-				});
+		const waitingListById = {};
+		const seenWaitingMembers = new Set();
+		waitingList.result.forEach(item => {
+			// A member registered twice on a slot is shown (and told) once
+			const memberKey = `${item.id_slot}:${item.id_user}`;
+			if (seenWaitingMembers.has(memberKey)) {
+				return;
+			}
+
+			seenWaitingMembers.add(memberKey);
+
+			if (!waitingListById[item.id_slot]) {
+				waitingListById[item.id_slot] = [];
+			}
+
+			waitingListById[item.id_slot].push({
+				label: item.user,
+				status:
+					Number(item.proposed) === 1 ?
+						item.proposed_at ?
+							`Place proposée le ${formatProposedAt(item.proposed_at)}`
+						:	"Place proposée"
+					:	"Sur la liste"
 			});
-		}
+		});
 
 		const results = {};
 		if (slots.result.length) {
 			slots.result.forEach(slot => {
 				if (!results[slot.id]) {
+					// Without the column every slot is public
+					const isHidden = typeof slot.is_public !== "undefined" && Number(slot.is_public) === 0;
+
 					results[slot.id] = {
 						id: slot.id,
 						label: `0 / ${slot.spots}`,
 						date: slot.date,
-						group_label: slot.label + (slot.trainer ? ` (${slot.trainer})` : ""),
+						group_label: slot.label + (slot.trainer ? ` (${slot.trainer})` : "") + (isHidden ? " · Masqué de l'agenda" : ""),
+						is_public: !isHidden,
 						spots: slot.spots,
 						reservations: 0,
 						dogs: [],
@@ -420,7 +464,9 @@ const getSlotsListing = async (req, res) => {
 						id_reservation: slot.id_reservation,
 						label: slot.label_dog,
 						paid: slot.paid,
-						payment_type: slot.payment_type
+						payment_type: slot.payment_type,
+						// Paid online through Stripe: cancelling it asks the trainer whether to refund
+						stripe_paid: Number(slot.stripe_paid) === 1
 					});
 
 					results[slot.id].reservations += 1;
@@ -469,6 +515,31 @@ router
 	})
 	.put(async (req, res, next) => {
 		try {
+			// The form's checkbox sends a boolean: store 1/0, or nothing before the migration
+			if (Object.prototype.hasOwnProperty.call(req.body, "is_public")) {
+				if (await hasSlotIsPublicColumn()) {
+					req.body.is_public = normalizeIsPublic(req.body.is_public);
+				} else {
+					delete req.body.is_public;
+				}
+			}
+
+			// The location is written here and kept away from the generic CRUD, which
+			// would store an emptied field as "" (or a null as the string "null")
+			if (req.params.id && Object.prototype.hasOwnProperty.call(req.body, "location")) {
+				// Only on the trainer's own slot, as the generic CRUD below restricts the other fields
+				const saved = await saveSlotLocation(req.params.id, req.body.location, { id_trainer: req.session.user_id });
+				delete req.body.location;
+
+				// Members booked on it are told when the place is set or changes. Not awaited:
+				// mailing must not hold up the save
+				if (saved) {
+					notifyLocationChange({ id_slot: req.params.id, ...saved }).catch(err => {
+						console.log("Location-change notification failed:", err?.message || err);
+					});
+				}
+			}
+
 			if (req.body.enabled === 0) {
 				// Annulation par l'éducateur : rembourse crédits de formule ET paiements
 				// Stripe de toutes les réservations actives du créneau
@@ -509,20 +580,52 @@ router.route("/all_slot").get(async (req, res) => {
 	}
 });
 
+/*
+ * "Publier mes créneaux masqués": makes all of the calling trainer's upcoming slots
+ * hidden from the agenda visible at once. Past ones are left alone, nobody can book
+ * them anyway.
+ */
+router.route("/publish-hidden-slots").post(async (req, res) => {
+	try {
+		if (!req.session.is_trainer) {
+			return res.send({ error: "Vous n'avez pas accès à cette ressource" });
+		}
+
+		if (!(await hasSlotIsPublicColumn())) {
+			return res.send({ ok: true, published: 0 });
+		}
+
+		const result = await query("UPDATE slot SET is_public = 1 WHERE id_trainer = ? AND is_public = 0 AND enabled = 1 AND date > NOW()", [req.session.user_id]);
+
+		res.send({ ok: true, published: result.affectedRows });
+	} catch (err) {
+		errorHandler({ err, req, res });
+	}
+});
+
 router.route("/create-slots").post(async (req, res) => {
 	try {
+		const isPublicColumn = await hasSlotIsPublicColumn();
+
 		for await (const date of req.body.date) {
 			if (!date) {
 				continue;
 			}
-			await backend.post({
+			const slot = await backend.post({
 				table: "slot",
 				body: {
 					id_trainer: req.session.user_id,
 					id_activity: req.body.id_activity,
-					date
+					date,
+					...(isPublicColumn ? { is_public: normalizeIsPublic(req.body.is_public) } : {})
 				}
 			});
+
+			// Raw write: the form pre-fills the default address; an emptied field means
+			// "not known yet" (NULL), which the generic CRUD would store as ""
+			if (slot.result?.id) {
+				await saveSlotLocation(slot.result.id, req.body.location);
+			}
 		}
 
 		res.send({
@@ -583,10 +686,16 @@ router.route("/user_package").get(async (req, res) => {
 		// Un membre ne consulte que ses propres formules, quel que soit le paramètre
 		const id_user = req.session.is_trainer ? req.query.id_user || req.session.user_id : req.session.user_id;
 
-		const user_packages = await backend.get({
-			table: "user_package",
-			query: { id_user }
-		});
+		const user_packages = await backend.handleQuery(
+			`SELECT *
+			FROM user_package
+			WHERE id_user = ?
+			ORDER BY start DESC
+			`,
+			[id_user],
+			null,
+			true
+		);
 
 		if (user_packages.result.length) {
 			for await (const user_package of user_packages.result) {
@@ -874,8 +983,9 @@ const keepResumableCheckouts = async checkouts => {
 	const reservationIds = items.filter(item => item.type === "slot" && item.reservation_id).map(item => item.reservation_id);
 	const packageIds = items.filter(item => item.type === "package" && item.package_id).map(item => item.package_id);
 
-	const payableReservations = reservationIds.length
-		? new Set(
+	const payableReservations =
+		reservationIds.length ?
+			new Set(
 				(
 					await query(
 						`SELECT r.id
@@ -886,7 +996,7 @@ const keepResumableCheckouts = async checkouts => {
 					)
 				).map(row => row.id)
 			)
-		: new Set();
+		:	new Set();
 
 	const payablePackages = packageIds.length ? new Set((await query("SELECT id FROM user_package WHERE id IN (?) AND paid = 0", [packageIds])).map(row => row.id)) : new Set();
 

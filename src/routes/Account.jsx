@@ -47,7 +47,7 @@ const switchRouter = params => {
 		case "users":
 			return <DashboardListComponent title='Les membres' type='user' allowedActions={["handleUserPackage", "handleUserReservation", "modify"]} />;
 		case "slots":
-			return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation", "copy-payment-link"]} />;
+			return <DashboardListComponent addLabel='Ajouter un créneau' title='Mes créneaux' type='slot' allowedActions={["delete", "modify", "book-reservation", "copy-payment-link", "publish-hidden-slots"]} />;
 		case "past-slots":
 			return <DashboardListComponent title='Mes créneaux passés' type='past_slot' allowedActions={["copy-payment-link"]} />;
 		case "all-slots":

@@ -78,6 +78,10 @@ lib/
   payment-link.js  Signed payment links (HMAC) for unpaid reservations/packages
   notification.js  Trainer activity feed: query, per-trainer ownership, wording
   push.js          Web Push (VAPID) subscriptions and delivery to trainers
+  waiting-list.js  Offers of freed spots to the waiting list (rules: waiting-list-rules.js)
+  calendar.js      .ics entries for booked sessions
+  slot-location.js Where a slot takes place: default, "not known yet", writes
+  slot-visibility.js Whether a slot shows in the agenda (slot.is_public)
   db.js            mysql2/promise pool, query(), withTransaction()
 @bankall/mysql-backend   Legacy generic CRUD — being phased out, now behind an ACL
 ```
@@ -188,7 +192,26 @@ the trainers' Stripe accounts.
    CREATE INDEX idx_reservation_slot_enabled ON reservation (id_slot, enabled);
    CREATE INDEX idx_payment_activity_session ON payment_activity (session_id);
    CREATE INDEX idx_payment_history_session ON payment_history (session_id);
+   CREATE INDEX idx_waiting_list_slot ON waiting_list (id_slot, proposed, declined);
    ```
+9. **Waiting list** (section 8) — schedule `/api/v1/cron/process-waiting-lists?token=…`
+   **every minute**: it sends the follow-up offers, so its period is how late past
+   the 15-minute window the next person can be told. With nothing to offer it is
+   one query. No migration (it uses the existing `proposed` / `proposed_at`
+   columns). Optional `.env`: `WAITING_LIST_OFFER_MINUTES=15`.
+10. **Slot location** (section 8) — **already run** on the database reachable from
+    `config/developpment.json`; run it on any other host. Until then the code simply
+    carries no location. No column default: slots created before it have no location,
+    and the default address only comes from the creation form:
+    ```sql
+    ALTER TABLE slot ADD COLUMN location VARCHAR(255) NULL;
+    ```
+11. **Slot visibility** (section 8) — **already run** on the same database (every
+    existing slot stays visible); run it on any other host. Until then every slot
+    counts as public, as before:
+    ```sql
+    ALTER TABLE slot ADD COLUMN is_public TINYINT(1) NOT NULL DEFAULT 1;
+    ```
 
 ### Optional — Stripe webhooks (per trainer)
 
@@ -362,9 +385,13 @@ Deliberately deferred:
   page. Listings build every code they need in one round trip (one `INSERT IGNORE` +
   one `SELECT`), so a page of unpaid reservations is still two queries.
 - **Refund policy** (configurable via `CANCELLATION_CUTOFF_HOURS`): trainer
-  cancellation refunds Stripe payments and package credits unconditionally; user
-  cancellation restores credits and refunds Stripe payments only when the slot is more
-  than the cutoff away. Users cannot cancel at all inside the cutoff (server-enforced).
+  cancellation always gives package credits back, and refunds a Stripe payment only if
+  the trainer says so — cancelling a reservation paid online from `/account/slots`
+  asks "Annuler et rembourser" / "Annuler sans rembourser" (`PUT /reservation/:id`
+  with `refund: false` keeps the payment; absent means refund, which is also what
+  deleting a whole slot still does). User cancellation restores credits and refunds
+  Stripe payments only when the slot is more than the cutoff away. Users cannot cancel
+  at all inside the cutoff (server-enforced).
 - Refund amount is the activity price of the cancelled session (partial refund of the
   Checkout payment). With `automatic_tax` enabled the collected total can exceed the
   base price — review whether tax should be included in refunds for VAT trainers.
@@ -374,3 +401,97 @@ Deliberately deferred:
 - Legacy data: some old reservations have inconsistent payment fields (e.g.
   `payment_type='later'` with `paid=1` and a `cs_…` session id) from the pre-webhook
   flow; the refund logic only trusts `payment_type='direct'` + `cs_…` details.
+
+## 8. Waiting list and calendar entries
+
+**Waiting list.** Members join the list of a full slot from the agenda. When a spot
+frees up, the people in line are told one after the other, first registered first:
+
+```
+reservation cancelled  → offerFreedSpots(slot)          [immediate, fire-and-forget]
+cron, every minute     → processWaitingLists()          [follow-ups + any other freed spot]
+  per slot with a free spot and people in line (slot row locked FOR UPDATE):
+    offers to send = free spots − offers sent < 15 min ago
+    next member(s) in line → proposed = 1, proposed_at = NOW()  (off the list)
+    mail "Une place s'est libérée … cliquez ici pour la réserver"
+```
+
+- State lives in `waiting_list` only (nothing scheduled in memory, which several pm2
+  processes and restarts would break). `proposed = 1` means "told, and off the list":
+  the agenda lets that member join the list again if the slot fills up again.
+- **An offer never holds the spot**: whoever books first gets it. If it is still free
+  after the window (`WAITING_LIST_OFFER_MINUTES`, 15), the next person is told; two
+  freed spots mean two people at a time. A member registered twice is told once.
+- A failed mail is not retried — the member is already off the list, and the next
+  one is told when the window runs out.
+- The link (`/cart/liste-attente/:id_waiting_list`) carries no secret on purpose: all
+  it does is offer a public slot for booking. It asks to log in first (`/login?next=`),
+  then `POST /cart/waiting-list/:id` puts that one slot in a **second session cart**
+  (`waiting_list_cart`). Every cart route takes `?source=waiting-list` to work on it,
+  so the member picks a dog and a payment method as usual, and the regular cart they
+  may have pending is neither shown, booked nor emptied. If someone was quicker the
+  page says so and offers to rejoin the list; `reserveSlot` re-checks capacity at
+  checkout anyway.
+- Trainers see each member's status on `/account/slots`: "Sur la liste" or "Place
+  proposée le …".
+
+**Calendar entries.** The booking confirmation mail carries one `.ics` attachment per
+session whose place is known (`METHOD:PUBLISH`, one event each — the form every
+calendar app imports). Gmail also reads them and shows its own "add to calendar" card
+per session, so no separate Google Calendar link is needed. A session without a place
+gets no entry in the confirmation: it comes with the "lieu ajouté" mail, which is
+the usual path (no place → a place) and avoids a duplicate. Slot dates are stored as
+Paris wall-clock time while the database clock runs in UTC, so `lib/calendar.js`
+converts Europe/Paris → UTC (DST-aware) before writing events. The UID is
+`reservation-<id>@wecandogit.com`. Cancelling does not send a calendar cancellation.
+
+Plain entries, not invitations, on purpose (tested on Gmail, 2026-11-12): Google
+Calendar adds a *new* event for every plain `.ics`, even with the same UID and a higher
+`SEQUENCE`, so a changed place leaves a duplicate there (Apple/Outlook may update in
+place). Invitations (`METHOD:REQUEST` + organizer) do update in place on Google, even
+unopened, but each one carries a single event (Gmail showed 1 of 5 in a 5-session
+confirmation), first-time senders get a "this event isn't in your calendar yet"
+banner, and they show RSVP buttons. Places rarely change, so members read the new
+place in the mail.
+
+**Slot location.** `slot.location` says where a session takes place. The creation form
+is pre-filled with the park (`We Can Dog It, Les Sables, 51370 Les Mesneux`) — the
+only source of that default: the column has none, and slots created before it existed
+have no location. Emptying the field means "not known yet" (NULL). It is written with
+raw SQL (`saveSlotLocation`), never through the generic CRUD, which would store an
+emptied field as `""` or a null as the string `"null"`. The location goes into the
+calendar entries, and each agenda slot that has one shows a directions button: Apple
+Maps on iPhone/iPad, a `geo:` link on Android (the phone offers the user's own
+navigation app), Google Maps directions from the current position on desktop
+(`src/utils/navigation.js`).
+
+**Address autocomplete.** The slot forms' "Lieu" field suggests addresses as the
+trainer types (`src/components/AddressAutocompleteField.jsx`, Places API (New)
+`AutocompleteSuggestion`, France only, biased towards Les Mesneux). Free text still
+works, and without `VITE_GOOGLE_MAPS_API_KEY` (frontend `.env.*`) the field is a plain
+text field. Only the suggestion text is used — no Place Details call — so each request
+is one "Autocomplete Requests" event: 10,000 free per month, then $2.83 per 1,000.
+Requests wait for a 300 ms pause in typing and 3 characters, so typing an address costs
+a handful of them. It is a browser key: restrict it to the site's referrers and to
+"Maps JavaScript API" + "Places API (New)", and cap the daily quota.
+
+**Location changes.** When a trainer edits an upcoming slot and its place is set or
+changed, every member with an active reservation on it gets one mail ("Le lieu de
+votre séance a été ajouté" / "Changement de lieu pour votre séance", with the old place
+when it changed), listing all of their dogs on that slot, and a `.ics` per reservation
+with the new place (same UID as the booking's, higher `SEQUENCE`: Apple/Outlook may
+update the entry, Google Calendar adds a second one — see "Calendar entries"). Saving
+the form unchanged, clearing the place, past or deleted slots,
+and user 2 (placeholder owner of trainer-registered dogs) send nothing. Sent
+fire-and-forget from `PUT /slot/:id` (`lib/location-change.js`); the location write is
+restricted to the trainer's own slot.
+
+**Hidden slots.** "Visible dans l'agenda" (`slot.is_public`, ticked by default) on the
+slot forms. A hidden slot exists for its trainer only: it is listed in their dashboard
+(marked "Masqué de l'agenda") and they can register dogs on it, but members cannot see
+it (agenda, "next slots" listings), add it to a cart, book it (`reserveSlot` refuses it,
+so an old cart or a crafted request cannot either), nor be offered it from a waiting
+list. Trainer registrations do not go through `reserveSlot`, which is why they still
+work. "Publier les N créneaux masqués dans l'agenda" on `/account/slots`
+(`POST /publish-hidden-slots`) makes all of the calling trainer's upcoming hidden slots
+visible at once.

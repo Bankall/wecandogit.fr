@@ -2,12 +2,16 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const updateCartItem = async (setError, action, item, value) => {
+// The server keeps two carts: the regular one, and the one a waiting-list offer
+// fills (source "waiting-list"). Every cart call names the one it works on.
+const withSource = (url, source) => (source ? `${url}?source=${encodeURIComponent(source)}` : url);
+
+const updateCartItem = async (setError, action, item, value, source) => {
 	try {
 		setError("");
 
 		const params = {
-			url: `/cart/${item.id_cart_item}/${item.type}/${item.id}/${item.id_dog}`
+			url: withSource(`/cart/${item.id_cart_item}/${item.type}/${item.id}/${item.id_dog}`, source)
 		};
 
 		if (action === "delete") {
@@ -40,7 +44,7 @@ const updateCartItem = async (setError, action, item, value) => {
 	}
 };
 
-const ListItem = ({ item, setError, unavailableSlots, canPayLater }) => {
+const ListItem = ({ item, setError, unavailableSlots, canPayLater, source }) => {
 	const isAvailable = unavailableSlots?.find(slot => slot.id === item.id) ? false : true;
 
 	return (
@@ -51,7 +55,7 @@ const ListItem = ({ item, setError, unavailableSlots, canPayLater }) => {
 					<span className='price'>{item.price}€</span>
 					<span
 						onClick={() => {
-							updateCartItem(setError, "delete", item);
+							updateCartItem(setError, "delete", item, undefined, source);
 						}}>
 						<i className='fa-solid fa-trash-can' style={{ color: "var(--invalid-color)", cursor: "pointer" }}></i>
 					</span>
@@ -64,7 +68,7 @@ const ListItem = ({ item, setError, unavailableSlots, canPayLater }) => {
 							name='dog-selector'
 							value={item.id_dog || item.dogs[0].id}
 							onChange={event => {
-								updateCartItem(setError, "update-dog", item, event.currentTarget.value);
+								updateCartItem(setError, "update-dog", item, event.currentTarget.value, source);
 							}}>
 							{item.dogs.map((dog, index) => (
 								<option key={index} value={dog.id}>
@@ -79,7 +83,7 @@ const ListItem = ({ item, setError, unavailableSlots, canPayLater }) => {
 						name='payment-options'
 						value={item.payment_type || "direct"}
 						onChange={event => {
-							updateCartItem(setError, "update-payment", item, event.currentTarget.value);
+							updateCartItem(setError, "update-payment", item, event.currentTarget.value, source);
 						}}>
 						<option value='direct'>Payer en ligne</option>
 						{item.type === "slot" && canPayLater && <option value='later'>Payer en personne</option>}
@@ -97,16 +101,16 @@ const ListItem = ({ item, setError, unavailableSlots, canPayLater }) => {
 	);
 };
 
-const fetchCartItems = async setCartItems => {
+const fetchCartItems = async (setCartItems, source) => {
 	try {
-		const carItems = await axios.get("/cart/full-cart");
+		const carItems = await axios.get(withSource("/cart/full-cart", source));
 		setCartItems(carItems);
 	} catch (err) {
 		console.error(err);
 	}
 };
 
-const CartByTrainer = ({ trainer, disabled, canPayLater }) => {
+const CartByTrainer = ({ trainer, disabled, canPayLater, source }) => {
 	const BACKEND_BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 	const [error, setError] = useState("");
 	const [unavailableSlots, setUnavailableSlots] = useState([]);
@@ -144,11 +148,11 @@ const CartByTrainer = ({ trainer, disabled, canPayLater }) => {
 			<div className='title'>{trainer.firstname}</div>
 
 			{trainer.package.map((item, index) => (
-				<ListItem item={item} key={index} setError={setError} canPayLater={canPayLater} />
+				<ListItem item={item} key={index} setError={setError} canPayLater={canPayLater} source={source} />
 			))}
 
 			{trainer.slot.map((item, index) => (
-				<ListItem item={item} key={index} setError={setError} unavailableSlots={unavailableSlots} canPayLater={canPayLater} />
+				<ListItem item={item} key={index} setError={setError} unavailableSlots={unavailableSlots} canPayLater={canPayLater} source={source} />
 			))}
 
 			{trainer.tax_excluded > 0 && (
@@ -181,7 +185,7 @@ const CartByTrainer = ({ trainer, disabled, canPayLater }) => {
 
 						<a
 							onClick={() => {
-								checkAvailability(`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`);
+								checkAvailability(withSource(`${BACKEND_BASE_URL}/cart/checkout/${trainer.id}`, source));
 							}}>
 							<button className='margin-t-10'>Confirmer mes réservations</button>
 						</a>
@@ -190,7 +194,7 @@ const CartByTrainer = ({ trainer, disabled, canPayLater }) => {
 					<a
 						className=''
 						onClick={() => {
-							checkAvailability(`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`);
+							checkAvailability(withSource(`${BACKEND_BASE_URL}/cart/make-reservation/${trainer.id}`, source));
 						}}>
 						<button>Réserver</button>
 					</a>
@@ -202,59 +206,69 @@ const CartByTrainer = ({ trainer, disabled, canPayLater }) => {
 	);
 };
 
-function Cart() {
+/*
+ * Notices + the cart's content, split by trainer. `source` picks the server-side
+ * cart (none: the regular cart); `loginPath` is where to come back after logging in.
+ */
+const CartContent = ({ source, loginPath = "/login/cart", emptyLabel = "Votre panier est vide" }) => {
 	const [cartItems, setCartItems] = useState({});
 	useEffect(() => {
 		const fetch = () => {
-			fetchCartItems(setCartItems);
+			fetchCartItems(setCartItems, source);
 		};
 
 		fetch();
 
 		window.addEventListener("cart-modified", fetch);
 		return () => window.removeEventListener("cart-modified", fetch);
-	}, []);
+	}, [source]);
 
+	return (
+		<div className='widgets flex-col center'>
+			{cartItems.data?.notice?.is_logged_in === false ? (
+				<div className='box notice' style={{ maxWidth: "800px" }}>
+					Veuillez vous connecter pour valider votre panier
+					<div className='margin-t-20 center'>
+						<Link to={loginPath}>
+							<button>Se connecter</button>
+						</Link>
+					</div>
+				</div>
+			) : cartItems.data?.notice?.has_dog === false ? (
+				<div className='box notice' style={{ maxWidth: "800px" }}>
+					Vous devez premièrement créer le profil de votre animal
+					<div className='margin-t-20 center'>
+						<Link to='/account/profile'>
+							<button>Créer son profil</button>
+						</Link>
+					</div>
+				</div>
+			) : cartItems.data?.notice?.has_address === false ? (
+				<div className='box notice' style={{ maxWidth: "800px" }}>
+					Vous devez renseigner votre adresse pour valider la facture
+					<div className='margin-t-20 center'>
+						<Link to='/account/profile#missing-address'>
+							<button>Renseigner son adresse</button>
+						</Link>
+					</div>
+				</div>
+			) : null}
+			{cartItems.data?.result?.length ? cartItems.data?.result?.map(trainer => <CartByTrainer key={trainer.id} trainer={trainer} disabled={Object.values(cartItems.data.notice).length} canPayLater={cartItems.data.can_pay_later !== false} source={source} />) : <div className='box'>{emptyLabel}</div>}
+		</div>
+	);
+};
+
+function Cart() {
 	return (
 		<>
 			<section className='cart' id='a-propos'>
 				<div className='content'>
 					<h2>Panier</h2>
-					<div className='widgets flex-col center'>
-						{cartItems.data?.notice?.is_logged_in === false ? (
-							<div className='box notice' style={{ maxWidth: "800px" }}>
-								Veuillez vous connecter pour valider votre panier
-								<div className='margin-t-20 center'>
-									<Link to='/login/cart'>
-										<button>Se connecter</button>
-									</Link>
-								</div>
-							</div>
-						) : cartItems.data?.notice?.has_dog === false ? (
-							<div className='box notice' style={{ maxWidth: "800px" }}>
-								Vous devez premièrement créer le profil de votre animal
-								<div className='margin-t-20 center'>
-									<Link to='/account/profile'>
-										<button>Créer son profil</button>
-									</Link>
-								</div>
-							</div>
-						) : cartItems.data?.notice?.has_address === false ? (
-							<div className='box notice' style={{ maxWidth: "800px" }}>
-								Vous devez renseigner votre adresse pour valider la facture
-								<div className='margin-t-20 center'>
-									<Link to='/account/profile#missing-address'>
-										<button>Renseigner son adresse</button>
-									</Link>
-								</div>
-							</div>
-						) : null}
-						{cartItems.data?.result?.length ? cartItems.data?.result?.map(trainer => <CartByTrainer key={trainer.id} trainer={trainer} disabled={Object.values(cartItems.data.notice).length} canPayLater={cartItems.data.can_pay_later !== false} />) : <div className='box'>Votre panier est vide</div>}
-					</div>
+					<CartContent />
 				</div>
 			</section>
 		</>
 	);
 }
 
-export { Cart as Component };
+export { Cart as Component, CartContent };

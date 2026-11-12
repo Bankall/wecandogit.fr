@@ -2,6 +2,8 @@ import { Router } from "express";
 import { errorHandler } from "../../lib/utils.js";
 import { getTrainerStripe } from "../../lib/stripe.js";
 import { confirmCheckoutSession, markCheckoutExpired } from "../../lib/booking.js";
+import { processWaitingLists } from "../../lib/waiting-list.js";
+import { formatProcessingReport, escapeHtml } from "../../lib/waiting-list-rules.js";
 
 import MailSender from "../../lib/mail-sender/index.cjs";
 let backend;
@@ -149,6 +151,29 @@ router.route("/check-missing-payments").get(async (req, res) => {
 		}
 
 		res.send(response.join("<br/>"));
+	} catch (err) {
+		errorHandler({ err, res, req });
+	}
+});
+
+/*
+ * Liste d'attente : prévient la personne suivante quand une place est libre et que
+ * la proposition précédente a dépassé son délai (15 min par défaut). A planifier
+ * chaque minute : sans place libre ni liste d'attente, c'est une seule requête.
+ *
+ * ?dry_run=1 : même décision, mais aucun mail envoyé, rien d'écrit en base, aucun
+ * verrou ; la réponse liste qui serait prévenu.
+ */
+router.route("/process-waiting-lists").get(async (req, res) => {
+	try {
+		const dryRun = ["1", "true"].includes(String(req.query.dry_run || "").toLowerCase());
+		const results = await processWaitingLists({ dryRun });
+
+		res.send(
+			formatProcessingReport(results, { dryRun })
+				.map(line => escapeHtml(line))
+				.join("<br/>")
+		);
 	} catch (err) {
 		errorHandler({ err, res, req });
 	}

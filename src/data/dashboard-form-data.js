@@ -99,6 +99,12 @@ const Activity = [
 	}
 ];
 
+// Pre-fills the slot creation form: the only place the default location comes from
+// (the slot.location column has no default, older slots have no location)
+const DEFAULT_SLOT_LOCATION = "We Can Dog It, Les Sables, 51370 Les Mesneux";
+const SLOT_LOCATION_TOOLTIP = "Laisser vide si le lieu n'est pas encore connu";
+const SLOT_PUBLIC_TOOLTIP = "Décoché, le créneau n'apparaît pas dans l'agenda : il reste dans votre espace, où vous pouvez y inscrire des chiens";
+
 const SlotCreateForm = [
 	{
 		name: "id_activity",
@@ -112,6 +118,24 @@ const SlotCreateForm = [
 		label: "Date",
 		type: "array",
 		uitype: "field-array-datetime-local"
+	},
+	{
+		name: "location",
+		label: "Lieu",
+		type: "string",
+		uitype: "address-autocomplete",
+		maxLength: 255,
+		default: DEFAULT_SLOT_LOCATION,
+		tooltip: SLOT_LOCATION_TOOLTIP,
+		required: false
+	},
+	{
+		name: "is_public",
+		label: "Visible dans l'agenda",
+		type: "string",
+		uitype: "checkbox",
+		default: true,
+		tooltip: SLOT_PUBLIC_TOOLTIP
 	}
 ];
 
@@ -128,6 +152,22 @@ const Slot = [
 		label: "Date",
 		type: "string",
 		uitype: "datetime-local"
+	},
+	{
+		name: "location",
+		label: "Lieu",
+		type: "string",
+		uitype: "address-autocomplete",
+		maxLength: 255,
+		tooltip: SLOT_LOCATION_TOOLTIP,
+		required: false
+	},
+	{
+		name: "is_public",
+		label: "Visible dans l'agenda",
+		type: "string",
+		uitype: "checkbox",
+		tooltip: SLOT_PUBLIC_TOOLTIP
 	}
 ];
 

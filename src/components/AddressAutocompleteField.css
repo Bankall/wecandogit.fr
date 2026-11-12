@@ -1,0 +1,45 @@
+.address-autocomplete {
+	position: relative;
+	width: 100%;
+}
+
+.address-autocomplete > input {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.address-autocomplete-list {
+	position: absolute;
+	z-index: 20;
+	top: 100%;
+	left: 0;
+	right: 0;
+	margin: 2px 0 0;
+	padding: 0;
+	list-style: none;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+	text-align: left;
+}
+
+.address-autocomplete-list li {
+	padding: 8px 12px;
+	cursor: pointer;
+	color: #222;
+}
+
+.address-autocomplete-list li.highlighted,
+.address-autocomplete-list li:hover {
+	background: #f3eef6;
+}
+
+.address-autocomplete-list li.address-autocomplete-attribution {
+	cursor: default;
+	padding: 4px 12px;
+	font-size: 0.75em;
+	color: #888;
+	text-align: right;
+	background: none;
+}

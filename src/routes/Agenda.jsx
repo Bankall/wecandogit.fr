@@ -11,8 +11,22 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/Button";
 import { useCookies } from "react-cookie";
 import { useFetch } from "../hooks/useFetch";
+import { getNavigationLink } from "../utils/navigation";
 
 const FILTERS_SUFFIX = "-202604";
+
+// Opens the visitor's navigation app with directions to the slot, from where they are
+const DirectionsButton = ({ location }) => {
+	const { href, newTab } = getNavigationLink(location);
+
+	return (
+		<a href={href} target={newTab ? "_blank" : undefined} rel={newTab ? "noopener noreferrer" : undefined} title={`Itinéraire : ${location}`} aria-label={`Itinéraire vers ${location}`}>
+			<button className='small'>
+				<i className='fa-solid fa-location-dot'></i>
+			</button>
+		</a>
+	);
+};
 
 const renderEventContent = (eventInfo, isLoggedIn) => {
 	const data = Object.assign({}, eventInfo.event.extendedProps);
@@ -24,7 +38,14 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 			<span className='flex-row'>
 				<i id={data.id_slot}>
 					<span>
-						<b>{data.label}</b> - ({data.firstname}) - <b className='nbsp'>{full ? "Complet" : availableSpots === 1 ? "1 place disponible" : `${availableSpots} places disponibles`}</b>
+						<b>{data.label}</b> - ({data.firstname}) -{" "}
+						<b className='nbsp'>
+							{full ?
+								"Complet"
+							: availableSpots === 1 ?
+								"1 place disponible"
+							:	`${availableSpots} places disponibles`}
+						</b>
 					</span>
 
 					{data.reservations && data.reservations.length && (
@@ -37,6 +58,10 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 				</i>
 
 				<span className='flex-row small-gap'>
+					{data.location ?
+						<DirectionsButton location={data.location} />
+					:	null}
+
 					{data.instant_reservation ||
 						(false && (
 							<Button
@@ -51,13 +76,13 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 							</Button>
 						))}
 
-					{data.is_mine ? (
+					{data.is_mine ?
 						<Link to={`/account/slots/filter/${data.id_slot}`}>
 							<button className='small'>Modifier</button>
 						</Link>
-					) : null}
+					:	null}
 
-					{!data.cantBeReserved && !full ? (
+					{!data.cantBeReserved && !full ?
 						<Button
 							className={`small inverted-colors`}
 							disableOnClick={response => {
@@ -73,7 +98,7 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 							}}>
 							Ajouter au panier
 						</Button>
-					) : full && !data.waiting && isLoggedIn.data && isLoggedIn.data.ok ? (
+					: full && !data.waiting && isLoggedIn.data && isLoggedIn.data.ok ?
 						<Button
 							className={`small`}
 							disableOnClick={true}
@@ -84,7 +109,7 @@ const renderEventContent = (eventInfo, isLoggedIn) => {
 							}}>
 							S'inscrire sur liste d'attente
 						</Button>
-					) : null}
+					:	null}
 				</span>
 			</span>
 		</>
@@ -102,7 +127,11 @@ const convertToLocalDate = (date, increment) => {
 };
 
 const getEventColor = firstname => {
-	return firstname === "Elodie" ? "rgb(33, 70, 144)" : firstname === "Chloé" ? "rgb(112, 33, 111)" : "rgb(135, 198, 216)";
+	return (
+		firstname === "Elodie" ? "rgb(33, 70, 144)"
+		: firstname === "Chloé" ? "rgb(112, 33, 111)"
+		: "rgb(135, 198, 216)"
+	);
 };
 
 const fetchEvents = async setEvents => {
@@ -141,9 +170,9 @@ export default function Agenda() {
 	const isLoggedIn = useFetch("/is-logged-in");
 	const [filters, setFilters] = useState(() => {
 		const filters = localStorage?.getItem(`agenda-filters${FILTERS_SUFFIX}`);
-		return filters && JSON.parse(filters) && JSON.parse(filters).events
-			? JSON.parse(filters)
-			: {
+		return filters && JSON.parse(filters) && JSON.parse(filters).events ?
+				JSON.parse(filters)
+			:	{
 					trainers: {
 						35: true,
 						34: true,

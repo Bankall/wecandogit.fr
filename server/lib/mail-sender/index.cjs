@@ -30,7 +30,8 @@ class Mail {
 		return body;
 	}
 
-	send({ email, subject, template, macros }) {
+	// attachments: nodemailer attachments ([{ filename, content, contentType }]), e.g. .ics calendar entries
+	send({ email, subject, template, macros, attachments }) {
 		return new Promise(async (resolve, reject) => {
 			const body = this.getMailContent(template, macros);
 			const mail = new MailComposer({
@@ -39,7 +40,8 @@ class Mail {
 				to: email,
 				subject,
 				text: body.txt,
-				html: body.html
+				html: body.html,
+				attachments: attachments && attachments.length ? attachments : undefined
 			});
 
 			mail.compile().build(async (err, message) => {
