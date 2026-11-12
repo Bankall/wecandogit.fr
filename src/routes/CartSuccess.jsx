@@ -50,6 +50,15 @@ export const Component = () => {
 								<p className='margin-b-20'>Vous pouvez maintenant procéder au paiement en toute sérénité.</p>
 							</div>
 
+							<a href={stripe_url} target='_blank' onClick={() => setAutoRedirect(false)}>
+								<button className='margin-t-20'>
+									Procéder au paiement
+									{auto_redirect && countdown > 0 && ` (${countdown})`}
+								</button>
+							</a>
+
+							{auto_redirect && <p className='margin-t-20'>Redirection automatique vers le paiement dans quelques secondes…</p>}
+
 							<div className='row flex-col flex-stretch'>
 								<p>
 									<b>⚠️ Important</b>
@@ -64,14 +73,6 @@ export const Component = () => {
 
 								<p className='margin-b-20'>En cas de problème de paiement, veuillez nous contacter.</p>
 							</div>
-
-							<a href={stripe_url} target='_blank' onClick={() => setAutoRedirect(false)}>
-								<button className='margin-t-20'>
-									Procéder au paiement
-									{auto_redirect && countdown > 0 && ` (${countdown})`}
-								</button>
-							</a>
-							{auto_redirect && <p className='margin-t-20'>Redirection automatique vers le paiement dans quelques secondes…</p>}
 						</div>
 					</div>
 				</div>
