@@ -90,11 +90,11 @@ const restorePackageCredit = async (id_user_package, connection) => {
  * `downgrade_payment_type` is what an exhausted package falls back to: "later" for a
  * member who may still pay in person, "direct" for one who may not (see canPayLater).
  */
-const reserveSlot = async ({ id_slot, id_dog, payment_type, payment_details = null, downgrade_payment_type = "later" }) => {
+const reserveSlot = async ({ id_slot, id_dog, payment_type, payment_details = null, downgrade_payment_type = "later", id_user = null }) => {
 	const locationColumn = await slotLocationSelect();
 	// Members book through here only (trainers register dogs through their own route):
-	// a slot hidden from the agenda is unavailable to them
-	const isPublic = await slotIsPublicCondition();
+	// a slot hidden from the agenda is unavailable to them (except to `id_user` 1, see slot-visibility)
+	const isPublic = await slotIsPublicCondition("s", { userId: id_user });
 
 	return withTransaction(async connection => {
 		const slots = await query(

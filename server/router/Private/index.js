@@ -208,7 +208,8 @@ router
 					id_slot: req.body.id_slot,
 					id_dog: req.body.id_dog,
 					payment_type: user_packages.length ? user_packages[0].id : fallback,
-					downgrade_payment_type: fallback
+					downgrade_payment_type: fallback,
+					id_user: req.session.user_id
 				});
 
 				if (result.unavailable || result.full || result.duplicate) {

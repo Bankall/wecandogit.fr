@@ -64,7 +64,7 @@ router.route("/add").post(async (req, res) => {
 
 		// Only what the agenda shows can be booked: not a deleted slot, nor one hidden from it
 		if (cartItem.type === "slot") {
-			const slots = await query(`SELECT s.id FROM slot s WHERE s.id = ? AND s.enabled = 1 AND ${await slotIsPublicCondition()}`, [cartItem.id]);
+			const slots = await query(`SELECT s.id FROM slot s WHERE s.id = ? AND s.enabled = 1 AND ${await slotIsPublicCondition("s", { userId: req.session.user_id })}`, [cartItem.id]);
 			if (!slots.length) {
 				throw { message: "Ce créneau n'est pas disponible" };
 			}
@@ -190,7 +190,7 @@ const getSlotDetail = async (req, slot) => {
 				s.date
 			FROM activity a
 			JOIN slot s on s.id_activity = a.id
-			WHERE s.id = ? AND s.enabled = 1 AND ${await slotIsPublicCondition()}
+			WHERE s.id = ? AND s.enabled = 1 AND ${await slotIsPublicCondition("s", { userId: req.session.user_id })}
 		`,
 		[slot.id],
 		"get-activity",
@@ -444,7 +444,8 @@ const handleReservation = async (req, itemToReserve) => {
 					id_slot: item.id,
 					id_dog: item.id_dog,
 					payment_type: item.payment_type,
-					downgrade_payment_type: payLaterAllowed ? "later" : "direct"
+					downgrade_payment_type: payLaterAllowed ? "later" : "direct",
+					id_user: req.session.user_id
 				});
 
 				if (result.unavailable || result.full || result.duplicate) {

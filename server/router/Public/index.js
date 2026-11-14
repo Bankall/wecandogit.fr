@@ -212,7 +212,7 @@ router.route("/get-all-slots").get(async (req, res) => {
 				
 				WHERE 	s.date > CURRENT_TIMESTAMP()
 				AND 	s.enabled = 1
-				AND 	${await slotIsPublicCondition()}
+				AND 	${await slotIsPublicCondition("s", { userId: req.session.user_id, isTrainer: !!req.session.is_trainer })}
 				
 				ORDER BY date asc`,
 			[req.session.user_id || 0],
