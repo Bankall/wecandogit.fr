@@ -51,7 +51,15 @@ test("buildLocationChangeMail: a place set for the first time", () => {
 });
 
 test("buildLocationChangeMail: a changed place shows the old one, several dogs, escaped", () => {
-	const mail = buildLocationChangeMail({ change: "changed", firstname: "Zoé", activity: "Agility & Hoopers", start: "2026-11-15 10:00:00", dogs: ["Rex", "Pixel", "<Lune>"], previous: PARK, location: "Parc de Champagne, Reims" });
+	const mail = buildLocationChangeMail({
+		change: "changed",
+		firstname: "Zoé",
+		activity: "Agility & Hoopers",
+		start: "2026-11-15 10:00:00",
+		dogs: ["Rex", "Pixel", "<Lune>"],
+		previous: PARK,
+		location: "Parc de Champagne, Reims"
+	});
 
 	assert.equal(mail.subject, "Changement de lieu pour votre séance");
 	assert.match(mail.html, /<b>Agility &amp; Hoopers<\/b> avec Rex, Pixel et &lt;Lune&gt; le/);

@@ -38,17 +38,16 @@ const SlotTaken = ({ slot }) => {
 		<Notice>
 			Désolé, la place sur le créneau {formatSlot(slot)} a déjà été réservée par quelqu&apos;un d&apos;autre.
 			<div className='margin-t-20 center'>
-				{rejoined ? (
+				{rejoined ?
 					"Vous êtes de nouveau sur la liste d'attente : nous vous préviendrons si une place se libère."
-				) : (
-					<button
+				:	<button
 						onClick={async () => {
 							const response = await addToWaitingList({ id_slot: slot.id_slot });
 							setRejoined(!!response?.ok);
 						}}>
 						Me remettre sur la liste d&apos;attente
 					</button>
-				)}
+				}
 			</div>
 		</Notice>
 	);

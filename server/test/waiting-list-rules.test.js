@@ -29,9 +29,18 @@ test("pickNextMembers keeps the order and tells a member registered twice only o
 		{ id: 13, id_user: 3 }
 	];
 
-	assert.deepEqual(pickNextMembers(entries, 1).map(entry => entry.id), [10]);
-	assert.deepEqual(pickNextMembers(entries, 3).map(entry => entry.id), [10, 11, 13]);
-	assert.deepEqual(pickNextMembers(entries, 10).map(entry => entry.id), [10, 11, 13]);
+	assert.deepEqual(
+		pickNextMembers(entries, 1).map(entry => entry.id),
+		[10]
+	);
+	assert.deepEqual(
+		pickNextMembers(entries, 3).map(entry => entry.id),
+		[10, 11, 13]
+	);
+	assert.deepEqual(
+		pickNextMembers(entries, 10).map(entry => entry.id),
+		[10, 11, 13]
+	);
 	assert.deepEqual(pickNextMembers(entries, 0), []);
 	assert.deepEqual(pickNextMembers([], 2), []);
 });

@@ -72,7 +72,11 @@ const formatSlotDateLong = value => {
 	return `${date} à ${pad(hour)}h${pad(minute)}`;
 };
 
-const formatIcsDate = date => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+const formatIcsDate = date =>
+	date
+		.toISOString()
+		.replace(/[-:]/g, "")
+		.replace(/\.\d{3}/, "");
 
 const escapeIcsText = text =>
 	String(text ?? "")

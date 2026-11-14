@@ -45,7 +45,9 @@ test("foldIcsLine keeps every line within 75 octets, without splitting a charact
 });
 
 test("buildIcs builds a PUBLISH calendar with UTC times and CRLF line endings", () => {
-	const ics = buildIcs([{ uid: "reservation-42@wecandogit.com", start: "2026-01-10 14:00:00", duration_minutes: 90, summary: "Agility, niveau 1", description: "Séance avec Rex" }], { now: new Date("2026-01-01T10:00:00Z") });
+	const ics = buildIcs([{ uid: "reservation-42@wecandogit.com", start: "2026-01-10 14:00:00", duration_minutes: 90, summary: "Agility, niveau 1", description: "Séance avec Rex" }], {
+		now: new Date("2026-01-01T10:00:00Z")
+	});
 
 	assert.ok(ics.startsWith("BEGIN:VCALENDAR\r\n"));
 	assert.ok(ics.endsWith("END:VCALENDAR\r\n"));

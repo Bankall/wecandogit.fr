@@ -35,7 +35,7 @@ test("a package line keeps its label", () => {
 });
 
 test("names and places are HTML-escaped", () => {
-	const line = formatConfirmationLine({ payment_type: "direct", session: { activity: "Agility & Hoopers", dog: "<Rex>", start: "2026-01-11 20:00:00", location: "Parc \"Les Sables\"" } });
+	const line = formatConfirmationLine({ payment_type: "direct", session: { activity: "Agility & Hoopers", dog: "<Rex>", start: "2026-01-11 20:00:00", location: 'Parc "Les Sables"' } });
 
 	assert.match(line, /<b>Agility &amp; Hoopers<\/b> avec &lt;Rex&gt;/);
 	assert.match(line, /Lieu : Parc &quot;Les Sables&quot;/);
