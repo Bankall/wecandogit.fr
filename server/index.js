@@ -110,21 +110,28 @@ app.get("/p/:code", async (req, res) => {
 
 app.use(express.static(path.join(__dirname, "../dist")));
 
+// A login lasts 7 days after the last visit. Cart items expire sooner (24h, see lib/cart-expiry.js)
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 const MySQLStore = rawMySQLStore(session);
 const sessionStore = new MySQLStore({
 	host: config.get("mysql.host"),
 	user: config.get("mysql.user"),
 	port: 3306,
 	password: config.get("mysql.password"),
-	database: config.get("mysql.database")
+	database: config.get("mysql.database"),
+	expiration: SESSION_TTL_MS
 });
 
 const sess = {
 	secret: process.env.SESSION_COOKIE_SECRET,
 	resave: false,
 	saveUninitialized: false,
+	// Re-send the cookie on every response so its 7 days count from the last visit, like the store's
+	rolling: true,
 	store: sessionStore,
 	cookie: {
+		maxAge: SESSION_TTL_MS,
 		httpOnly: true,
 		sameSite: "lax",
 		secure: "auto"

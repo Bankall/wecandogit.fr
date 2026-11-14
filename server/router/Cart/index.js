@@ -9,12 +9,20 @@ import { buildReservationEvent, buildIcsAttachment } from "../../lib/calendar.js
 import { getClaimableSlot } from "../../lib/waiting-list.js";
 import { selectCalendarEvents, buildConfirmationMail } from "../../lib/confirmation-mail.js";
 import { slotIsPublicCondition } from "../../lib/slot-visibility.js";
+import { pruneSessionCarts, touchCartItems } from "../../lib/cart-expiry.js";
 
 import config from "config";
 
 let backend;
 
 const router = Router();
+
+// A cart lasts 24 hours after its last change, the login 7 days: empty a stale cart before any cart route reads it
+router.use((req, res, next) => {
+	pruneSessionCarts(req.session);
+	next();
+});
+
 router.route("/ping").get((req, res) => {
 	res.send("pong");
 });
@@ -37,7 +45,7 @@ const WAITING_LIST_SOURCE = "waiting-list";
 const isWaitingListCart = req => req.query.source === WAITING_LIST_SOURCE;
 const getCart = req => req.session[isWaitingListCart(req) ? "waiting_list_cart" : "cart"] || [];
 const setCart = (req, items) => {
-	req.session[isWaitingListCart(req) ? "waiting_list_cart" : "cart"] = items;
+	req.session[isWaitingListCart(req) ? "waiting_list_cart" : "cart"] = touchCartItems(items);
 };
 
 // Front page showing the cart in use, to come back to while it still holds something
@@ -105,7 +113,7 @@ router.route("/add").post(async (req, res) => {
 			}
 		}
 
-		req.session.cart.push(cartItem);
+		req.session.cart = touchCartItems([...req.session.cart, cartItem]);
 		res.send({
 			ok: true,
 			cantAddMore
@@ -1044,14 +1052,14 @@ router.route("/waiting-list/:id_waiting_list").post(async (req, res) => {
 				return res.send({ already_booked: true, slot });
 			}
 
-			req.session.waiting_list_cart = [
+			req.session.waiting_list_cart = touchCartItems([
 				{
 					type: "slot",
 					id: id_slot,
 					id_dog: freeDog ? freeDog.id : undefined,
 					id_cart_item: parseInt(Math.random() * 1000000, 10)
 				}
-			];
+			]);
 		}
 
 		req.session.waiting_list_claim_id = claim.entry.id;
